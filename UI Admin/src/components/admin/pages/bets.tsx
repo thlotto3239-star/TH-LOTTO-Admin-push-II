@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import { Search, Eye, FileText, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
-import { Panel, Btn, PageHeader, TableWrap, Th, Td, StatusBadge, EmptyState, fmtTHB } from "../primitives";
+import { Panel, Btn, PageHeader, TableWrap, Th, Td, StatusBadge, EmptyState } from "../primitives";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GLOBAL_BETS, MARKETS, type GlobalBet } from "@/data/admin-mock";
+import { GLOBAL_BETS, MARKETS, type GlobalBet, fmtTHB } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
 export function BetsPage() {

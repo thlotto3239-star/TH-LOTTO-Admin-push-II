@@ -9,6 +9,8 @@ export type PageId =
   | "members"
   | "member-detail"
   | "markets"
+  | "restricted"
+  | "bets"
   | "results"
   | "instant-overview"
   | "wheel"
@@ -45,6 +47,8 @@ export const PAGE_META: Record<PageId, { title: string; group: string }> = {
   members: { title: "จัดการสมาชิก", group: "สมาชิก" },
   "member-detail": { title: "รายละเอียดสมาชิก", group: "สมาชิก" },
   markets: { title: "ตลาดหวย", group: "หวย" },
+  restricted: { title: "จัดการเลขอั้น", group: "หวย" },
+  bets: { title: "รายการแทงหวย", group: "หวย" },
   results: { title: "ออกผลรางวัล", group: "หวย" },
   "instant-overview": { title: "หวยหนึ่งนาที — ภาพรวม", group: "หวยหนึ่งนาที" },
   wheel: { title: "วงล้อโชคดี", group: "เกม" },
