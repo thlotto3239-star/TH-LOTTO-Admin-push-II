@@ -91,6 +91,45 @@ export function BanksPage() {
   const [form, setForm] = React.useState<{ initial: BankAccountBook } | null>(null);
   const [confirmDel, setConfirmDel] = React.useState<BankAccountBook | null>(null);
 
+  React.useEffect(() => {
+    fetch("/api/admin/data?resource=content")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data?.banks?.length > 0) {
+          setDisplays(
+            res.data.banks.map((b: any, idx: number) => ({
+              code: (b.code || "").toLowerCase(),
+              is_active: Boolean(b.is_active),
+              display_order: idx + 1,
+            }))
+          );
+        }
+        if (res.success && res.data?.settings?.length > 0) {
+          const dict: Record<string, string> = {};
+          res.data.settings.forEach((s: any) => {
+            if (s.key) dict[s.key] = s.value;
+          });
+          if (dict.company_bank_account_number) {
+            setAccounts((prev) => [
+              {
+                id: "sb-company-1",
+                bank_code: (dict.company_bank_code || "kbank").toLowerCase(),
+                account_no: dict.company_bank_account_number || "",
+                account_name: dict.company_bank_account_name || dict.bank_account_name || "",
+                branch: "สำนักงานใหญ่",
+                qr_code_url: dict.bank_qr_url || "",
+                account_type: "deposit" as const,
+                is_default: true,
+                is_active: true,
+              },
+              ...prev.filter((a) => a.id !== "sb-company-1"),
+            ]);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const sortedDisp = [...displays].sort((a, b) => a.display_order - b.display_order);
 
   const moveDisp = (code: string, dir: -1 | 1) => {

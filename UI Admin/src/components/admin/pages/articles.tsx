@@ -139,6 +139,29 @@ export function ArticlesPage() {
   const [form, setForm] = React.useState<{ initial: Article } | null>(null);
   const [confirmDel, setConfirmDel] = React.useState<Article | null>(null);
 
+  React.useEffect(() => {
+    fetch("/api/admin/data?resource=content")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data?.articles?.length > 0) {
+          setRows(
+            res.data.articles.map((a: any) => ({
+              id: String(a.id),
+              title: a.title || "",
+              slug: String(a.id),
+              category: a.category || "ข่าวสาร",
+              content: a.content || "",
+              image_url: a.image_url || "",
+              views: 0,
+              is_published: Boolean(a.is_published),
+              published_at: a.created_at ? new Date(a.created_at).toLocaleDateString("th-TH") : "—",
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const filtered = rows.filter(
     (r) =>
       (cat === "all" || r.category === cat) &&

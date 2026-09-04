@@ -249,6 +249,49 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, data: dict, raw: data });
       }
 
+      case "table-stats": {
+        const tableNames = [
+          { key: "draw_schedules", name: "ตารางออกรางวัล (draw_schedules)" },
+          { key: "instant_draws", name: "ผลหวยหนึ่งนาที (instant_draws)" },
+          { key: "bets", name: "โพยหวย (bets)" },
+          { key: "transactions", name: "ธุรกรรมการเงิน (transactions)" },
+          { key: "admin_notifications", name: "การแจ้งเตือนแอดมิน (admin_notifications)" },
+          { key: "payout_rates", name: "อัตราจ่ายรางวัล (payout_rates)" },
+          { key: "lottery_results", name: "ผลรางวัลหวย (lottery_results)" },
+          { key: "profiles", name: "สมาชิกและผู้ใช้ (profiles)" },
+          { key: "wallets", name: "กระเป๋าเงินสมาชิก (wallets)" },
+          { key: "settings", name: "ตั้งค่าระบบ (settings)" },
+          { key: "notifications", name: "การแจ้งเตือนผู้ใช้ (notifications)" },
+          { key: "lucky_wheel_spins", name: "ประวัติหมุนวงล้อ (lucky_wheel_spins)" },
+          { key: "lottery_markets", name: "ตลาดหวย (lottery_markets)" },
+          { key: "login_attempts", name: "บันทึกการเข้าสู่ระบบ (login_attempts)" },
+          { key: "instant_bet_types", name: "ประเภทแทงหวยไว (instant_bet_types)" },
+          { key: "banks", name: "ธนาคาร (banks)" },
+          { key: "lucky_wheel_prizes", name: "รางวัลวงล้อ (lucky_wheel_prizes)" },
+          { key: "announcements", name: "ประกาศระบบ (announcements)" },
+          { key: "sliders", name: "สไลเดอร์แบนเนอร์ (sliders)" },
+          { key: "promotions", name: "โปรโมชั่น (promotions)" },
+          { key: "deposit_requests", name: "รายการฝากเงิน (deposit_requests)" },
+          { key: "withdraw_requests", name: "รายการถอนเงิน (withdraw_requests)" },
+          { key: "articles", name: "บทความ (articles)" },
+          { key: "restricted_numbers", name: "เลขอั้น (restricted_numbers)" },
+        ];
+
+        const counts = await Promise.all(
+          tableNames.map(async (t) => {
+            const { count } = await supabaseAdmin.from(t.key).select("*", { count: "exact", head: true });
+            return {
+              name: t.name,
+              table: t.key,
+              rows: count || 0,
+              size: `${(((count || 0) * 0.4) + 1).toFixed(1)} KB`,
+            };
+          })
+        );
+
+        return NextResponse.json({ success: true, data: counts });
+      }
+
       case "member-detail": {
         const id = searchParams.get("id");
         if (!id) {

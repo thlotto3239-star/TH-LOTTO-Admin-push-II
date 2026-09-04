@@ -119,6 +119,27 @@ export function WheelPage() {
   const [config, setConfig] = React.useState(WHEEL_CONFIG);
   const [selected, setSelected] = React.useState<string | null>(null);
 
+  React.useEffect(() => {
+    fetch("/api/admin/data?resource=content")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data?.wheelPrizes?.length > 0) {
+          setSlots(
+            res.data.wheelPrizes.map((p: any) => ({
+              id: String(p.id),
+              label: p.name || "",
+              value: Number(p.amount || 0),
+              probability: Number(p.probability || 0),
+              color: p.color || "#10b981",
+              hi_color: p.hi_color || "#34d399",
+              is_active: Boolean(p.is_active),
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const totalProb = slots.filter((s) => s.is_active).reduce((a, s) => a + s.probability, 0);
   const probOk = totalProb === 100;
 
