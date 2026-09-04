@@ -5,6 +5,7 @@ import {
   LayoutDashboard, ArrowDownToLine, ArrowUpFromLine, Users, Dices, BadgeCheck,
   Zap, Disc3, Megaphone, Wrench, UserCog, Bell, Menu, LogOut, ChevronDown, Search,
   Images, Newspaper, Rss, Palette, Landmark, RadioTower, DatabaseBackup,
+  ShieldAlert, Ticket,
 } from "lucide-react";
 import { useAdminNav, PAGE_META, type PageId } from "./store";
 import { Btn } from "./primitives";
@@ -16,6 +17,8 @@ import { WithdrawalsPage } from "./pages/withdrawals";
 import { MembersPage } from "./pages/members";
 import { MemberDetailPage } from "./pages/member-detail";
 import { MarketsPage } from "./pages/markets";
+import { RestrictedNumbersPage } from "./pages/restricted";
+import { BetsPage } from "./pages/bets";
 import { ResultsPage } from "./pages/results";
 import { InstantOverviewPage } from "./pages/instant";
 import { WheelPage } from "./pages/wheel";
@@ -58,6 +61,8 @@ const NAV: { group: string; items: { id: PageId; label: string; icon: React.Comp
     group: "หวย",
     items: [
       { id: "markets", label: "ตลาดหวย", icon: Dices },
+      { id: "restricted", label: "จัดการเลขอั้น", icon: ShieldAlert },
+      { id: "bets", label: "รายการแทงหวย", icon: Ticket },
       { id: "results", label: "ออกผลรางวัล", icon: BadgeCheck, badge: (n) => n.res },
     ],
   },
@@ -267,6 +272,8 @@ export function AdminApp() {
       case "members": return <MembersPage />;
       case "member-detail": return <MemberDetailPage />;
       case "markets": return <MarketsPage />;
+      case "restricted": return <RestrictedNumbersPage />;
+      case "bets": return <BetsPage />;
       case "results": return <ResultsPage />;
       case "instant-overview": return <InstantOverviewPage />;
       case "wheel": return <WheelPage />;
