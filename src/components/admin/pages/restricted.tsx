@@ -62,21 +62,48 @@ export function RestrictedNumbersPage() {
         BET_TYPE_LABEL[r.bet_type]?.includes(q.trim())
     );
 
-  const handleSave = () => {
-    if (!form.number.trim()) {
-      toast({ title: "กรุณากรอกตัวเลข", variant: "destructive" });
-      return;
-    }
-    const targetMkt = MARKETS.find((m) => m.id === form.market_id) ?? MARKETS[0];
+  // Live Supabase Sync
+  React.useEffect(() => {
+    fetch("/api/admin/data?resource=restricted-numbers")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data?.length) {
+          const mapped = res.data.map((d: any) => {
+            const mkt = MARKETS.find((m) => m.id === d.market_id) || MARKETS[0];
+            return {
+              id: d.id,
+              market_id: d.market_id,
+              market_name: mkt.name,
+              market_code: mkt.code,
+              market_color: mkt.color,
+              bet_type: d.bet_type as BetType,
+              number: d.number,
+              max_amount: parseFloat(d.max_amount) || 0,
+              payout_rate: parseFloat(d.payout_rate) || 0,
+              draw_date: d.draw_date || "16/09/2569",
+              created_at: new Date(d.created_at).toLocaleString("th-TH"),
+            };
+          });
+          setRows(mapped);
+        }
+      })
+      .catch((e) => console.error("Could not fetch live restricted numbers:", e));
+  }, []);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.number.trim()) return;
+
+    const targetMkt = MARKETS.find((m) => m.id === form.market_id) || MARKETS[0];
     const newRecord: RestrictedNumber = {
-      id: `rn-${Date.now()}`,
-      market_id: targetMkt.id,
-      market_code: targetMkt.code,
+      id: "rn_" + Date.now(),
+      market_id: form.market_id,
       market_name: targetMkt.name,
+      market_code: targetMkt.code,
       market_color: targetMkt.color,
       bet_type: form.bet_type,
       number: form.number.trim(),
-      max_amount: form.max_amount,
+      max_amount: Number(form.max_amount) || 0,
       payout_rate: form.mode === "blocked" ? 0 : form.payout_rate,
       draw_date: form.draw_date,
       created_at: new Date().toLocaleDateString("th-TH") + " " + new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }),
@@ -85,7 +112,7 @@ export function RestrictedNumbersPage() {
     setRows((prev) => [newRecord, ...prev]);
     toast({
       title: form.mode === "blocked" ? "บันทึกเลขอั้นแล้ว (ไม่รับแทง)" : "บันทึกเลขจ่ายครึ่งแล้ว",
-      description: `${targetMkt.name} · ${BET_TYPE_LABEL[form.bet_type]} [${form.number}] · RPC admin_upsert_restricted_number สำเร็จ`,
+      description: `${targetMkt.name} · ${BET_TYPE_LABEL[form.bet_type]} [${form.number}] บันทึกสำเร็จ`,
     });
     setIsModalOpen(false);
     setForm({
@@ -97,12 +124,48 @@ export function RestrictedNumbersPage() {
       max_amount: 0,
       draw_date: "16/09/2569",
     });
+
+    try {
+      await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "upsert_restricted_number",
+          payload: {
+            market_id: form.market_id,
+            bet_type: form.bet_type,
+            number: form.number.trim(),
+            max_amount: Number(form.max_amount) || 0,
+            payout_rate: form.mode === "blocked" ? 0 : form.payout_rate,
+            draw_date: "2026-09-16",
+            note: form.mode === "blocked" ? "เลขอั้น" : "เลขจ่ายครึ่ง",
+          },
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to sync restricted number to Supabase:", err);
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleSave = () => handleAdd({ preventDefault: () => {} } as any);
+
+  const handleDelete = async (id: string) => {
     setRows((prev) => prev.filter((r) => r.id !== id));
     toast({ title: "ยกเลิกเลขอั้นแล้ว", description: "ลบรายการออกจากระบบเรียบร้อย" });
     setConfirmDel(null);
+
+    try {
+      await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete_restricted_number",
+          payload: { id },
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to delete restricted number on Supabase:", err);
+    }
   };
 
   return (
