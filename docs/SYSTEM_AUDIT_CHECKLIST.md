@@ -1,126 +1,109 @@
 # 📋 เอกสารเช็คลิสต์การปรับปรุงระบบ (System Audit & Modification Checklist)
 ## โครงการ THLOTTO-II — ระบบแผงควบคุมผู้ดูแลระบบ (Admin Management Portal)
 
-> **เวอร์ชันเอกสาร:** 1.0.0  
+> **เวอร์ชันเอกสาร:** 2.0.0 (ซิงค์และตรวจสอบตรงกับฐานข้อมูลจริง Supabase Production เรียบร้อยแล้ว)  
 > **วันที่จัดทำ:** 4 กันยายน 2026  
-> **สถานะความปลอดภัย:** สร้างจุดย้อนกลับ (Baseline Tag: `checkpoint-pre-schema-alignment`) และสลับทำงานบน Branch `feature/complete-schema-alignment` เรียบร้อยแล้ว
+> **ฐานข้อมูล Production:** `https://ygopnjbvccenryejqmlw.supabase.co` (Ref: `ygopnjbvccenryejqmlw`)  
+> **สถานะความปลอดภัย:** 
+> - บันทึกกุญแจ Supabase ใน `UI Admin/.env.local` อย่างปลอดภัย 100% ไม่ถูกแทร็กหรือคอมมิตขึ้น Git
+> - สร้างจุดย้อนกลับ Git Tag: `checkpoint-pre-schema-alignment`
+> - กิ่งพัฒนา: `feature/complete-schema-alignment` ซิงค์ขึ้น GitHub ([thlotto3239-star/THLOTTO-II](https://github.com/thlotto3239-star/THLOTTO-II))
 
 ---
 
-## 1. 📊 สรุปภาพรวมและสถาปัตยกรรมฐานข้อมูล (Database Architecture Overview)
+## 1. 📊 ผลการตรวจสอบการเชื่อมต่อฐานข้อมูลจริงผ่าน Supabase MCP (Live Database Audit)
 
-จากการวิเคราะห์เอกสารสถาปัตยกรรมระบบ (`SYSTEM_ARCHITECTURE_MANUAL.md`) และคู่มือปฏิบัติการภายใน (`INTERNAL_SYSTEM_OPERATION_MANUAL.md`):
+ระบบได้ทำการเชื่อมต่อและทดสอบคิวรีผ่าน **Supabase MCP Tool (`execute_sql` & `list_tables`)** พบโครงสร้างตารางจริง ข้อมูลจริง และ Stored Procedures ดังนี้:
 
-### 1.1 สถาปัตยกรรมหลักและความปลอดภัย (Core Closed-Loop Architecture)
-* **ฐานข้อมูล:** Supabase PostgreSQL Production (`https://ygopnjbvccenryejqmlw.supabase.co`)
-* **ความปลอดภัยระดับสูงสุด:** เปิดใช้งาน **Row-Level Security (RLS) 100% ครบทั้ง 39 ตาราง** ไม่มีตารางใดที่ไม่มีนโยบายความปลอดภัย
-* **Closed-Loop Isolation:** ทำงานเป็นระบบปิดระหว่าง Admin Management Portal $\leftrightarrow$ Supabase $\leftrightarrow$ Customer Portal ไม่มีการเชื่อมต่อ Webhook ภายนอกที่ไม่น่าเชื่อถือ และไม่มีการเปิดพอร์ตที่ไม่จำเป็น
-* **ระบบการเงินแบบ Double-Entry Atomic Ledger:**
-  - ยึดตาราง `transactions` เป็น Single Source of Truth
-  - บันทึก `balance_before` และ `balance_after` ทุกบาททุกสตางค์
-  - การปรับยอดและการอนุมัติฝาก/ถอนถูกกำกับด้วย Stored Procedures ระดับฐานข้อมูล (`admin_approve_deposit`, `admin_reject_deposit`, `admin_approve_withdraw`, `admin_reject_withdraw`, `admin_adjust_wallet`) ซึ่งทำงานแบบ Atomic Transaction (ACID)
-
-### 1.2 โครงสร้างโมเดลข้อมูลหลัก (Core Domain Models)
-1. **ระบบหวยหลัก (Main Lottery Engine):**
-   - **ตลาดหวยจริง 21 ตลาด (`public.lottery_markets`):**
-     - *รัฐบาลไทย:* `TH_GOV`
-     - *ต่างประเทศ (5 ตลาด):* `LAO`, `HANOI`, `HANOI_SPECIAL`, `HANOI_VIP`, `MALAY`
-     - *หวยหุ้นต่างประเทศ (15 ตลาด):* `NIKKEI_MORNING`, `NIKKEI_AFTERNOON`, `CHINA_MORNING`, `CHINA_AFTERNOON`, `HANGSENG_MORNING`, `HANGSENG_AFTERNOON`, `STOCK_TAIWAN`, `STOCK_KOREA`, `STOCK_SG`, `STOCK_INDIA`, `STOCK_EGYPT`, `STOCK_RUSSIA`, `STOCK_GERMANY`, `STOCK_ENGLAND`, `STOCK_DOWJONES`
-   - **งวดออกรางวัล (`public.draw_schedules`):** คำนวณและสร้างงวดล่วงหน้าอัตโนมัติ (ปัจจุบันมี 1,211 แถว)
-   - **โพยหวยหลัก (`public.bets`):** บันทึกการเดิมพันหลักของผู้เล่น (ปัจจุบันมี 417 แถว)
-   - **ผลรางวัล (`public.lottery_results`):** จัดเก็บผลรางวัลและสถานะการออกผล (ปัจจุบันมี 134 แถว)
-   - **อัตราจ่ายรางวัล (`public.payout_rates`):** กำหนดอัตราจ่ายตามประเภทรางวัล (ปัจจุบันมี 135 แถว)
-   - **การควบคุมความเสี่ยงเลขอั้น (`public.restricted_numbers`):** ควบคุมเลขอั้น (จ่าย 0 เท่า) และเลขจ่ายครึ่ง (ลดอัตราจ่าย) พร้อมเพดานรับแทงสูงสุด (`max_amount`)
-
-2. **ระบบหวยเร็ว 1 นาที (Instant 1-Minute Engine):**
-   - **รูปแบบการเดิมพันจริง 9 ประเภท (`public.instant_bet_types`):**
-     1. `2top` (2 ตัวบน — อัตราจ่าย 90 เท่า)
-     2. `2bottom` (2 ตัวล่าง — อัตราจ่าย 90 เท่า)
-     3. `3top` (3 ตัวบน — อัตราจ่าย 900 เท่า)
-     4. `3toad` (3 ตัวโต๊ด — อัตราจ่าย 180 เท่า)
-     5. `3front` (3 ตัวหน้า — อัตราจ่าย 900 เท่า)
-     6. `3back` (3 ตัวท้าย — อัตราจ่าย 900 เท่า)
-     7. `6straight` (6 ตัวตรง — อัตราจ่าย 15,000 เท่า)
-     8. `pin_top` (ปักหลักบน — อัตราจ่าย 9.9 เท่า)
-     9. `pin_bottom` (ปักหลักล่าง — อัตราจ่าย 9.9 เท่า)
-   - **งวดและระบบประมวลผลทันที:** ออกผลงวดทุก 60 วินาที (`public.instant_draws` มี 517 แถว), บันทึกการแทง (`public.instant_bets`), ประมวลผลเคลียร์ยอดทันที (Micro-Settlement) และมีระบบ Cron ทำความสะอาดข้อมูลรอบดึก
-
-3. **ระบบบริหารจัดการสมาชิกและการเงิน:**
-   - ข้อมูลบัญชีผู้ใช้และกระเป๋าเงิน (`profiles` และ `wallets` มี 52 บัญชี)
-   - คำขอฝากเงิน (`deposit_requests`) และคำขอถอนเงิน (`withdraw_requests`)
-   - ระบบบันทึกประวัติการเงินแบบแยกประเภท (`DEPOSIT`, `WITHDRAW`, `BET`, `WIN`, `REFUND`, `COMMISSION`)
-
-4. **ระบบสนับสนุนและการตลาด:**
-   - วงล้อลุ้นโชค (`lucky_wheel_prizes` 8 รางวัล)
-   - แบนเนอร์สไลด์ (`sliders`), โปรโมชั่น (`promotions`), หน้าบทความ (`cms_pages` 3 หน้า), ข่าวสารและประกาศ (`announcements`)
-   - ระบบแจ้งเตือนภายในแอปพลิเคชัน (`notifications`) ทั้งแบบป๊อปอัปและแถบวิ่ง
+### 1.1 สรุปจำนวนข้อมูลจริงในตารางสำคัญ (Live Row Counts)
+| ชื่อตารางในฐานข้อมูล | จำนวนแถวจริง | RLS | บทบาทในระบบ Admin |
+| :--- | :---: | :---: | :--- |
+| `public.draw_schedules` | **1,211** | ✅ เปิด | ตารางงวดออกรางวัลล่วงหน้าของทั้ง 21 ตลาด |
+| `public.instant_draws` | **562** | ✅ เปิด | รอบออกรางวัลหวยเร็ว 1 นาที (ออกทุก 60 วินาที) |
+| `public.bets` | **417** | ✅ เปิด | รายการโพยหวยหลักที่สมาชิกลงเดิมพัน |
+| `public.transactions` | **258** | ✅ เปิด | บัญชีแยกประเภทคู่ (Double-Entry Ledger) บันทึกทุกรายการเงิน |
+| `public.admin_notifications` | **153** | ✅ เปิด | การแจ้งเตือนสำหรับผู้ดูแลระบบ (ฝาก/ถอน/เดิมพันสูง) |
+| `public.payout_rates` | **135** | ✅ เปิด | อัตราจ่ายรางวัลหวยหลักทุกประเภท |
+| `public.lottery_results` | **134** | ✅ เปิด | ประวัติผลรางวัลหวยที่ออกแล้ว |
+| `public.settings` | **74** | ✅ เปิด | การตั้งค่าระบบ บัญชีรับโอน ไลน์ติดต่อ และระบบออโต้ |
+| `public.notifications` | **54** | ✅ เปิด | การแจ้งเตือนผู้ใช้งานหน้าเว็บ |
+| `public.profiles` | **52** | ✅ เปิด | สมาชิกทั้งหมด (แอดมิน 3 ท่าน + สมาชิกทั่วไป 49 ท่าน) |
+| `public.wallets` | **52** | ✅ เปิด | กระเป๋าเงินสมาชิก ยอดคงเหลือ และค่าคอมมิชชั่น |
+| `public.lucky_wheel_spins` | **40** | ✅ เปิด | ประวัติการหมุนวงล้อโชคดี |
+| `public.lottery_markets` | **21** | ✅ เปิด | ตลาดหวยจริง 21 ตลาด (รัฐบาลไทย, ต่างประเทศ, หวยหุ้น) |
+| `public.login_attempts` | **12** | ✅ เปิด | บันทึกประวัติการพยายามล็อกอิน |
+| `public.instant_bet_types` | **9** | ✅ เปิด | รูปแบบการแทงหวย 1 นาที 9 ชนิดจริง |
+| `public.lucky_wheel_prizes` | **8** | ✅ เปิด | ช่องรางวัลวงล้อโชคดี 8 ช่อง (slot_index 0-7) |
+| `public.banks` | **8** | ✅ เปิด | ธนาคารที่รองรับในระบบพร้อมโลโก้จริง |
+| `public.announcements` | **7** | ✅ เปิด | ข้อความประกาศหน้าเว็บและแถบวิ่ง |
+| `public.sliders` | **5** | ✅ เปิด | แบนเนอร์สไลด์หน้าแรกพร้อมรูปภาพจริงบน Storage |
+| `public.promotions` | **4** | ✅ เปิด | โปรโมชั่นจริง (สมัครใหม่, แนะนำเพื่อน, วันเกิด, แทงผิด 10 งวด) |
+| `public.deposit_requests` | **4** | ✅ เปิด | คำขอฝากเงิน (อนุมัติแล้ว 3 รายการ, ปฏิเสธ 1 รายการ) |
+| `public.articles` | **3** | ✅ เปิด | ข่าวสารและบทความเลขเด็ด |
+| `public.admin_roles` | **3** | ✅ เปิด | บทบาทแอดมิน (`super_admin`, `admin`, `support`) |
+| `public.cms_pages` | **3** | ✅ เปิด | หน้าเนื้อหา CMS (เกี่ยวกับเรา, กฎกติกา, ข้อกำหนด) |
+| `public.withdraw_requests` | **0** | ✅ เปิด | คำขอถอนเงิน (ยังไม่มีรายการในระบบจริง) |
+| `public.restricted_numbers` | **0** | ✅ เปิด | รายการเลขอั้น (ปัจจุบันยังไม่มีการกำหนดเลขอั้นค้างไว้) |
+| `public.instant_bets` | **0** | ✅ เปิด | โพยหวย 1 นาทีรอบปัจจุบัน (เคลียร์อัตโนมัติรอบดึก) |
 
 ---
 
-## 2. 🛡️ ยุทธศาสตร์ความปลอดภัยและการย้อนกลับ (Rollback & Version Safety Strategy)
+## 2. 🔴 เช็คลิสต์สีแดง: ปัญหา ความคลาดเคลื่อน และจุดที่ต้องแก้ไข (Red Checklist)
 
-เพื่อรักษาเสถียรภาพสูงสุดของระบบและป้องกันความเสี่ยงจากการแก้ไขโค้ดผิดพลาด ได้วางโครงสร้างความปลอดภัย **3 ระดับ (3-Tier Safety Net)**:
+จากการตรวจสอบ Schema จริงเทียบกับโค้ด UI ในแต่ละหน้า พบจุดที่ต้องปรับแต่งและระวังอย่างยิ่ง **8 ประเด็นหลัก**:
+
+| รหัส | ระดับความสำคัญ | หมวดหมู่ | รายละเอียดปัญหา / ข้อค้นพบจริงจาก Supabase | แนวทางแก้ไขทางเทคนิค |
+| :---: | :---: | :--- | :--- | :--- |
+| **RC-01** | 🚨 วิกฤต | **การเรียกใช้ Stored Procedures & RLS** | ฟังก์ชัน RPC ของแอดมินทั้งหมด เช่น `admin_get_dashboard_stats()`, `admin_approve_deposit()`, `admin_update_market()` มีเงื่อนไข `IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true) THEN RETURN forbidden;` หากเรียกจากหน้าบ้านโดยไม่มี Authenticated Session ของแอดมินจะถูกปฏิเสธทันที | สร้าง API Routes ฝั่งเซิร์ฟเวอร์ใน `/src/app/api/admin/...` โดยใช้ `supabaseAdmin` (Service Role Client) ในการตรวจสอบสิทธิ์และส่งต่อคำสั่ง |
+| **RC-02** | ⚠️ สำคัญมาก | **ชื่อฟิลด์ในตาราง `lottery_markets`** | ในฐานข้อมูลจริงใช้ชื่อคอลัมน์:<br>- `close_minutes_before` (ไม่ใช่ `close_before_minutes`)<br>- `stream_url` (ไม่ใช่ `live_stream_url`)<br>- `is_open` และ `is_active`<br>- `draw_day_of_month` เป็นอาร์เรย์ `[1, 16]` สำหรับหวยรัฐบาล<br>- `category` เป็นตัวพิมพ์ใหญ่: `GOV`, `FOREIGN`, `STOCK` | ปรับปรุง TypeScript Interface ใน `src/data/admin-mock.ts` และคอมโพเนนต์ `markets.tsx` ให้ตรงกับชื่อคอลัมน์จริงของ Supabase 100% |
+| **RC-03** | ⚠️ สำคัญมาก | **ชื่อฟิลด์ในตาราง `instant_bet_types`** | คอลัมน์จริงในตารางหวย 1 นาที:<br>- `rate` (ไม่ใช่ `payout_rate`) เช่น 90, 900, 15000, 9.9<br>- `min_digits` และ `max_digits`<br>- `is_positioned` (boolean เพื่อระบุเลขปักหลัก)<br>- `is_active` และ `display_order` | ปรับปรุงหน้า `instant.tsx` ให้แมปกับคอลัมน์ `rate` และ `is_positioned` พร้อมรองรับการอัปเดตผ่าน `admin_update_instant_bet_type` |
+| **RC-04** | ⚠️ สำคัญมาก | **การจัดการหน้าที่มีข้อมูลว่างใน Production (0 แถว)** | ตารางต่อไปนี้ไม่มีแถวข้อมูลในระบบจริง:<br>- `withdraw_requests` (0 แถว)<br>- `restricted_numbers` (0 แถว)<br>- `instant_bets` (0 แถว)<br>- `deposit_requests` (มี 4 แถวที่อนุมัติ/ปฏิเสธแล้ว ไม่มีแถวสถานะ PENDING) | ออกแบบ Empty State ให้สวยงาม ป้องกันข้อผิดพลาดหน้าว่าง และมีปุ่มสลับ "โหมดข้อมูลจำลองสำหรับทดสอบ (Demo/Test Mode)" เพื่อให้แอดมินสามารถทดลองกดอนุมัติ/ปฏิเสธได้โดยไม่กระทบข้อมูลจริง |
+| **RC-05** | ⚠️ สำคัญมาก | **ชื่อฟิลด์ในตาราง `lottery_results`** | คอลัมน์ผลรางวัลใน Supabase ใช้ชื่อ:<br>- `result_main` (รางวัลที่ 1)<br>- `result_3top` (3 ตัวบน)<br>- `result_2top` (2 ตัวบน)<br>- `result_2bottom` (2 ตัวล่าง)<br>- `result_3front` (3 ตัวหน้า)<br>- `result_3bottom` (3 ตัวท้าย)<br>(เดิมใน mock ใช้ `prize_1`, `prize_3top`) | ซิงค์ฟิลด์ใน `results.tsx` และโมดอลกรอกผลรางวัลให้ตรงกับ Supabase คอลัมน์จริงเพื่อป้องกันบันทึกผลผิดพลาด |
+| **RC-06** | 🟡 ปานกลาง | **คอลัมน์ตาราง `restricted_numbers`** | คอลัมน์ตัวเลขใช้ชื่อ `number` (เอกพจน์) ไม่ใช่ `numbers`<br>มีฟิลด์ `market_id` (uuid เชื่อมโยงตลาด) และ `draw_date` (วันที่) | ปรับปรุงหน้า `restricted.tsx` ให้ส่ง payload ฟิลด์ `number` และเชื่อม `market_id` เป็น UUID ให้ถูกต้อง |
+| **RC-07** | 🟡 ปานกลาง | **โครงสร้างการเงิน Double-Entry ใน `transactions`** | ในตาราง `transactions` มีคอลัมน์ `balance_after` แต่ไม่มีคอลัมน์ `balance_before` ในสคีมาโดยตรง (ยอดก่อนหน้าคำนวณจาก balance_after หักลบ amount) | ปรับฟังก์ชันแสดงผลในหน้ารายการเงิน ให้คำนวณ `balance_before` แบบไดนามิกได้อย่างแม่นยำ |
+| **RC-08** | 🟢 ทั่วไป | **การแสดงผลรูปภาพจาก Supabase Storage** | สลิปโอนเงิน, แบนเนอร์สไลเดอร์, และโลโก้ธนาคาร เก็บอยู่บนโดเมน `ygopnjbvccenryejqmlw.supabase.co` และ `i.postimg.cc` | เพิ่ม `remotePatterns` ใน `next.config.ts` เรียบร้อยแล้ว เพื่อให้คอมโพเนนต์ Next/Image แสดงผลรูปภาพได้อย่างปลอดภัยและไม่เกิด Error |
+
+---
+
+## 3. 🛡️ ยุทธศาสตร์ความปลอดภัยและการย้อนกลับ (Rollback Protocol)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                    3-TIER SAFETY & VERSION ROLLBACK MATRIX                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  [Tier 1: Git Tag Baseline]                                                 │
-│  - แท็กเสมือน Snapshot: checkpoint-pre-schema-alignment                     │
-│  - จุดอ้างอิงสเตเบิลเดิมก่อนเริ่มการแก้ไขส่วนของ 21 ตลาดและ Schema ทั้งหมด   │
+│  - Tag: checkpoint-pre-schema-alignment                                     │
+│  - สามารถรัน `git reset --hard checkpoint-pre-schema-alignment` เพื่อย้อนกลับ  │
 │                                                                             │
 │  [Tier 2: Dedicated Development Branch]                                     │
-│  - ทำงานแยกบน branch: feature/complete-schema-alignment                     │
-│  - แยกอิสระจาก branch หลัก ป้องกันการกระทบต่อระบบงานที่พร้อมใช้งาน          │
+│  - Branch: feature/complete-schema-alignment                                │
+│  - พุชและซิงค์ประวัติการพัฒนาบน GitHub เรียบร้อย                            │
 │                                                                             │
-│  [Tier 3: Isolated Atomic Commits & Instant Rollback Protocol]              │
-│  - แยก Commit ตามเนื้องานแต่ละส่วนอย่างชัดเจน                               │
-│  - มีคำสั่ง Rollback เฉพาะจุด (File-level) และ Rollback ทั้งหมด (Full Reset) │
+│  [Tier 3: Environment Credentials Isolation]                                │
+│  - กุญแจ Service Role & Anon Key อยู่ใน UI Admin/.env.local (Git Ignored)   │
+│  - ไม่มี Key หลุดเข้าไปใน Git หรือ Public Code                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### คำสั่งสำหรับย้อนกลับเมื่อเกิดปัญหา (Rollback Commands Reference):
-* **กรณีย้อนกลับเฉพาะไฟล์ที่ผิดพลาด:**
-  ```powershell
-  git checkout checkpoint-pre-schema-alignment -- <path-to-file>
-  ```
-* **กรณีย้อนกลับระบบทั้งหมด 100% กลับสู่สถานะปลอดภัยเดิมทันที:**
-  ```powershell
-  git reset --hard checkpoint-pre-schema-alignment
-  ```
-
 ---
 
-## 3. 📝 เช็คลิสต์รายการตรวจสอบและแก้ไข (Audit & Modification Checklist)
+## 4. 📝 แผนการดำเนินงานเชื่อมต่อข้อมูลจริง (Implementation Plan)
 
-| หมวดหมู่ | รหัส | รายการที่ต้องตรวจสอบและแก้ไข | รายละเอียดทางเทคนิค | สถานะ |
-| :--- | :---: | :--- | :--- | :---: |
-| **ตลาดหวย (Markets)** | **M-01** | ตลาดหวยรัฐบาลไทย (`TH_GOV`) | ตรวจสอบวันออก (วันที่ 1 และ 16 ของเดือน), เวลาออก 16:00 น., ปิดรับก่อน 20 นาที | ⏳ รอดำเนินการ |
-| | **M-02** | ตลาดต่างประเทศ 5 ตลาด | ตรวจสอบ `LAO`, `HANOI`, `HANOI_SPECIAL`, `HANOI_VIP`, `MALAY` วัน/เวลาออก และเวลาปิดรับตามคู่มือข้อ 2.2 | ⏳ รอดำเนินการ |
-| | **M-03** | ตลาดหวยหุ้นต่างประเทศ 15 ตลาด | เพิ่มและตรวจสอบครบ 15 ตลาด: นิเคอิ (เช้า/บ่าย), จีน (เช้า/บ่าย), ฮั่งเส็ง (เช้า/บ่าย), ไต้หวัน, เกาหลี, สิงคโปร์, อินเดีย, อียิปต์, รัสเซีย, เยอรมัน, อังกฤษ, ดาวน์โจนส์ | ⏳ รอดำเนินการ |
-| | **M-04** | หมวดหมู่และการค้นหาตลาดหวย | เพิ่มแท็บคัดกรอง: ทั้งหมด (21), รัฐบาลไทย (1), ต่างประเทศ (5), หวยหุ้น (15) พร้อมช่องค้นหา | ⏳ รอดำเนินการ |
-| | **M-05** | โครงสร้างการ์ดตลาดหวย 2 แถว | คงเลย์เอาต์การ์ดเดิม: แถวบน (ปิดรับก่อน + เวลาออก), แถวล่าง (สถานะ + ถ่ายทอดสด) ไม่ให้เพี้ยน | ⏳ รอดำเนินการ |
-| **เลขอั้น (Restricted)** | **R-01** | หน้าจัดการเลขอั้น (`restricted.tsx`) | สร้างหน้า UI สำหรับจัดการตาราง `public.restricted_numbers` เต็มรูปแบบ | ⏳ รอดำเนินการ |
-| | **R-02** | ฟอร์มเพิ่มเลขอั้น/เลขจ่ายครึ่ง | รองรับการเลือกตลาดหวย, ประเภทการแทง, ตัวเลข, กำหนดอัตราจ่าย (0 = อั้น, > 0 = จ่ายครึ่ง), และเพดานรับแทง (`max_amount`) | ⏳ รอดำเนินการ |
-| | **R-03** | ตารางรายการเลขอั้นพร้อมระบบคัดกรอง | แสดงรายการเลขอั้นพร้อมตัวกรองตามตลาดหวย และปุ่มลบ/ยกเลิกเลขอั้น | ⏳ รอดำเนินการ |
-| | **R-04** | เชื่อมต่อเมนู Sidebar | เพิ่มเมนู "จัดการเลขอั้น" ในกลุ่ม "หวย" สอดคล้องกับสิทธิ์การเข้าถึง | ⏳ รอดำเนินการ |
-| **หวย 1 นาที (Instant)** | **I-01** | แท็บตั้งค่าอัตราจ่าย 9 รูปแบบ | เพิ่มแท็บจัดการอัตราจ่ายของตาราง `public.instant_bet_types` ในหน้า `instant.tsx` | ⏳ รอดำเนินการ |
-| | **I-02** | รองรับรูปแบบการแทง 9 ชนิดจริง | ครอบคลุม: 2top (90x), 2bottom (90x), 3top (900x), 3toad (180x), 3front (900x), 3back (900x), 6straight (15,000x), pin_top (9.9x), pin_bottom (9.9x) | ⏳ รอดำเนินการ |
-| | **I-03** | โมดอลแก้ไขอัตราจ่ายและสวิตช์เปิด/ปิด | ปรับอัตราจ่ายและเปิด/ปิดรับแทงรายรูปแบบ รองรับ RPC `admin_update_instant_bet_type` | ⏳ รอดำเนินการ |
-| **โพยหวย (Bets)** | **B-01** | หน้าศูนย์รวมรายการแทงหวย (`bets.tsx`) | สร้างหน้าตรวจสอบตาราง `public.bets` แสดงโพยหวยทั้งระบบ | ⏳ รอดำเนินการ |
-| | **B-02** | ฟิลเตอร์สถานะและการค้นหาโพย | ตัวกรองสถานะ: ALL, PENDING, WON, LOST, CANCELLED พร้อมค้นหาตาม Ticket ID, ผู้ใช้งาน, หรือตัวเลข | ⏳ รอดำเนินการ |
-| | **B-03** | โมดอลแสดงรายละเอียดโพย | คลิกดูรายละเอียดโพยฉบับสมบูรณ์ (ตัวเลข, อัตราจ่าย, เวลาแทง, ยอดเงินรางวัล) | ⏳ รอดำเนินการ |
-| | **B-04** | เชื่อมต่อเมนู Sidebar | เพิ่มเมนู "รายการแทงหวย" ในกลุ่ม "หวย" สอดคล้องกับสิทธิ์การเข้าถึง | ⏳ รอดำเนินการ |
-| **งวดผลรางวัล (Results)** | **S-01** | ซิงค์งวดรางวัลให้ครอบคลุม 21 ตลาด | ขยายข้อมูล `DRAW_SCHEDULES` ใน `admin-mock.ts` ให้ครอบคลุมการทดสอบออกผลรางวัลทุกตลาด | ⏳ รอดำเนินการ |
-| **การตรวจสอบ (Verification)** | **V-01** | TypeScript & Build Verification | ทดสอบรัน `npm run build` ผ่าน 100% ไม่มีข้อผิดพลาดทางชนิดข้อมูล | ⏳ รอดำเนินการ |
-| | **V-02** | Browser Live Verification | ทดสอบการทำงานบน Browser Subagent ทุกหน้า และบันทึกภาพหลักฐานใน `walkthrough.md` | ⏳ รอดำเนินการ |
+### ขั้นตอนที่ 1: ติดตั้งและตั้งค่า Client Library (เสร็จสิ้น ✅)
+- ติดตั้ง `@supabase/supabase-js` ใน `UI Admin` เรียบร้อย
+- สร้าง `src/lib/supabase.ts` เพื่อแยกการใช้งานระหว่าง Public Client (Anon) และ Secure Server Client (Service Role)
+- เพิ่ม Image Domains ใน `next.config.ts` เพื่อรองรับรูปสลิปและแบนเนอร์จาก Supabase Storage
 
----
+### ขั้นตอนที่ 2: ปรับชื่อคอลัมน์ใน Data Layer ให้ตรงกับ Supabase 100%
+- อัปเดต `src/data/admin-mock.ts` ให้ฟิลด์ `close_minutes_before`, `stream_url`, `rate`, `number`, `result_main`, `result_3top`, `result_2bottom` ตรงกับฐานข้อมูลจริง
 
-## 4. 📌 ขั้นตอนการทำงานถัดไป (Execution Next Steps)
+### ขั้นตอนที่ 3: ปรับแต่งหน้า UI ตามเช็คลิสต์สีแดง
+- [ ] **RC-01:** ทำ API Endpoints สำหรับดึง Dashboard Stats, อนุมัติฝาก/ถอน
+- [ ] **RC-02:** ซิงค์หน้า `markets.tsx` ให้ใช้ชื่อฟิลด์จริง
+- [ ] **RC-03:** ซิงค์หน้า `instant.tsx` แท็บอัตราจ่าย 9 รูปแบบ
+- [ ] **RC-04:** ตรวจสอบ Empty State ในหน้าถอนเงินและเลขอั้น
+- [ ] **RC-05:** ซิงค์หน้ากรอกผลรางวัล `results.tsx`
 
-เมื่อได้รับคำสั่งอนุมัติจากผู้ใช้งาน ระบบจะเริ่มดำเนินการตามลำดับเช็คลิสต์:
-1. ปรับปรุงหน้า `instant.tsx` (แท็บอัตราจ่าย 9 รูปแบบ + โมดอลแก้ไข)
-2. นำเข้าและเชื่อมต่อ `restricted.tsx` และ `bets.tsx` เข้าสู่ระบบ Routing และ Sidebar ใน `admin-app.tsx`
-3. ทำการ Build ทดสอบ (`npm run build`)
-4. ตรวจสอบหน้าจอผ่าน Browser Subagent เพื่อบันทึกภาพผลลัพธ์และอัปเดตสถานะในเอกสารเช็คลิสต์นี้
+### ขั้นตอนที่ 4: การทดสอบความถูกต้อง
+- รัน `npm run build` เพื่อตรวจสอบ TypeScript compile
+- ทดสอบการดึงข้อมูลจริงและการกดบันทึกข้อมูลผ่าน Browser Subagent
