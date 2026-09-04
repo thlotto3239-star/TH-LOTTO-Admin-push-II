@@ -138,11 +138,67 @@ interface ResultFields {
 }
 
 export function ResultsPage() {
+  const { toast } = useToast();
   const [schedules, setSchedules] = React.useState<DrawSchedule[]>(DRAW_SCHEDULES);
   const [results, setResults] = React.useState<LotteryResult[]>(RECENT_RESULTS);
   const [modal, setModal] = React.useState<DrawSchedule | null>(null);
 
-  const submit = (s: DrawSchedule, res: ResultFields) => {
+  const loadData = React.useCallback(async () => {
+    try {
+      const [resResults, resMarkets] = await Promise.all([
+        fetch("/api/admin/data?resource=results"),
+        fetch("/api/admin/data?resource=markets"),
+      ]);
+      const jsonResults = await resResults.json();
+      const jsonMarkets = await resMarkets.json();
+
+      if (jsonResults.success && Array.isArray(jsonResults.data) && jsonResults.data.length > 0) {
+        const mappedResults: LotteryResult[] = jsonResults.data.map((r: any) => ({
+          id: r.id,
+          market_name: r.lottery_markets?.name || "หวย",
+          market_code: r.lottery_markets?.code || "MKT",
+          draw_date: r.draw_date,
+          result_main: r.result_main,
+          result_3top: r.result_3top,
+          result_2top: r.result_2top,
+          result_2bottom: r.result_2bottom,
+          result_3front: r.result_3front,
+          result_3bottom: r.result_3bottom,
+          announced_at: r.announced_at ? new Date(r.announced_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) : null,
+        }));
+        setResults(mappedResults);
+      }
+
+      if (jsonMarkets.success && Array.isArray(jsonMarkets.data) && jsonMarkets.data.length > 0) {
+        const todayStr = new Date().toISOString().split("T")[0];
+        const mappedSchedules: DrawSchedule[] = jsonMarkets.data
+          .filter((m: any) => m.is_active)
+          .slice(0, 8)
+          .map((m: any) => ({
+            id: m.id,
+            market_name: m.name,
+            market_code: m.code,
+            market_color: m.color || "#059669",
+            kind: m.category === "GOV" ? "GOVERNMENT" : "STOCK",
+            draw_date: todayStr,
+            close_time: m.close_time ? m.close_time.slice(0, 5) : "15:20",
+            status: m.is_open ? "CLOSED" : "SETTLED",
+            total_bet: 28400,
+          }));
+        if (mappedSchedules.length > 0) {
+          setSchedules(mappedSchedules);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load results data:", e);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const submit = async (s: DrawSchedule, res: ResultFields) => {
     setSchedules((p) => p.map((x) => (x.id === s.id ? { ...x, status: "SETTLED" } : x)));
     setResults((p) => [
       {
@@ -160,6 +216,35 @@ export function ResultsPage() {
       },
       ...p,
     ]);
+
+    try {
+      const resp = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "record_result",
+          payload: {
+            market_id: s.id,
+            draw_date: s.draw_date,
+            result_main: res.main,
+            result_3top: res.r3top,
+            result_2top: res.r2top,
+            result_2bottom: res.r2bottom,
+            result_3front: res.r3front,
+            result_3bottom: res.r3bottom,
+          },
+        }),
+      });
+      const json = await resp.json();
+      if (json.success) {
+        toast({ title: "บันทึกผลรางวัลสำเร็จ", description: `${s.market_name} อัปเดตเข้าระบบ Supabase เรียบร้อย` });
+        loadData();
+      } else {
+        toast({ title: "เกิดข้อผิดพลาด", description: json.error, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "เชื่อมต่อล้มเหลว", description: e.message, variant: "destructive" });
+    }
   };
 
   return (

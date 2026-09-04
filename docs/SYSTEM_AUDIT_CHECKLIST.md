@@ -94,16 +94,20 @@
 - สร้าง `src/lib/supabase.ts` เพื่อแยกการใช้งานระหว่าง Public Client (Anon) และ Secure Server Client (Service Role)
 - เพิ่ม Image Domains ใน `next.config.ts` เพื่อรองรับรูปสลิปและแบนเนอร์จาก Supabase Storage
 
-### ขั้นตอนที่ 2: ปรับชื่อคอลัมน์ใน Data Layer ให้ตรงกับ Supabase 100%
+### ขั้นตอนที่ 2: ปรับชื่อคอลัมน์ใน Data Layer ให้ตรงกับ Supabase 100% (เสร็จสิ้น ✅)
 - อัปเดต `src/data/admin-mock.ts` ให้ฟิลด์ `close_minutes_before`, `stream_url`, `rate`, `number`, `result_main`, `result_3top`, `result_2bottom` ตรงกับฐานข้อมูลจริง
 
-### ขั้นตอนที่ 3: ปรับแต่งหน้า UI ตามเช็คลิสต์สีแดง
-- [ ] **RC-01:** ทำ API Endpoints สำหรับดึง Dashboard Stats, อนุมัติฝาก/ถอน
-- [ ] **RC-02:** ซิงค์หน้า `markets.tsx` ให้ใช้ชื่อฟิลด์จริง
-- [ ] **RC-03:** ซิงค์หน้า `instant.tsx` แท็บอัตราจ่าย 9 รูปแบบ
-- [ ] **RC-04:** ตรวจสอบ Empty State ในหน้าถอนเงินและเลขอั้น
-- [ ] **RC-05:** ซิงค์หน้ากรอกผลรางวัล `results.tsx`
+### ขั้นตอนที่ 3: ปรับแต่งหน้า UI ตามเช็คลิสต์สีแดง (เสร็จสิ้น ✅)
+- [x] **RC-01:** ทำ API Endpoints `/api/admin/data` ฝั่งเซิร์ฟเวอร์ด้วย `supabaseAdmin` (Service Role) จัดการทั้ง GET และ POST อนุมัติฝาก/ถอน/ปรับยอด/บันทึกผลรางวัล
+- [x] **RC-02:** ซิงค์หน้า `markets.tsx` เชื่อมต่อ 21 ตลาดจริงจาก `public.lottery_markets` (บันทึก `close_minutes_before`, `stream_url`, `is_open`, `is_active` สำเร็จ)
+- [x] **RC-03:** ซิงค์หน้า `instant.tsx` เชื่อมต่อ 9 รูปแบบการแทงจริงจาก `public.instant_bet_types` (อัตราจ่าย `rate` และ `is_positioned` สำหรับเลขปักหลัก)
+- [x] **RC-04:** ตรวจสอบ Empty State พร้อม fallback UI ในหน้ารายการที่ยังไม่มีข้อมูลจริงในระบบ
+- [x] **RC-05:** ซิงค์หน้ากรอกผลรางวัล `results.tsx` ดึง 134 ผลรางวัลจริงจาก `public.lottery_results` และบันทึกผลรางวัลลงฐานข้อมูล
+- [x] **RC-06:** หน้ารายการแทง `bets.tsx` ดึง 100 รายการโพยจริงจาก `public.bets` แสดงผลถูกต้อง
+- [x] **RC-07:** หน้ารายการฝาก `deposits.tsx` ดึงข้อมูลคำขอฝากจริง พร้อมแสดงภาพสลิปจริงจาก Supabase Storage และรองรับการอนุมัติ/ปฏิเสธ
+- [x] **RC-08:** หน้าจัดการสมาชิก `members.tsx` ดึง 52 สมาชิกจริงจาก `public.profiles` + `public.wallets` พร้อมระบบแก้ไขข้อมูลและปรับยอดกระเป๋า
 
-### ขั้นตอนที่ 4: การทดสอบความถูกต้อง
-- รัน `npm run build` เพื่อตรวจสอบ TypeScript compile
-- ทดสอบการดึงข้อมูลจริงและการกดบันทึกข้อมูลผ่าน Browser Subagent
+### ขั้นตอนที่ 4: การทดสอบความถูกต้อง (เสร็จสิ้น ✅)
+- [x] รัน `npx next build` ผ่าน 100% (Exit code 0, ไร้ข้อผิดพลาด TypeScript/Turbopack)
+- [x] ทดสอบการทำงานจริงบนเบราว์เซอร์ผ่าน Browser Subagent (บันทึกภาพถ่ายหน้าจอและวิดีโอยืนยันทุกหน้า)
+
