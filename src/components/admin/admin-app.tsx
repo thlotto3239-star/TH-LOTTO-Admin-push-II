@@ -259,7 +259,7 @@ function NotificationBell() {
   );
 }
 
-function AdminUserSwitcher() {
+function AdminUserSwitcher({ onLogout }: { onLogout?: () => void }) {
   const { currentAdmin, setCurrentAdmin } = useAdminNav();
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
@@ -331,12 +331,24 @@ function AdminUserSwitcher() {
             );
           })}
         </div>
+        <div className="mt-2 border-t border-neutral-100 pt-1.5">
+          <button
+            onClick={() => {
+              setOpen(false);
+              onLogout?.();
+            }}
+            className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50"
+          >
+            <LogOut className="size-3.5" />
+            ออกจากระบบ
+          </button>
+        </div>
       </PopoverContent>
     </Popover>
   );
 }
 
-export function AdminApp() {
+export function AdminApp({ onLogout }: { onLogout?: () => void } = {}) {
   const { page } = useAdminNav();
   const [mobileNav, setMobileNav] = React.useState(false);
   const meta = PAGE_META[page];
@@ -375,7 +387,7 @@ export function AdminApp() {
         <Brand />
         <SidebarNav />
         <div className="border-t border-neutral-100 p-3">
-          <AdminUserSwitcher />
+          <AdminUserSwitcher onLogout={onLogout} />
         </div>
       </aside>
 
@@ -396,7 +408,7 @@ export function AdminApp() {
               </SheetHeader>
               <SidebarNav onNavigate={() => setMobileNav(false)} />
               <div className="border-t border-neutral-100 p-3">
-                <AdminUserSwitcher />
+                <AdminUserSwitcher onLogout={onLogout} />
               </div>
             </SheetContent>
           </Sheet>
@@ -417,7 +429,7 @@ export function AdminApp() {
           <NotificationBell />
 
           <div className="w-48 hidden sm:block">
-            <AdminUserSwitcher />
+            <AdminUserSwitcher onLogout={onLogout} />
           </div>
         </header>
 
