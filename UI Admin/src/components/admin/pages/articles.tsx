@@ -17,7 +17,7 @@ const EMPTY_ARTICLE: Article = {
   image_url: "", author: "ทีมงาน TH-LOTTO", views: 0, is_published: false, published_at: "—",
 };
 
-const PER_PAGE = 4;
+const PER_PAGE = 6;
 
 function ArticleForm({
   initial, onClose, onSave,
@@ -202,68 +202,107 @@ export function ArticlesPage() {
       </Panel>
 
       {shown.length === 0 ? <Panel><EmptyState title="ไม่พบบทความที่ค้นหา" /></Panel> : (
-        <Panel>
-          <TableWrap className="min-w-[860px]">
-            <thead>
-              <tr>
-                <Th>บทความ</Th>
-                <Th>หมวดหมู่</Th>
-                <Th>ผู้เขียน</Th>
-                <Th className="text-right">ยอดเข้าชม</Th>
-                <Th>สถานะ</Th>
-                <Th>วันเผยแพร่</Th>
-                <Th>เผยแพร่</Th>
-                <Th className="sticky right-0 bg-neutral-50/90 text-center">การจัดการ</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {shown.map((a) => (
-                <tr key={a.id} className="transition-colors hover:bg-neutral-50/60">
-                  <Td className="max-w-[300px]">
-                    <div className="flex items-center gap-3">
-                      <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neutral-100">
-                        {a.image_url ? <img src={a.image_url} alt="" className="size-10 object-cover" /> : <Newspaper className="size-4 text-neutral-400" />}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-neutral-900">{a.title}</p>
-                        <p className="line-clamp-1 text-xs text-neutral-400">{a.excerpt}</p>
-                      </div>
+        <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {shown.map((a) => (
+              <Panel key={a.id} className="overflow-hidden flex flex-col justify-between">
+                <div>
+                  {/* ภาพตัวอย่างหน้าปกบทความ */}
+                  {a.image_url ? (
+                    <div className="relative h-40 w-full overflow-hidden bg-neutral-100">
+                      <img
+                        src={a.image_url}
+                        alt={a.title}
+                        className="h-40 w-full object-cover transition-transform duration-300 hover:scale-105"
+                      />
+                      <span className="absolute right-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-neutral-800 shadow-sm backdrop-blur-xs">
+                        {a.category}
+                      </span>
+                      {!a.is_published ? (
+                        <span className="absolute left-3 top-3 rounded-full bg-neutral-900/80 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm backdrop-blur-xs">
+                          ฉบับร่าง
+                        </span>
+                      ) : (
+                        <span className="absolute left-3 top-3 rounded-full bg-brand-600/90 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm backdrop-blur-xs">
+                          เผยแพร่แล้ว
+                        </span>
+                      )}
                     </div>
-                  </Td>
-                  <Td><span className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-200">{a.category}</span></Td>
-                  <Td className="whitespace-nowrap text-xs">{a.author}</Td>
-                  <Td className="whitespace-nowrap text-right">
-                    <span className="inline-flex items-center gap-1 text-xs"><Eye className="size-3.5 text-neutral-400" /> {fmtNum(a.views)}</span>
-                  </Td>
-                  <Td><StatusBadge status={a.is_published ? "active" : "inactive"} /></Td>
-                  <Td className="whitespace-nowrap text-xs">{a.published_at}</Td>
-                  <Td>
-                    <Switch
-                      checked={a.is_published}
-                      onCheckedChange={(v) => {
-                        setRows((rws) => rws.map((x) => (x.id === a.id ? { ...x, is_published: v, published_at: v && x.published_at === "—" ? "วันนี้" : x.published_at } : x)));
-                        toast({ title: v ? "เผยแพร่บทความแล้ว" : "ซ่อนบทความแล้ว", description: "อัปเดตสถานะเรียบร้อย" });
-                      }}
-                    />
-                  </Td>
-                  <Td className="sticky right-0 bg-white text-center">
-                    <div className="flex items-center justify-center gap-1.5">
-                      <Btn size="icon" variant="outline" className="size-8 rounded-full" onClick={() => setForm({ initial: a })} aria-label="แก้ไข">
-                        <Pencil className="size-3.5" />
+                  ) : (
+                    <div className="relative flex h-40 w-full items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-950 p-4 text-white">
+                      <Newspaper className="size-12 text-white/20" />
+                      <span className="absolute right-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-neutral-800 shadow-sm backdrop-blur-xs">
+                        {a.category}
+                      </span>
+                      {!a.is_published ? (
+                        <span className="absolute left-3 top-3 rounded-full bg-neutral-900/80 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm backdrop-blur-xs">
+                          ฉบับร่าง
+                        </span>
+                      ) : (
+                        <span className="absolute left-3 top-3 rounded-full bg-brand-600/90 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm backdrop-blur-xs">
+                          เผยแพร่แล้ว
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* เนื้อหาบทความ */}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-bold text-neutral-900 line-clamp-2 leading-snug">{a.title}</p>
+                    </div>
+                    <p className="mt-2 line-clamp-2 text-xs text-neutral-500 leading-relaxed">
+                      {a.excerpt || a.content.replace(/[#*`_]/g, "").slice(0, 100) || "—"}
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-neutral-500">
+                      <span>ผู้เขียน <b className="text-neutral-700">{a.author || "ทีมงาน"}</b></span>
+                      <span>วันที่ <b className="text-neutral-700">{a.published_at}</b></span>
+                      <span className="inline-flex items-center gap-1">
+                        <Eye className="size-3 text-neutral-400" />
+                        <b className="text-neutral-700">{fmtNum(a.views)} ครั้ง</b>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* แถบควบคุมด้านล่าง */}
+                <div className="border-t border-neutral-100 p-4 pt-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={a.is_published}
+                        onCheckedChange={(v) => {
+                          setRows((rws) =>
+                            rws.map((x) =>
+                              x.id === a.id
+                                ? { ...x, is_published: v, published_at: v && x.published_at === "—" ? "วันนี้" : x.published_at }
+                                : x
+                            )
+                          );
+                          toast({ title: v ? "เผยแพร่บทความแล้ว" : "ซ่อนบทความแล้ว", description: a.title });
+                        }}
+                      />
+                      <span className="text-xs font-medium text-neutral-600">{a.is_published ? "เผยแพร่อยู่" : "ฉบับร่าง"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Btn size="sm" variant="outline" className="h-8 rounded-full px-3" onClick={() => setForm({ initial: a })}>
+                        <Pencil className="size-3.5" /> แก้ไข
                       </Btn>
-                      <Btn size="icon" variant="outline" className="size-8 rounded-full border-rose-200 text-rose-600 hover:bg-rose-50" onClick={() => setConfirmDel(a)} aria-label="ลบ">
-                        <Trash2 className="size-3.5" />
+                      <Btn size="sm" variant="outline" className="h-8 rounded-full border-rose-200 px-3 text-rose-600 hover:bg-rose-50" onClick={() => setConfirmDel(a)}>
+                        <Trash2 className="size-3.5" /> ลบ
                       </Btn>
                     </div>
-                  </Td>
-                </tr>
-              ))}
-            </tbody>
-          </TableWrap>
-          <div className="border-t border-neutral-100">
-            <Pagination page={page} pages={pages} onChange={setPage} />
+                  </div>
+                </div>
+              </Panel>
+            ))}
           </div>
-        </Panel>
+
+          <Panel className="p-3">
+            <Pagination page={page} pages={pages} onChange={setPage} />
+          </Panel>
+        </div>
       )}
 
       {form ? (
