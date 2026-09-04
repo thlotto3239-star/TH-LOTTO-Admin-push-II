@@ -7,6 +7,17 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "ygopnjbvccenryejqmlw.supabase.co" },
+      { protocol: "https", hostname: "i.postimg.cc" },
+      { protocol: "https", hostname: "storage.googleapis.com" },
+      { protocol: "https", hostname: "encrypted-tbn0.gstatic.com" },
+      { protocol: "https", hostname: "placehold.co" },
+      { protocol: "https", hostname: "www.ttbbank.com" },
+      { protocol: "https", hostname: "www.truemoney.com" },
+    ],
+  },
 };
 
 export default nextConfig;
