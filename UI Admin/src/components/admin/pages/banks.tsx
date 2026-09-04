@@ -185,9 +185,20 @@ export function BanksPage() {
                     <ArrowDown className="size-3.5" />
                   </button>
                 </div>
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl text-[10px] font-black tracking-tight text-white" style={{ backgroundColor: b.color }}>
-                  {b.short.slice(0, 3)}
-                </span>
+                {b.logo_url ? (
+                  <img
+                    src={b.logo_url}
+                    alt={b.name}
+                    className="size-9 shrink-0 rounded-xl object-contain bg-white p-1 ring-1 ring-neutral-200/80 shadow-xs"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl text-[10px] font-black tracking-tight text-white" style={{ backgroundColor: b.color }}>
+                    {b.short.slice(0, 3)}
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-neutral-900">{b.name}</p>
                   <p className="text-[11px] text-neutral-400">ลำดับ {d.display_order}</p>
@@ -223,9 +234,20 @@ export function BanksPage() {
               return (
                 <div key={a.id} className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-neutral-50/60 lg:flex-row lg:items-center">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl text-[11px] font-black tracking-tight text-white" style={{ backgroundColor: b.color }}>
-                      {b.short.slice(0, 3)}
-                    </span>
+                    {b.logo_url ? (
+                      <img
+                        src={b.logo_url}
+                        alt={b.name}
+                        className="size-11 shrink-0 rounded-2xl object-contain bg-white p-1.5 ring-1 ring-neutral-200/80 shadow-xs"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl text-[11px] font-black tracking-tight text-white" style={{ backgroundColor: b.color }}>
+                        {b.short.slice(0, 3)}
+                      </span>
+                    )}
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <p className="font-mono text-sm font-bold text-neutral-900">{a.account_no}</p>

@@ -356,18 +356,29 @@ export function Avatar({
 }
 
 // ─── BankBadge (โลโก้ + ชื่อธนาคาร) ──────────────────────────────────────────
-import { bankOf } from "@/data/admin-mock";
+import { bankOf, BANKS as BANKS_LIST } from "@/data/admin-mock";
 export function BankBadge({ code, className }: { code: string; className?: string }) {
   const b = bankOf(code);
   return (
-    <span className={cn("inline-flex items-center gap-1.5", className)}>
-      <span
-        className="flex size-6 shrink-0 items-center justify-center rounded-md text-[9px] font-black tracking-tight text-white"
-        style={{ backgroundColor: b.color }}
-      >
-        {b.short.slice(0, 2)}
-      </span>
-      <span className="text-sm text-neutral-700">{b.name}</span>
+    <span className={cn("inline-flex items-center gap-2", className)}>
+      {b.logo_url ? (
+        <img
+          src={b.logo_url}
+          alt={b.name}
+          className="size-6 shrink-0 rounded-md object-contain bg-white ring-1 ring-neutral-200/70 p-0.5"
+          onError={(e) => {
+            (e.currentTarget as HTMLElement).style.display = "none";
+          }}
+        />
+      ) : (
+        <span
+          className="flex size-6 shrink-0 items-center justify-center rounded-md text-[9px] font-black tracking-tight text-white"
+          style={{ backgroundColor: b.color }}
+        >
+          {b.short.slice(0, 2)}
+        </span>
+      )}
+      <span className="text-sm font-medium text-neutral-700">{b.name}</span>
     </span>
   );
 }
@@ -394,12 +405,20 @@ export function BankSelector({
         {BANKS_LIST.map((b) => (
           <SelectItem key={b.code} value={b.code}>
             <span className="flex items-center gap-2">
-              <span
-                className="flex size-5 items-center justify-center rounded text-[8px] font-black text-white"
-                style={{ backgroundColor: b.color }}
-              >
-                {b.short.slice(0, 2)}
-              </span>
+              {b.logo_url ? (
+                <img
+                  src={b.logo_url}
+                  alt={b.name}
+                  className="size-5 shrink-0 rounded object-contain bg-white ring-1 ring-neutral-200/70 p-0.5"
+                />
+              ) : (
+                <span
+                  className="flex size-5 items-center justify-center rounded text-[8px] font-black text-white"
+                  style={{ backgroundColor: b.color }}
+                >
+                  {b.short.slice(0, 2)}
+                </span>
+              )}
               {b.name}
             </span>
           </SelectItem>
@@ -408,8 +427,6 @@ export function BankSelector({
     </Select>
   );
 }
-
-import { BANKS as BANKS_LIST } from "@/data/admin-mock";
 
 // ─── Solid circular ColorPickerInput ─────────────────────────────────────────
 export function ColorPickerInput({

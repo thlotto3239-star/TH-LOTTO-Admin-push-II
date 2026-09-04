@@ -25,23 +25,78 @@ export interface Bank {
   name: string;
   short: string;
   color: string;
+  logo_url?: string;
 }
 
 export const BANKS: Bank[] = [
-  { code: "kbank", name: "กสิกรไทย", short: "KBANK", color: "#138f2d" },
-  { code: "bbl", name: "กรุงเทพ", short: "BBL", color: "#1e4586" },
-  { code: "scb", name: "ไทยพาณิชย์", short: "SCB", color: "#4e2a84" },
-  { code: "ktb", name: "กรุงไทย", short: "KTB", color: "#1897d4" },
-  { code: "ttb", name: "ทหารไทย", short: "ttb", color: "#f26522" },
-  { code: "gsb", name: "ออมสิน", short: "GSB", color: "#f37021" },
+  {
+    code: "kbank",
+    name: "กสิกรไทย",
+    short: "KBANK",
+    color: "#138f2d",
+    logo_url: "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/eTZt9hleBEh0QLZXwUjZ/pub/gtF5IDygx1zHFrvTDBiu.png",
+  },
+  {
+    code: "bbl",
+    name: "กรุงเทพ",
+    short: "BBL",
+    color: "#1e4586",
+    logo_url: "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/eTZt9hleBEh0QLZXwUjZ/pub/c3T2psxLLJtZwwDseqKG.png",
+  },
+  {
+    code: "scb",
+    name: "ไทยพาณิชย์",
+    short: "SCB",
+    color: "#4e2a84",
+    logo_url: "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/eTZt9hleBEh0QLZXwUjZ/pub/dGQJLcLaQtPtYTgIgJdd.png",
+  },
+  {
+    code: "ktb",
+    name: "กรุงไทย",
+    short: "KTB",
+    color: "#1897d4",
+    logo_url: "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/eTZt9hleBEh0QLZXwUjZ/pub/4movMnyEyWRBPCaETXn4.png",
+  },
+  {
+    code: "ttb",
+    name: "ทหารไทย",
+    short: "ttb",
+    color: "#f26522",
+    logo_url: "https://www.ttbbank.com/global/assets/img/wow/LogoandCard/ttb%20touch_logo_final.png",
+  },
+  {
+    code: "gsb",
+    name: "ออมสิน",
+    short: "GSB",
+    color: "#f37021",
+    logo_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9yN5VjUxDb3v0woQnTi8aM4ZuNVWh0j3aGQ&s",
+  },
+  {
+    code: "bay",
+    name: "กรุงศรีอยุธยา",
+    short: "BAY",
+    color: "#ff7b15",
+    logo_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT81zQilT_Gs2CxxpvLuRzsjR97WgcaE3tC9w&s",
+  },
+  {
+    code: "truewallet",
+    name: "ทรูมันนี่วอลเล็ท",
+    short: "TRUE",
+    color: "#f97316",
+    logo_url: "https://www.truemoney.com/wp-content/uploads/2021/05/truemoneywallet-howto-20201012-regis-paopunsuk-01.png",
+  },
   { code: "baac", name: "ธ.ก.ส.", short: "BAAC", color: "#00a94f" },
-  { code: "bay", name: "กรุงศรีอยุธยา", short: "BAY", color: "#ff7b15" },
   { code: "ghb", name: "อาคารสงเคราะห์", short: "GHB", color: "#007f4d" },
   { code: "isbt", name: "อิสลาม", short: "IB", color: "#0b7a75" },
 ];
 
-export const bankOf = (code: string): Bank =>
-  BANKS.find((b) => b.code === code) ?? BANKS[0];
+export const bankOf = (code: string): Bank => {
+  const norm = (code || "").toLowerCase();
+  return (
+    BANKS.find((b) => b.code.toLowerCase() === norm || b.short.toLowerCase() === norm) ??
+    BANKS[0]
+  );
+};
 
 // ── Members (profiles JOIN wallets) ─────────────────────────────────────────
 export type MemberStatus = "active" | "inactive" | "suspended";
