@@ -129,9 +129,9 @@ export function WithdrawalsPage() {
           created_at: w.created_at,
           amount: Number(w.amount),
           status: w.status as WithdrawReq["status"],
-          bank_code: w.bank_name || "KBANK",
-          bank_account_number: w.bank_account_number || "-",
-          bank_account_name: w.bank_account_name || "-",
+          bank_code: w.profiles?.bank_name || "KBANK",
+          bank_account_number: w.profiles?.bank_account_number || "-",
+          bank_account_name: w.profiles?.bank_account_name || "-",
           admin_note: w.admin_note,
           approved_at: w.approved_at,
           approver_name: w.approved_by ? "Admin" : null,
@@ -139,7 +139,8 @@ export function WithdrawalsPage() {
             full_name: w.profiles?.full_name || "สมาชิก",
             member_id: w.profiles?.member_id || (w.user_id ? w.user_id.slice(0, 8) : "MB"),
             phone: w.profiles?.phone || "-",
-          },
+            avatar_url: w.profiles?.avatar_url || null,
+          } as Member,
         }));
         setRows(mapped);
       }
@@ -238,7 +239,7 @@ export function WithdrawalsPage() {
                 <Td className="whitespace-nowrap text-xs">{fmtDT(r.created_at)}</Td>
                 <Td>
                   <div className="flex items-center gap-2">
-                    <Avatar name={r.member.full_name} className="size-8" />
+                    <Avatar name={r.member.full_name} imageUrl={r.member.avatar_url} className="size-8" />
                     <div>
                       <p className="whitespace-nowrap font-medium text-neutral-800">{r.member.full_name}</p>
                       <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] font-bold text-neutral-500">{r.member.member_id}</span>

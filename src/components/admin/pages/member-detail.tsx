@@ -119,7 +119,8 @@ export function MemberDetailPage() {
     bank_code: normalizeBank(profile.bank_name),
     bank_account_number: profile.bank_account_number || "-",
     bank_account_name: profile.bank_account_name || profile.full_name || "-",
-    vip_level: typeof profile.vip_level === "number" ? profile.vip_level : Number(profile.vip_level || 0),
+    avatar_url: profile.avatar_url || null,
+    vip_level: typeof profile.vip_level === "number" ? profile.vip_level : (profile.vip_level && profile.vip_level !== "MEMBER" ? parseInt(profile.vip_level, 10) || 0 : 0),
     status: (profile.status as Member["status"]) || "active",
     balance: Number(wallet?.balance || 0),
     commission_balance: Number(wallet?.commission_balance || 0),
@@ -127,6 +128,8 @@ export function MemberDetailPage() {
     total_won: totalWon,
     created_at: profile.created_at || new Date().toISOString(),
   };
+
+  const vipDisplay = member.vip_level > 0 ? `วีไอพี ${member.vip_level}` : "สมาชิกทั่วไป";
 
   const copyId = async () => {
     try { await navigator.clipboard.writeText(member.member_id); } catch { /* no-op */ }
@@ -145,7 +148,7 @@ export function MemberDetailPage() {
       <Panel className="p-5 sm:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-start gap-4">
-            <Avatar name={member.full_name} className="size-14 text-xl" />
+            <Avatar name={member.full_name} imageUrl={member.avatar_url} className="size-14 text-xl" />
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-bold tracking-tight text-neutral-900">{member.full_name}</h1>
@@ -160,7 +163,9 @@ export function MemberDetailPage() {
               </div>
               <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 <StatusBadge status={member.status} />
-                <span className="inline-flex items-center whitespace-nowrap rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-inset ring-amber-200">วีไอพี {member.vip_level}</span>
+                <span className="inline-flex items-center whitespace-nowrap rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-inset ring-amber-200">
+                  {vipDisplay}
+                </span>
               </div>
             </div>
           </div>
@@ -201,7 +206,7 @@ export function MemberDetailPage() {
                 <span className="text-neutral-400">ชื่อ-นามสกุล</span><span className="text-neutral-800">{member.full_name}</span>
                 <span className="text-neutral-400">เบอร์โทร</span><span className="font-mono text-neutral-800">{member.phone}</span>
                 <span className="text-neutral-400">สถานะบัญชี</span><span><StatusBadge status={member.status} /></span>
-                <span className="text-neutral-400">ระดับวีไอพี</span><span className="font-semibold text-amber-600">วีไอพี {member.vip_level}</span>
+                <span className="text-neutral-400">ระดับวีไอพี</span><span className="font-semibold text-amber-600">{vipDisplay}</span>
                 <span className="text-neutral-400">วันที่สมัคร</span><span className="text-neutral-800">{fmtD(member.created_at)}</span>
               </div>
             </Panel>

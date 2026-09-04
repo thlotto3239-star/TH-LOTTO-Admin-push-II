@@ -31,6 +31,7 @@ export interface CurrentAdminProfile {
   phone: string;
   admin_role: "super_admin" | "admin" | "support";
   is_super: boolean;
+  avatar_url?: string | null;
 }
 
 export const KNOWN_ADMINS: CurrentAdminProfile[] = [
@@ -40,6 +41,7 @@ export const KNOWN_ADMINS: CurrentAdminProfile[] = [
     phone: "0622306037",
     admin_role: "super_admin",
     is_super: true,
+    avatar_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/avatars/8cd9dc58-d2eb-4aed-a5bc-f4cd74cb3ee4/1780530738154.jpg",
   },
   {
     id: "b439d425-afe0-4353-aefd-2affd053e3c5",
@@ -47,6 +49,7 @@ export const KNOWN_ADMINS: CurrentAdminProfile[] = [
     phone: "857217124@thlotto.app",
     admin_role: "super_admin",
     is_super: true,
+    avatar_url: null,
   },
   {
     id: "98fb9b29-0915-494e-9e43-8844771fc784",
@@ -54,6 +57,7 @@ export const KNOWN_ADMINS: CurrentAdminProfile[] = [
     phone: "0999999993@thlotto.app",
     admin_role: "admin",
     is_super: false,
+    avatar_url: null,
   },
 ];
 

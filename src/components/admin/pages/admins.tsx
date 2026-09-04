@@ -123,6 +123,7 @@ export function AdminsPage() {
             ? PERMISSION_KEYS.map((k) => k.key)
             : ["members", "bets", "results", "deposits"],
           avatar_color: a.admin_role === "super_admin" ? "#d97706" : "#0d9488",
+          avatar_url: a.avatar_url || null,
         }));
         setRows(mapped);
       }
@@ -253,7 +254,7 @@ export function AdminsPage() {
                 <tr key={a.id} className="transition-colors hover:bg-neutral-50/70">
                   <Td>
                     <div className="flex items-center gap-2.5">
-                      <Avatar name={a.full_name} color={a.avatar_color} className="size-9" />
+                      <Avatar name={a.full_name} color={a.avatar_color} imageUrl={a.avatar_url} className="size-9" />
                       <div className="min-w-0">
                         <span className="whitespace-nowrap font-medium text-neutral-800">{a.full_name}</span>
                         {a.id === currentAdmin?.id ? (

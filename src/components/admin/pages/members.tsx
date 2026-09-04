@@ -138,6 +138,7 @@ export function MembersPage() {
             bank_code: normalizeBank(p.bank_name),
             bank_account_number: p.bank_account_number || "-",
             bank_account_name: p.bank_account_name || p.full_name || "-",
+            avatar_url: p.avatar_url || null,
             vip_level: typeof p.vip_level === "number" ? p.vip_level : 0,
             status: (p.status as Member["status"]) || "active",
             balance: Number(w?.balance || 0),
@@ -286,7 +287,7 @@ export function MembersPage() {
               <tr key={m.id} className="transition-colors hover:bg-neutral-50/70">
                 <Td>
                   <div className="flex items-center gap-2">
-                    <Avatar name={m.full_name} className="size-9" />
+                    <Avatar name={m.full_name} imageUrl={m.avatar_url} className="size-9" />
                     <span className="whitespace-nowrap font-medium text-neutral-800">{m.full_name}</span>
                   </div>
                 </Td>

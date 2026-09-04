@@ -21,6 +21,7 @@ const TYPE_META: Record<NewsFeed["type"], { label: string; icon: React.Component
   winner: { label: "ผู้ชนะ", icon: Trophy, cls: "bg-amber-50 text-amber-700 ring-amber-200" },
   promo: { label: "โปรโมชั่น", icon: Megaphone, cls: "bg-brand-50 text-brand-700 ring-brand-200" },
   alert: { label: "แจ้งเตือน", icon: AlertTriangle, cls: "bg-rose-50 text-rose-700 ring-rose-200" },
+  system: { label: "ประกาศระบบ", icon: Megaphone, cls: "bg-purple-50 text-purple-700 ring-purple-200" },
 };
 
 function FeedForm({ initial, onClose, onSave }: { initial: NewsFeed; onClose: () => void; onSave: (f: NewsFeed) => void }) {
@@ -142,7 +143,7 @@ export function FeedsPage() {
       {sorted.length === 0 ? <Panel><EmptyState title="ยังไม่มีฟีดข่าว" /></Panel> : (
         <div className="space-y-2.5">
           {sorted.map((f, idx) => {
-            const meta = TYPE_META[f.type];
+            const meta = TYPE_META[f.type] || TYPE_META.system || TYPE_META.news;
             return (
               <Panel key={f.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                 {/* order + icon */}

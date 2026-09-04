@@ -31,52 +31,38 @@ export interface Bank {
 export const BANKS: Bank[] = [
   {
     code: "kbank",
-    name: "กสิกรไทย",
+    name: "ธนาคารกสิกรไทย",
     short: "KBANK",
     color: "#138f2d",
     logo_url: "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/eTZt9hleBEh0QLZXwUjZ/pub/gtF5IDygx1zHFrvTDBiu.png",
   },
   {
-    code: "bbl",
-    name: "กรุงเทพ",
-    short: "BBL",
-    color: "#1e4586",
-    logo_url: "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/eTZt9hleBEh0QLZXwUjZ/pub/c3T2psxLLJtZwwDseqKG.png",
-  },
-  {
     code: "scb",
-    name: "ไทยพาณิชย์",
+    name: "ธนาคารไทยพาณิชย์",
     short: "SCB",
     color: "#4e2a84",
     logo_url: "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/eTZt9hleBEh0QLZXwUjZ/pub/dGQJLcLaQtPtYTgIgJdd.png",
   },
   {
     code: "ktb",
-    name: "กรุงไทย",
+    name: "ธนาคารกรุงไทย",
     short: "KTB",
     color: "#1897d4",
     logo_url: "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/eTZt9hleBEh0QLZXwUjZ/pub/4movMnyEyWRBPCaETXn4.png",
   },
   {
-    code: "ttb",
-    name: "ทหารไทย",
-    short: "ttb",
-    color: "#f26522",
-    logo_url: "https://www.ttbbank.com/global/assets/img/wow/LogoandCard/ttb%20touch_logo_final.png",
+    code: "bbl",
+    name: "ธนาคารกรุงเทพ",
+    short: "BBL",
+    color: "#1e4586",
+    logo_url: "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/eTZt9hleBEh0QLZXwUjZ/pub/c3T2psxLLJtZwwDseqKG.png",
   },
   {
     code: "gsb",
-    name: "ออมสิน",
+    name: "ธนาคารออมสิน",
     short: "GSB",
     color: "#f37021",
     logo_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9yN5VjUxDb3v0woQnTi8aM4ZuNVWh0j3aGQ&s",
-  },
-  {
-    code: "bay",
-    name: "กรุงศรีอยุธยา",
-    short: "BAY",
-    color: "#ff7b15",
-    logo_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT81zQilT_Gs2CxxpvLuRzsjR97WgcaE3tC9w&s",
   },
   {
     code: "truewallet",
@@ -85,17 +71,38 @@ export const BANKS: Bank[] = [
     color: "#f97316",
     logo_url: "https://www.truemoney.com/wp-content/uploads/2021/05/truemoneywallet-howto-20201012-regis-paopunsuk-01.png",
   },
+  {
+    code: "bay",
+    name: "ธนาคารกรุงศรีอยุธยา",
+    short: "BAY",
+    color: "#ff7b15",
+    logo_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT81zQilT_Gs2CxxpvLuRzsjR97WgcaE3tC9w&s",
+  },
+  {
+    code: "ttb",
+    name: "ธนาคารทหารไทย",
+    short: "TTB",
+    color: "#f26522",
+    logo_url: "https://www.ttbbank.com/global/assets/img/wow/LogoandCard/ttb%20touch_logo_final.png",
+  },
   { code: "baac", name: "ธ.ก.ส.", short: "BAAC", color: "#00a94f" },
   { code: "ghb", name: "อาคารสงเคราะห์", short: "GHB", color: "#007f4d" },
   { code: "isbt", name: "อิสลาม", short: "IB", color: "#0b7a75" },
 ];
 
 export const bankOf = (code: string): Bank => {
-  const norm = (code || "").toLowerCase();
-  return (
-    BANKS.find((b) => b.code.toLowerCase() === norm || b.short.toLowerCase() === norm) ??
-    BANKS[0]
+  const norm = (code || "").trim().toLowerCase();
+  if (!norm) return BANKS[0];
+  const found = BANKS.find(
+    (b) =>
+      b.code.toLowerCase() === norm ||
+      b.short.toLowerCase() === norm ||
+      b.name.toLowerCase() === norm ||
+      norm.includes(b.code.toLowerCase()) ||
+      norm.includes(b.short.toLowerCase()) ||
+      b.name.toLowerCase().includes(norm)
   );
+  return found ?? BANKS[0];
 };
 
 // ── Members (profiles JOIN wallets) ─────────────────────────────────────────
@@ -109,6 +116,7 @@ export interface Member {
   bank_code: string;
   bank_account_number: string;
   bank_account_name: string;
+  avatar_url?: string | null;
   status: MemberStatus;
   vip_level: number;
   balance: number;
@@ -711,6 +719,7 @@ export interface AdminUser {
   status: "active" | "inactive";
   permissions: string[];
   avatar_color: string;
+  avatar_url?: string | null;
 }
 
 export const ADMINS: AdminUser[] = [
@@ -838,7 +847,7 @@ export const ARTICLE_CATEGORIES = ["คู่มือ", "เทคนิค", "
 
 // ── Feeds (Table: feeds — หน้าจัดการฟีด + Trending) ──────────────────────────
 export interface NewsFeed {
-  id: string; title: string; body: string; type: "news" | "winner" | "promo" | "alert";
+  id: string; title: string; body: string; type: "news" | "winner" | "promo" | "alert" | "system";
   link_url: string; display_order: number; is_active: boolean; created_at: string;
 }
 
