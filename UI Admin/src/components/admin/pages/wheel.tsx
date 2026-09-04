@@ -127,8 +127,8 @@ export function WheelPage() {
           setSlots(
             res.data.wheelPrizes.map((p: any) => ({
               id: String(p.id),
-              label: p.name || "",
-              value: Number(p.amount || 0),
+              name: p.name || "",
+              amount: Number(p.amount || 0),
               probability: Number(p.probability || 0),
               color: p.color || "#10b981",
               hi_color: p.hi_color || "#34d399",

@@ -28,12 +28,12 @@ export async function GET(req: NextRequest) {
           supabaseAdmin.from("bets").select("amount, actual_payout, status, created_at"),
           supabaseAdmin.from("bets").select(`
             *,
-            profiles!bets_profile_fkey (full_name, member_id),
+            profiles!bets_profile_fkey (full_name, member_id, avatar_url),
             lottery_markets!bets_market_id_fkey (name, code, color)
           `).order("created_at", { ascending: false }).limit(20),
           supabaseAdmin.from("deposit_requests").select(`
             *,
-            profiles!deposit_requests_profile_fkey (full_name, member_id, bank_name, bank_account_number, bank_account_name)
+            profiles!deposit_requests_profile_fkey (full_name, member_id, avatar_url, bank_name, bank_account_number, bank_account_name)
           `).order("created_at", { ascending: false }).limit(20),
         ]);
 
@@ -114,6 +114,7 @@ export async function GET(req: NextRequest) {
               full_name,
               member_id,
               phone,
+              avatar_url,
               bank_name,
               bank_account_number,
               bank_account_name
@@ -141,6 +142,7 @@ export async function GET(req: NextRequest) {
               full_name,
               member_id,
               phone,
+              avatar_url,
               bank_name,
               bank_account_number,
               bank_account_name
@@ -163,6 +165,7 @@ export async function GET(req: NextRequest) {
             bank_name,
             bank_account_number,
             bank_account_name,
+            avatar_url,
             is_admin,
             admin_role,
             status,
@@ -172,6 +175,7 @@ export async function GET(req: NextRequest) {
               commission_balance
             )
           `)
+          .eq("is_admin", false)
           .order("created_at", { ascending: false });
         if (error) throw error;
         return NextResponse.json({ success: true, data });

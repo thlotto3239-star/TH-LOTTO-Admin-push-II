@@ -331,19 +331,34 @@ export function Field({
 export const inputCls =
   "rounded-xl border-neutral-200 bg-white focus-visible:ring-brand-500/30 h-10";
 
-// ─── Avatar (initial circle) ─────────────────────────────────────────────────
+// ─── Avatar (profile image with initial circle fallback) ─────────────────────
 const AVATAR_COLORS = ["#0d9488", "#e11d48", "#7c3aed", "#f59e0b", "#287e0b", "#2563eb", "#dc2626", "#0891b2"];
 export function Avatar({
   name,
   color,
+  imageUrl,
   className,
 }: {
   name: string;
   color?: string;
+  imageUrl?: string | null;
   className?: string;
 }) {
+  const [imgFailed, setImgFailed] = React.useState(false);
   const initial = name.trim().charAt(0) || "?";
   const idx = name.length % AVATAR_COLORS.length;
+
+  if (imageUrl && !imgFailed) {
+    return (
+      <img
+        src={imageUrl}
+        alt={name}
+        onError={() => setImgFailed(true)}
+        className={cn("size-9 shrink-0 rounded-full object-cover ring-1 ring-neutral-200", className)}
+      />
+    );
+  }
+
   return (
     <div
       className={cn("flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white", className)}

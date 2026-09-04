@@ -57,7 +57,7 @@ function FeedRow({ item }: { item: FeedItem }) {
   if (item.kind === "bet") {
     return (
       <div className="flex items-center gap-3 px-4 py-3 hover:bg-neutral-50/70">
-        <Avatar name={item.member?.full_name ?? "?"} className="size-9" />
+        <Avatar name={item.member?.full_name ?? "?"} imageUrl={item.member?.avatar_url} className="size-9" />
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-neutral-800">
             {item.member?.full_name}
@@ -81,7 +81,7 @@ function FeedRow({ item }: { item: FeedItem }) {
   const isDep = item.kind === "deposit";
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-neutral-50/70">
-      <Avatar name={item.member?.full_name ?? "?"} className="size-9" />
+      <Avatar name={item.member?.full_name ?? "?"} imageUrl={item.member?.avatar_url} className="size-9" />
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-neutral-800">
           {item.member?.full_name}
@@ -136,6 +136,7 @@ export function DashboardPage() {
               full_name: b.profiles?.full_name || "สมาชิก",
               member_id: b.profiles?.member_id || (b.user_id ? b.user_id.slice(0, 8) : "MB"),
               phone: "-",
+              avatar_url: b.profiles?.avatar_url || null,
               bank_code: "KBANK",
               bank_account_number: "-",
               vip_level: 0,
@@ -156,6 +157,7 @@ export function DashboardPage() {
               full_name: d.profiles?.full_name || "สมาชิก",
               member_id: d.profiles?.member_id || (d.user_id ? d.user_id.slice(0, 8) : "MB"),
               phone: "-",
+              avatar_url: d.profiles?.avatar_url || null,
               bank_code: d.profiles?.bank_name || "KBANK",
               bank_account_number: d.profiles?.bank_account_number || "-",
               vip_level: 0,

@@ -19,6 +19,9 @@ export function InstantOverviewPage() {
   const [editMaxBet, setEditMaxBet] = React.useState<number>(0);
   const { toast } = useToast();
 
+  const s = INSTANT_STATS;
+  const net = s.total_bet_amount_today - s.total_payout_today;
+
   // Auto-refresh ทุก 30 วินาที (ตามสเปก admin_get_instant_stats)
   React.useEffect(() => {
     const iv = setInterval(() => {

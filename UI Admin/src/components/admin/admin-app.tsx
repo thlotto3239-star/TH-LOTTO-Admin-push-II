@@ -8,7 +8,7 @@ import {
   ShieldAlert, Ticket, Check,
 } from "lucide-react";
 import { useAdminNav, KNOWN_ADMINS, PAGE_META, type PageId } from "./store";
-import { Btn } from "./primitives";
+import { Btn, Avatar } from "./primitives";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardPage } from "./pages/dashboard";
@@ -265,7 +265,6 @@ function AdminUserSwitcher({ onLogout }: { onLogout?: () => void }) {
   const [open, setOpen] = React.useState(false);
 
   const roleLabel = currentAdmin.admin_role === "super_admin" ? "Super Admin" : "Admin";
-  const initials = currentAdmin.full_name.slice(0, 2);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -274,14 +273,14 @@ function AdminUserSwitcher({ onLogout }: { onLogout?: () => void }) {
           className="flex w-full items-center gap-2.5 rounded-full border border-neutral-200 bg-white p-1.5 pr-3 text-left transition-colors hover:bg-neutral-50"
           title="สลับบัญชีเพื่อทดสอบสิทธิ์ (Super Admin vs Admin)"
         >
-          <div
+          <Avatar
+            name={currentAdmin.full_name}
+            imageUrl={currentAdmin.avatar_url}
             className={cn(
-              "flex size-8 items-center justify-center rounded-full text-xs font-bold text-white shrink-0",
-              currentAdmin.admin_role === "super_admin" ? "bg-amber-600" : "bg-teal-600"
+              "size-8 text-xs shrink-0",
+              currentAdmin.admin_role === "super_admin" ? "bg-amber-600 text-white" : "bg-teal-600 text-white"
             )}
-          >
-            {initials}
-          </div>
+          />
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold text-neutral-800">{currentAdmin.full_name}</p>
             <p className="truncate text-[10px] text-neutral-400">{roleLabel}</p>
@@ -312,14 +311,14 @@ function AdminUserSwitcher({ onLogout }: { onLogout?: () => void }) {
                   isSelected ? "bg-brand-50 text-brand-700 font-bold" : "text-neutral-700 hover:bg-neutral-100"
                 )}
               >
-                <div
+                <Avatar
+                  name={adm.full_name}
+                  imageUrl={adm.avatar_url}
                   className={cn(
-                    "flex size-7 items-center justify-center rounded-full text-[10px] font-bold text-white shrink-0",
-                    adm.admin_role === "super_admin" ? "bg-amber-600" : "bg-teal-600"
+                    "size-7 text-[10px] shrink-0",
+                    adm.admin_role === "super_admin" ? "bg-amber-600 text-white" : "bg-teal-600 text-white"
                   )}
-                >
-                  {adm.full_name.slice(0, 2)}
-                </div>
+                />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{adm.full_name}</p>
                   <p className="truncate text-[10px] text-neutral-400">
