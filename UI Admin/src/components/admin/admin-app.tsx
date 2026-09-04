@@ -5,9 +5,9 @@ import {
   LayoutDashboard, ArrowDownToLine, ArrowUpFromLine, Users, Dices, BadgeCheck,
   Zap, Disc3, Megaphone, Wrench, UserCog, Bell, Menu, LogOut, ChevronDown, Search,
   Images, Newspaper, Rss, Palette, Landmark, RadioTower, DatabaseBackup,
-  ShieldAlert, Ticket,
+  ShieldAlert, Ticket, Check,
 } from "lucide-react";
-import { useAdminNav, PAGE_META, type PageId } from "./store";
+import { useAdminNav, KNOWN_ADMINS, PAGE_META, type PageId } from "./store";
 import { Btn } from "./primitives";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -259,6 +259,83 @@ function NotificationBell() {
   );
 }
 
+function AdminUserSwitcher() {
+  const { currentAdmin, setCurrentAdmin } = useAdminNav();
+  const { toast } = useToast();
+  const [open, setOpen] = React.useState(false);
+
+  const roleLabel = currentAdmin.admin_role === "super_admin" ? "Super Admin" : "Admin";
+  const initials = currentAdmin.full_name.slice(0, 2);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className="flex w-full items-center gap-2.5 rounded-full border border-neutral-200 bg-white p-1.5 pr-3 text-left transition-colors hover:bg-neutral-50"
+          title="สลับบัญชีเพื่อทดสอบสิทธิ์ (Super Admin vs Admin)"
+        >
+          <div
+            className={cn(
+              "flex size-8 items-center justify-center rounded-full text-xs font-bold text-white shrink-0",
+              currentAdmin.admin_role === "super_admin" ? "bg-amber-600" : "bg-teal-600"
+            )}
+          >
+            {initials}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-semibold text-neutral-800">{currentAdmin.full_name}</p>
+            <p className="truncate text-[10px] text-neutral-400">{roleLabel}</p>
+          </div>
+          <ChevronDown className="size-3.5 text-neutral-400 shrink-0" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-64 rounded-2xl p-2 shadow-xl ring-1 ring-neutral-200">
+        <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+          สลับบัญชีแอดมิน (ทดสอบสิทธิ์)
+        </p>
+        <div className="space-y-1">
+          {KNOWN_ADMINS.map((adm) => {
+            const isSelected = adm.id === currentAdmin.id;
+            return (
+              <button
+                key={adm.id}
+                onClick={() => {
+                  setCurrentAdmin(adm);
+                  setOpen(false);
+                  toast({
+                    title: `สลับเป็น ${adm.full_name}`,
+                    description: `ระดับสิทธิ์: ${adm.admin_role === "super_admin" ? "Super Admin (จัดการสิทธิ์และเพิ่มแอดมินได้)" : "Admin (ธรรมดา — ไม่เห็นปุ่มสร้างแอดมิน)"}`,
+                  });
+                }}
+                className={cn(
+                  "flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs transition-colors",
+                  isSelected ? "bg-brand-50 text-brand-700 font-bold" : "text-neutral-700 hover:bg-neutral-100"
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex size-7 items-center justify-center rounded-full text-[10px] font-bold text-white shrink-0",
+                    adm.admin_role === "super_admin" ? "bg-amber-600" : "bg-teal-600"
+                  )}
+                >
+                  {adm.full_name.slice(0, 2)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{adm.full_name}</p>
+                  <p className="truncate text-[10px] text-neutral-400">
+                    {adm.admin_role === "super_admin" ? "Super Admin (เต็มสิทธิ์)" : "Admin (ธรรมดา)"}
+                  </p>
+                </div>
+                {isSelected ? <Check className="size-3.5 text-brand-600 shrink-0" /> : null}
+              </button>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function AdminApp() {
   const { page } = useAdminNav();
   const [mobileNav, setMobileNav] = React.useState(false);
@@ -298,16 +375,7 @@ export function AdminApp() {
         <Brand />
         <SidebarNav />
         <div className="border-t border-neutral-100 p-3">
-          <button className="flex w-full items-center gap-3 rounded-full px-3 py-2 text-left transition-colors hover:bg-neutral-100">
-            <div className="flex size-9 items-center justify-center rounded-full bg-neutral-900 text-xs font-bold text-white">
-              อจ
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-neutral-800">เจ้าของเว็บ</p>
-              <p className="truncate text-xs text-neutral-400">062-230-6037</p>
-            </div>
-            <LogOut className="size-4 text-neutral-400" />
-          </button>
+          <AdminUserSwitcher />
         </div>
       </aside>
 
@@ -327,6 +395,9 @@ export function AdminApp() {
                 <Brand />
               </SheetHeader>
               <SidebarNav onNavigate={() => setMobileNav(false)} />
+              <div className="border-t border-neutral-100 p-3">
+                <AdminUserSwitcher />
+              </div>
             </SheetContent>
           </Sheet>
 
@@ -345,10 +416,9 @@ export function AdminApp() {
 
           <NotificationBell />
 
-          <button className="flex items-center gap-2 rounded-full border border-neutral-200 py-1.5 pl-1.5 pr-3 transition-colors hover:bg-neutral-50">
-            <div className="flex size-8 items-center justify-center rounded-full bg-neutral-900 text-[11px] font-bold text-white">อจ</div>
-            <ChevronDown className="size-3.5 text-neutral-400" />
-          </button>
+          <div className="w-48 hidden sm:block">
+            <AdminUserSwitcher />
+          </div>
         </header>
 
         {/* Page content */}

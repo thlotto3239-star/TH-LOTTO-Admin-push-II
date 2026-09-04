@@ -1,12 +1,11 @@
-"use client";
-
 import * as React from "react";
-import { Plus, Pencil, ShieldCheck, KeyRound, Ban, RotateCcw, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, ShieldCheck, KeyRound, Ban, RotateCcw, Trash2, Loader2, Lock } from "lucide-react";
 import { Panel, Btn, StatusBadge, Avatar, PageHeader, TableWrap, Th, Td, Field, inputCls, EmptyState, ConfirmDialog } from "../primitives";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminNav } from "../store";
 import { PERMISSION_KEYS, type AdminUser } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
@@ -98,11 +97,14 @@ function AdminForm({ initial, onClose, onSave }: { initial: AdminUser; onClose: 
 }
 
 export function AdminsPage() {
+  const { currentAdmin } = useAdminNav();
   const { toast } = useToast();
   const [rows, setRows] = React.useState<AdminUser[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [form, setForm] = React.useState<{ initial: AdminUser } | null>(null);
   const [confirmDel, setConfirmDel] = React.useState<AdminUser | null>(null);
+
+  const isSuperAdmin = currentAdmin?.admin_role === "super_admin" || currentAdmin?.is_super;
 
   const emptyAdmin: AdminUser = { id: "", full_name: "", phone: "", role: "admin", status: "active", permissions: [], avatar_color: "#0d9488" };
 
@@ -136,6 +138,14 @@ export function AdminsPage() {
   }, [fetchAdmins]);
 
   const handleSaveAdmin = async (a: AdminUser) => {
+    if (!isSuperAdmin) {
+      toast({
+        title: "ไม่มีสิทธิ์ดำเนินการ",
+        description: "เฉพาะบัญชี Super Admin เท่านั้นที่สามารถสร้างหรือกำหนดบทบาทแอดมินได้",
+        variant: "destructive",
+      });
+      return;
+    }
     const isNew = !a.id;
     try {
       const action = isNew ? "create_admin_user" : "update_admin_user";
@@ -174,10 +184,18 @@ export function AdminsPage() {
   };
 
   const resetPw = (a: AdminUser) => {
+    if (!isSuperAdmin) {
+      toast({ title: "ไม่มีสิทธิ์", description: "เฉพาะ Super Admin เท่านั้นที่รีเซ็ตรหัสผ่านได้", variant: "destructive" });
+      return;
+    }
     toast({ title: "ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว", description: `ระบบรีเซ็ตรหัสผ่านสำหรับ ${a.full_name} (${a.phone})` });
   };
 
   const toggleSuspend = async (a: AdminUser) => {
+    if (!isSuperAdmin) {
+      toast({ title: "ไม่มีสิทธิ์", description: "เฉพาะ Super Admin เท่านั้นที่สามารถระงับแอดมินได้", variant: "destructive" });
+      return;
+    }
     const next = a.status === "active" ? "inactive" : "active";
     setRows((p) => p.map((x) => (x.id === a.id ? { ...x, status: next } : x)));
     try {
@@ -204,10 +222,19 @@ export function AdminsPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="ผู้ดูแลระบบ" description={`บัญชีผู้ดูแลระบบจริงในฐานข้อมูล · ทั้งหมด ${rows.length} คน · ผู้ดูแลสูงสุดจัดการสิทธิ์ได้ทุกข้อ`}>
-        <Btn className="rounded-full bg-brand-600 hover:bg-brand-700" onClick={() => setForm({ initial: emptyAdmin })}>
-          <Plus className="size-4" /> เพิ่มแอดมิน
-        </Btn>
+      <PageHeader
+        title="ผู้ดูแลระบบ"
+        description={
+          isSuperAdmin
+            ? `บัญชีผู้ดูแลระบบจริงในฐานข้อมูล · ทั้งหมด ${rows.length} คน · ล็อกอินในฐานะ Super Admin (${currentAdmin?.full_name}) มีสิทธิ์สร้างและจัดการบทบาทแอดมินได้`
+            : `บัญชีผู้ดูแลระบบจริงในฐานข้อมูล · ทั้งหมด ${rows.length} คน · ล็อกอินในฐานะ Admin (${currentAdmin?.full_name}) โหมดดูข้อมูลเท่านั้น (ไม่สามารถสร้างหรือแก้ไขแอดมินได้)`
+        }
+      >
+        {isSuperAdmin ? (
+          <Btn className="rounded-full bg-brand-600 hover:bg-brand-700" onClick={() => setForm({ initial: emptyAdmin })}>
+            <Plus className="size-4" /> เพิ่มแอดมิน
+          </Btn>
+        ) : null}
       </PageHeader>
 
       <Panel>
@@ -227,7 +254,12 @@ export function AdminsPage() {
                   <Td>
                     <div className="flex items-center gap-2.5">
                       <Avatar name={a.full_name} color={a.avatar_color} className="size-9" />
-                      <span className="whitespace-nowrap font-medium text-neutral-800">{a.full_name}</span>
+                      <div className="min-w-0">
+                        <span className="whitespace-nowrap font-medium text-neutral-800">{a.full_name}</span>
+                        {a.id === currentAdmin?.id ? (
+                          <span className="ml-2 inline-flex rounded-full bg-brand-50 px-2 py-0.2 text-[10px] font-bold text-brand-700">คุณ</span>
+                        ) : null}
+                      </div>
                     </div>
                   </Td>
                   <Td className="whitespace-nowrap font-mono text-xs">{a.phone}</Td>
@@ -253,20 +285,28 @@ export function AdminsPage() {
                     </div>
                   </Td>
                   <Td className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" onClick={() => setForm({ initial: a })}><Pencil className="size-3.5" /> แก้ไข</Btn>
-                      <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" title="รีเซ็ตรหัสผ่าน" onClick={() => resetPw(a)}><KeyRound className="size-3.5" /> รหัสผ่าน</Btn>
-                      <Btn
-                        variant="outline"
-                        size="sm"
-                        className={cn("h-8 whitespace-nowrap rounded-full px-2.5", a.status === "active" ? "border-amber-200 text-amber-700 hover:bg-amber-50" : "border-brand-200 text-brand-700 hover:bg-brand-50")}
-                        title={a.status === "active" ? "ระงับแอดมิน" : "ปลดระงับ"}
-                        onClick={() => toggleSuspend(a)}
-                      >
-                        {a.status === "active" ? <Ban className="size-3.5" /> : <RotateCcw className="size-3.5" />}
-                        {a.status === "active" ? "ระงับ" : "ปลด"}
-                      </Btn>
-                    </div>
+                    {isSuperAdmin ? (
+                      <div className="flex items-center justify-end gap-1">
+                        <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" onClick={() => setForm({ initial: a })}><Pencil className="size-3.5" /> แก้ไข</Btn>
+                        <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" title="รีเซ็ตรหัสผ่าน" onClick={() => resetPw(a)}><KeyRound className="size-3.5" /> รหัสผ่าน</Btn>
+                        <Btn
+                          variant="outline"
+                          size="sm"
+                          className={cn("h-8 whitespace-nowrap rounded-full px-2.5", a.status === "active" ? "border-amber-200 text-amber-700 hover:bg-amber-50" : "border-brand-200 text-brand-700 hover:bg-brand-50")}
+                          title={a.status === "active" ? "ระงับแอดมิน" : "ปลดระงับ"}
+                          onClick={() => toggleSuspend(a)}
+                        >
+                          {a.status === "active" ? <Ban className="size-3.5" /> : <RotateCcw className="size-3.5" />}
+                          {a.status === "active" ? "ระงับ" : "ปลด"}
+                        </Btn>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-end">
+                        <span className="inline-flex items-center gap-1 text-xs text-neutral-400">
+                          <Lock className="size-3 text-neutral-300" /> ดูเท่านั้น
+                        </span>
+                      </div>
+                    )}
                   </Td>
                 </tr>
               ))}
