@@ -117,8 +117,83 @@ const FILTERS = [
 
 export function DashboardPage() {
   const [filter, setFilter] = React.useState<(typeof FILTERS)[number]["key"]>("all");
-  const feed = ACTIVITY_FEED.filter((f) => filter === "all" || f.kind === filter).slice(0, 30);
-  const s = DASH_STATS;
+  const [liveStats, setLiveStats] = React.useState<any>(null);
+  const [liveFeed, setLiveFeed] = React.useState<FeedItem[]>(ACTIVITY_FEED);
+
+  React.useEffect(() => {
+    async function loadDash() {
+      try {
+        const res = await fetch("/api/admin/data?resource=dashboard");
+        const json = await res.json();
+        if (json.success && json.data) {
+          setLiveStats(json.data);
+
+          const betsFeed: FeedItem[] = (json.data.recentBets || []).map((b: any) => ({
+            id: `bet-${b.id}`,
+            time: b.created_at,
+            kind: "bet",
+            member: {
+              full_name: b.profiles?.full_name || "สมาชิก",
+              member_id: b.profiles?.member_id || (b.user_id ? b.user_id.slice(0, 8) : "MB"),
+              phone: "-",
+              bank_code: "KBANK",
+              bank_account_number: "-",
+              vip_level: 0,
+            },
+            market: b.lottery_markets?.name || "หวย",
+            market_code: b.lottery_markets?.code || "MKT",
+            market_color: b.lottery_markets?.color || "#059669",
+            bet_type: b.bet_type,
+            numbers: b.number,
+            amount: Number(b.amount),
+          }));
+
+          const depsFeed: FeedItem[] = (json.data.recentDeposits || []).map((d: any) => ({
+            id: `dep-${d.id}`,
+            time: d.created_at,
+            kind: "deposit",
+            member: {
+              full_name: d.profiles?.full_name || "สมาชิก",
+              member_id: d.profiles?.member_id || (d.user_id ? d.user_id.slice(0, 8) : "MB"),
+              phone: "-",
+              bank_code: d.profiles?.bank_name || "KBANK",
+              bank_account_number: d.profiles?.bank_account_number || "-",
+              vip_level: 0,
+            },
+            amount: Number(d.amount),
+            bank_code: d.profiles?.bank_name || "KBANK",
+            account_no: d.profiles?.bank_account_number,
+            account_name: d.profiles?.bank_account_name,
+            status: d.status,
+          }));
+
+          const merged = [...betsFeed, ...depsFeed].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+          if (merged.length > 0) {
+            setLiveFeed(merged);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load dashboard data:", e);
+      }
+    }
+    loadDash();
+  }, []);
+
+  const s = liveStats ? {
+    total_deposit_today: liveStats.totalDeposit,
+    total_withdraw_today: 0,
+    total_bet_today: liveStats.totalBet,
+    total_payout_today: liveStats.totalPayout,
+    pending_deposits: liveStats.depositPendingCount,
+    pending_withdrawals: liveStats.withdrawPendingCount,
+    new_members_today: liveStats.memberCount,
+    net_profit_today: (liveStats.totalDeposit + liveStats.totalBet) - liveStats.totalPayout,
+    active_members_7d: liveStats.memberCount,
+    bet_rate_per_person: liveStats.memberCount > 0 ? (liveStats.betCount / liveStats.memberCount) : 0,
+    withdrawal_rate: 0,
+  } : DASH_STATS;
+
+  const feed = liveFeed.filter((f) => filter === "all" || f.kind === filter).slice(0, 30);
 
   return (
     <div className="space-y-5">

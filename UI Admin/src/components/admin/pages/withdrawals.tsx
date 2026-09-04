@@ -112,10 +112,47 @@ function DetailModal({
 
 export function WithdrawalsPage() {
   const { toast } = useToast();
-  const [rows, setRows] = React.useState<WithdrawReq[]>(WITHDRAWALS);
-  const [tab, setTab] = React.useState("PENDING");
+  const [rows, setRows] = React.useState<WithdrawReq[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [tab, setTab] = React.useState("ALL");
   const [q, setQ] = React.useState("");
   const [modal, setModal] = React.useState<{ req: WithdrawReq; mode: "view" | "approve" | "reject" } | null>(null);
+
+  const fetchWithdrawals = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/admin/data?resource=withdrawals");
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        const mapped: WithdrawReq[] = json.data.map((w: any) => ({
+          id: w.id,
+          created_at: w.created_at,
+          amount: Number(w.amount),
+          status: w.status as WithdrawReq["status"],
+          bank_code: w.bank_name || "KBANK",
+          bank_account_number: w.bank_account_number || "-",
+          bank_account_name: w.bank_account_name || "-",
+          admin_note: w.admin_note,
+          approved_at: w.approved_at,
+          approver_name: w.approved_by ? "Admin" : null,
+          member: {
+            full_name: w.profiles?.full_name || "สมาชิก",
+            member_id: w.profiles?.member_id || (w.user_id ? w.user_id.slice(0, 8) : "MB"),
+            phone: w.profiles?.phone || "-",
+          },
+        }));
+        setRows(mapped);
+      }
+    } catch (e) {
+      console.error("Failed to load withdrawals:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchWithdrawals();
+  }, [fetchWithdrawals]);
 
   const counts = {
     PENDING: rows.filter((r) => r.status === "PENDING").length,
@@ -131,9 +168,24 @@ export function WithdrawalsPage() {
       return r.member.full_name.toLowerCase().includes(s) || r.member.phone.includes(s) || r.member.member_id.toLowerCase().includes(s);
     });
 
-  const update = (id: string, status: "APPROVED" | "REJECTED", note: string) => {
+  const update = async (id: string, status: "APPROVED" | "REJECTED", note: string) => {
     setRows((p) => p.map((r) => (r.id === id ? { ...r, status, admin_note: note, approved_at: new Date().toISOString(), approver_name: "Owner" } : r)));
-    toast({ title: status === "APPROVED" ? "ทำเครื่องหมายโอนแล้ว" : "ปฏิเสธรายการแล้ว", description: `RPC admin_${status === "APPROVED" ? "approve" : "reject"}_withdraw เรียกสำเร็จ (ตัวอย่าง)` });
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update_withdrawal", payload: { id, status, admin_note: note } }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: status === "APPROVED" ? "ทำเครื่องหมายโอนแล้ว" : "ปฏิเสธรายการแล้ว", description: `อัปเดตสถานะ Supabase เรียบร้อย` });
+        fetchWithdrawals();
+      } else {
+        toast({ title: "เกิดข้อผิดพลาด", description: json.error, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "เชื่อมต่อล้มเหลว", description: e.message, variant: "destructive" });
+    }
   };
 
   const exportCsv = () => {
