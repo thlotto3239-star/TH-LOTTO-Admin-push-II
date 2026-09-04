@@ -1,0 +1,278 @@
+"use client";
+
+import * as React from "react";
+import { ArrowLeft, Phone, CalendarDays, Wallet, Dices, Trophy, Gem, Landmark, Copy, Check } from "lucide-react";
+import { Panel, Btn, StatusBadge, BankBadge, Avatar, TableWrap, Th, Td, EmptyState } from "../primitives";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { useAdminNav } from "../store";
+import { MEMBERS, MEMBER_BETS, MEMBER_TXS, MEMBER_LOGINS, MEMBER_DEPOSIT_ROWS, MEMBER_WITHDRAW_ROWS, fmtTHB, fmtD, type Member } from "@/data/admin-mock";
+import { cn } from "@/lib/utils";
+
+const TX_TYPE_LABEL: Record<string, string> = {
+  DEPOSIT: "ฝาก", WITHDRAW: "ถอน", WIN: "ชนะรางวัล", BET: "แทงโพย",
+  BONUS: "โบนัส", COMMISSION: "ค่าแนะนำ", PAYOUT: "จ่ายรางวัล",
+};
+
+function Stat({ icon: Icon, label, value, tone }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; tone: string }) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-3.5">
+      <div className={cn("flex size-10 items-center justify-center rounded-full", tone)}>
+        <Icon className="size-4.5" />
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-xs text-neutral-500">{label}</p>
+        <p className="truncate text-base font-bold text-neutral-900">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+export function MemberDetailPage() {
+  const { selectedMemberId, navigate } = useAdminNav();
+  const { toast } = useToast();
+  const member: Member = MEMBERS.find((m) => m.id === selectedMemberId) ?? MEMBERS[0];
+  const [copied, setCopied] = React.useState(false);
+
+  const copyId = async () => {
+    try { await navigator.clipboard.writeText(member.member_id); } catch { /* no-op */ }
+    setCopied(true);
+    toast({ title: "คัดลอกรหัสสมาชิกแล้ว" });
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div className="space-y-4">
+      <Btn variant="ghost" size="sm" className="rounded-full text-neutral-500" onClick={() => navigate("members")}>
+        <ArrowLeft className="size-4" /> กลับหน้าสมาชิกทั้งหมด
+      </Btn>
+
+      {/* Header card */}
+      <Panel className="p-5 sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex items-start gap-4">
+            <Avatar name={member.full_name} className="size-14 text-xl" />
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl font-bold tracking-tight text-neutral-900">{member.full_name}</h1>
+                <button onClick={copyId} className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 font-mono text-[11px] font-bold text-neutral-500 transition-colors hover:bg-neutral-200">
+                  {member.member_id}
+                  {copied ? <Check className="size-3 text-brand-600" /> : <Copy className="size-3" />}
+                </button>
+              </div>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-500">
+                <span className="inline-flex items-center gap-1"><Phone className="size-3.5" /> {member.phone}</span>
+                <span className="inline-flex items-center gap-1"><CalendarDays className="size-3.5" /> สมัคร {fmtD(member.created_at)}</span>
+              </div>
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                <StatusBadge status={member.status} />
+                <span className="inline-flex items-center whitespace-nowrap rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-inset ring-amber-200">วีไอพี {member.vip_level}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid w-full max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat icon={Wallet} label="ยอดเงิน" value={fmtTHB(member.balance)} tone="bg-brand-50 text-brand-600" />
+            <Stat icon={Dices} label="แทงรวม" value={fmtTHB(member.total_bets)} tone="bg-amber-50 text-amber-600" />
+            <Stat icon={Trophy} label="ชนะรวม" value={fmtTHB(member.total_won)} tone="bg-sky-50 text-sky-600" />
+            <Stat icon={Gem} label="ค่าแนะนำ" value={fmtTHB(member.commission_balance)} tone="bg-violet-50 text-violet-600" />
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-neutral-100 px-4 py-3">
+          <Landmark className="size-4 text-neutral-400" />
+          <BankBadge code={member.bank_code} />
+          <span className="font-mono text-sm text-neutral-700">{member.bank_account_number}</span>
+          <span className="text-sm text-neutral-400">· {member.bank_account_name}</span>
+        </div>
+      </Panel>
+
+      {/* 5 Tabs */}
+      <Tabs defaultValue="overview">
+        <TabsList className="h-auto w-full flex-wrap justify-start gap-1 rounded-full bg-neutral-100 p-1">
+          <TabsTrigger value="overview" className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm">ภาพรวม</TabsTrigger>
+          <TabsTrigger value="bets" className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm">ประวัติแทง</TabsTrigger>
+          <TabsTrigger value="transactions" className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm">ธุรกรรม</TabsTrigger>
+          <TabsTrigger value="deposits" className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm">ฝาก/ถอน</TabsTrigger>
+          <TabsTrigger value="logins" className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm">ล็อกอิน</TabsTrigger>
+        </TabsList>
+
+        {/* Tab 1: overview */}
+        <TabsContent value="overview" className="mt-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Panel className="p-5">
+              <h3 className="mb-3 text-sm font-bold text-neutral-900">ข้อมูลโปรไฟล์</h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                <span className="text-neutral-400">รหัสสมาชิก</span><span className="font-mono text-neutral-800">{member.member_id}</span>
+                <span className="text-neutral-400">ชื่อ-นามสกุล</span><span className="text-neutral-800">{member.full_name}</span>
+                <span className="text-neutral-400">เบอร์โทร</span><span className="font-mono text-neutral-800">{member.phone}</span>
+                <span className="text-neutral-400">สถานะบัญชี</span><span><StatusBadge status={member.status} /></span>
+                <span className="text-neutral-400">ระดับวีไอพี</span><span className="font-semibold text-amber-600">วีไอพี {member.vip_level}</span>
+                <span className="text-neutral-400">วันที่สมัคร</span><span className="text-neutral-800">{fmtD(member.created_at)}</span>
+              </div>
+            </Panel>
+            <Panel className="p-5">
+              <h3 className="mb-3 text-sm font-bold text-neutral-900">ยอดกระเป๋าปัจจุบัน</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl bg-brand-50 p-4 ring-1 ring-inset ring-brand-100">
+                  <p className="text-xs text-brand-700">ยอดเงินหลัก</p>
+                  <p className="mt-1 text-2xl font-black text-brand-700">{fmtTHB(member.balance)}</p>
+                </div>
+                <div className="rounded-2xl bg-violet-50 p-4 ring-1 ring-inset ring-violet-100">
+                  <p className="text-xs text-violet-700">ค่าแนะนำ</p>
+                  <p className="mt-1 text-2xl font-black text-violet-700">{fmtTHB(member.commission_balance)}</p>
+                </div>
+                <div className="rounded-2xl bg-neutral-50 p-4">
+                  <p className="text-xs text-neutral-500">แทงรวม</p>
+                  <p className="mt-1 text-xl font-bold text-neutral-900">{fmtTHB(member.total_bets)}</p>
+                </div>
+                <div className="rounded-2xl bg-neutral-50 p-4">
+                  <p className="text-xs text-neutral-500">ชนะรวม</p>
+                  <p className="mt-1 text-xl font-bold text-neutral-900">{fmtTHB(member.total_won)}</p>
+                </div>
+              </div>
+            </Panel>
+          </div>
+        </TabsContent>
+
+        {/* Tab 2: bets */}
+        <TabsContent value="bets" className="mt-4">
+          <Panel>
+            <TableWrap>
+              <thead>
+                <tr>
+                  <Th>วันที่</Th><Th>ตลาด</Th><Th>งวดวันที่</Th><Th>เลขที่แทง</Th><Th>ประเภท</Th>
+                  <Th className="text-right">ยอดแทง</Th><Th className="text-right">อัตราจ่าย</Th><Th className="text-right">ยอดรางวัล</Th><Th>สถานะ</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {MEMBER_BETS.map((b, i) => (
+                  <tr key={i} className="transition-colors hover:bg-neutral-50/70">
+                    <Td className="whitespace-nowrap text-xs">{b.created_at}</Td>
+                    <Td>
+                      <span className="inline-flex items-center gap-1.5 text-sm text-neutral-800">
+                        <span className="size-2.5 rounded-full" style={{ backgroundColor: b.market_color }} />
+                        {b.market_name}
+                      </span>
+                    </Td>
+                    <Td className="whitespace-nowrap text-xs">{b.draw_date}</Td>
+                    <Td className="font-mono font-bold text-neutral-800">{b.numbers}</Td>
+                    <Td className="whitespace-nowrap text-xs">{b.bet_type}</Td>
+                    <Td className="whitespace-nowrap text-right font-semibold">{fmtTHB(b.amount)}</Td>
+                    <Td className="whitespace-nowrap text-right text-xs text-neutral-500">×{b.payout_rate}</Td>
+                    <Td className={cn("whitespace-nowrap text-right font-bold", b.payout_amount > 0 ? "text-brand-600" : "text-neutral-400")}>
+                      {b.payout_amount > 0 ? fmtTHB(b.payout_amount) : "—"}
+                    </Td>
+                    <Td><StatusBadge status={b.status} /></Td>
+                  </tr>
+                ))}
+              </tbody>
+            </TableWrap>
+          </Panel>
+        </TabsContent>
+
+        {/* Tab 3: transactions */}
+        <TabsContent value="transactions" className="mt-4">
+          <Panel>
+            <TableWrap>
+              <thead>
+                <tr><Th>วันที่</Th><Th>ประเภท</Th><Th className="text-right">ยอด</Th><Th>หมายเหตุ</Th></tr>
+              </thead>
+              <tbody>
+                {MEMBER_TXS.map((t, i) => (
+                  <tr key={i} className="transition-colors hover:bg-neutral-50/70">
+                    <Td className="whitespace-nowrap text-xs">{t.created_at}</Td>
+                    <Td>
+                      <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", t.amount >= 0 ? "bg-brand-50 text-brand-700" : "bg-rose-50 text-rose-700")}>
+                        {TX_TYPE_LABEL[t.type] ?? t.type}
+                      </span>
+                    </Td>
+                    <Td className={cn("whitespace-nowrap text-right font-bold", t.amount >= 0 ? "text-brand-600" : "text-rose-600")}>
+                      {t.amount >= 0 ? "+" : "−"}{fmtTHB(Math.abs(t.amount))}
+                    </Td>
+                    <Td className="text-xs text-neutral-500">{t.note}</Td>
+                  </tr>
+                ))}
+              </tbody>
+            </TableWrap>
+          </Panel>
+        </TabsContent>
+
+        {/* Tab 4: deposits/withdraws */}
+        <TabsContent value="deposits" className="mt-4">
+          <div className="grid gap-4 xl:grid-cols-2">
+            <Panel>
+              <p className="border-b border-neutral-100 px-4 py-3 text-sm font-bold text-brand-700">
+                ฝาก <span className="ml-1 text-[11px] font-medium text-neutral-400">deposit_requests (50 ล่าสุด)</span>
+              </p>
+              <TableWrap className="min-w-[420px]">
+                <thead>
+                  <tr><Th>วันที่</Th><Th className="text-right">ยอด</Th><Th>สถานะ</Th><Th>หมายเหตุแอดมิน</Th></tr>
+                </thead>
+                <tbody>
+                  {MEMBER_DEPOSIT_ROWS.map((d, i) => (
+                    <tr key={i} className="transition-colors hover:bg-neutral-50/70">
+                      <Td className="whitespace-nowrap text-xs">{d.date}</Td>
+                      <Td className="whitespace-nowrap text-right font-bold text-brand-600">+{fmtTHB(d.amount)}</Td>
+                      <Td><StatusBadge status={d.status} /></Td>
+                      <Td className="text-xs text-neutral-500">{d.admin_note ?? <span className="text-neutral-300">—</span>}</Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </TableWrap>
+            </Panel>
+            <Panel>
+              <p className="border-b border-neutral-100 px-4 py-3 text-sm font-bold text-rose-700">
+                ถอน <span className="ml-1 text-[11px] font-medium text-neutral-400">withdraw_requests (50 ล่าสุด)</span>
+              </p>
+              <TableWrap className="min-w-[520px]">
+                <thead>
+                  <tr><Th>วันที่</Th><Th className="text-right">ยอด</Th><Th>ธนาคาร</Th><Th>เลขบัญชี</Th><Th>สถานะ</Th><Th>หมายเหตุ</Th></tr>
+                </thead>
+                <tbody>
+                  {MEMBER_WITHDRAW_ROWS.map((w, i) => (
+                    <tr key={i} className="transition-colors hover:bg-neutral-50/70">
+                      <Td className="whitespace-nowrap text-xs">{w.date}</Td>
+                      <Td className="whitespace-nowrap text-right font-bold text-rose-600">−{fmtTHB(w.amount)}</Td>
+                      <Td><BankBadge code={w.bank_code} /></Td>
+                      <Td className="whitespace-nowrap font-mono text-xs">{w.account_no}</Td>
+                      <Td><StatusBadge status={w.status} /></Td>
+                      <Td className="text-xs text-neutral-500">{w.admin_note ?? <span className="text-neutral-300">—</span>}</Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </TableWrap>
+            </Panel>
+          </div>
+        </TabsContent>
+
+        {/* Tab 5: logins */}
+        <TabsContent value="logins" className="mt-4">
+          <Panel>
+            <TableWrap>
+              <thead>
+                <tr><Th>วันเวลา</Th><Th>IP Address</Th><Th>ผลลัพธ์</Th><Th>User Agent</Th></tr>
+              </thead>
+              <tbody>
+                {MEMBER_LOGINS.map((l, i) => (
+                  <tr key={i} className="transition-colors hover:bg-neutral-50/70">
+                    <Td className="whitespace-nowrap text-xs">{l.attempted_at}</Td>
+                    <Td className="font-mono text-xs">{l.ip_address}</Td>
+                    <Td>
+                      {l.success ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700">✅ สำเร็จ</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">❌ ไม่สำเร็จ</span>
+                      )}
+                    </Td>
+                    <Td className="text-xs text-neutral-500">{l.user_agent}</Td>
+                  </tr>
+                ))}
+              </tbody>
+            </TableWrap>
+          </Panel>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
