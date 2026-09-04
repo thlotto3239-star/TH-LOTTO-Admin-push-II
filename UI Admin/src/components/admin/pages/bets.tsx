@@ -16,6 +16,38 @@ export function BetsPage() {
   const [q, setQ] = React.useState<string>("");
   const [selectedBet, setSelectedBet] = React.useState<GlobalBet | null>(null);
 
+  // Live Supabase Sync
+  React.useEffect(() => {
+    fetch("/api/admin/data?resource=bets&limit=100")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data?.length) {
+          const mapped: GlobalBet[] = res.data.map((b: any, idx: number) => {
+            const mkt = MARKETS.find((m) => m.id === b.market_id || m.code === b.lottery_code) || MARKETS[0];
+            return {
+              id: b.id,
+              bet_no: "TK-" + (b.id.substring(0, 8).toUpperCase()),
+              member_id: b.user_id ? b.user_id.substring(0, 8) : "MB-GUEST",
+              member_name: "สมาชิก " + (b.user_id ? b.user_id.substring(0, 6) : "#" + (idx + 1)),
+              member_phone: "08x-xxx-" + (1000 + (idx % 9000)),
+              market_code: b.lottery_code || mkt.code,
+              market_name: mkt.name,
+              market_color: mkt.color,
+              bet_type: b.bet_type || "2BOTTOM",
+              numbers: b.numbers || "00",
+              amount: parseFloat(b.amount) || 0,
+              payout_rate: parseFloat(b.payout_rate) || 90,
+              payout_amount: parseFloat(b.payout_amount) || 0,
+              status: (b.status ? b.status.toUpperCase() : "PENDING") as any,
+              created_at: new Date(b.created_at).toLocaleString("th-TH"),
+            };
+          });
+          setRows(mapped);
+        }
+      })
+      .catch((e) => console.error("Could not fetch live bets:", e));
+  }, []);
+
   const filtered = rows
     .filter((r) => statusFilter === "ALL" || r.status === statusFilter)
     .filter((r) => marketFilter === "ALL" || r.market_code === marketFilter)

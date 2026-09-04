@@ -34,23 +34,54 @@ export function InstantOverviewPage() {
     return () => clearInterval(iv);
   }, []);
 
-  const s = INSTANT_STATS;
-  const net = s.total_bet_amount_today - s.total_payout_today;
-
-  const handleToggle = (code: string) => {
-    setBetTypes((prev) =>
-      prev.map((bt) => {
-        if (bt.code === code) {
-          const nextState = !bt.is_active;
-          toast({
-            title: nextState ? "เปิดรับแทงแล้ว" : "ปิดรับแทงชั่วคราว",
-            description: `${bt.name_th} (${bt.code}) เปลี่ยนสถานะเป็น ${nextState ? "เปิดใช้งาน" : "ปิดชั่วคราว"}`,
-          });
-          return { ...bt, is_active: nextState };
+  // Live Supabase Sync for 9 Bet Types
+  React.useEffect(() => {
+    fetch("/api/admin/data?resource=instant-bet-types")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data?.length) {
+          setBetTypes((prev) =>
+            prev.map((bt) => {
+              const live = res.data.find((d: any) => d.code === bt.code);
+              if (!live) return bt;
+              return {
+                ...bt,
+                payout_rate: parseFloat(live.rate) || bt.payout_rate,
+                is_active: live.is_active,
+              };
+            })
+          );
         }
-        return bt;
       })
+      .catch((e) => console.error("Could not fetch live instant bet types:", e));
+  }, []);
+
+  const handleToggle = async (code: string) => {
+    const target = betTypes.find((b) => b.code === code);
+    if (!target) return;
+    const nextState = !target.is_active;
+
+    setBetTypes((prev) =>
+      prev.map((bt) => (bt.code === code ? { ...bt, is_active: nextState } : bt))
     );
+
+    toast({
+      title: nextState ? "เปิดรับแทงแล้ว" : "ปิดรับแทงชั่วคราว",
+      description: `${target.name_th} (${target.code}) เปลี่ยนสถานะเป็น ${nextState ? "เปิดใช้งาน" : "ปิดชั่วคราว"}`,
+    });
+
+    try {
+      await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_instant_bet_type",
+          payload: { id: target.id, rate: target.payout_rate, is_active: nextState },
+        }),
+      });
+    } catch (e) {
+      console.error("Failed to sync toggle to Supabase:", e);
+    }
   };
 
   const handleOpenEdit = (bt: InstantBetTypeConfig) => {
@@ -59,7 +90,7 @@ export function InstantOverviewPage() {
     setEditMaxBet(bt.max_bet);
   };
 
-  const handleSaveRate = (e: React.FormEvent) => {
+  const handleSaveRate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingType) return;
     setBetTypes((prev) =>
@@ -71,7 +102,22 @@ export function InstantOverviewPage() {
       title: "บันทึกอัตราจ่ายสำเร็จ",
       description: `ปรับปรุง ${editingType.name_th} อัตราจ่ายเป็น ${editRate}x สูงสุด ${fmtTHB(editMaxBet)}`,
     });
+
+    const targetId = editingType.id;
     setEditingType(null);
+
+    try {
+      await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_instant_bet_type",
+          payload: { id: targetId, rate: editRate, is_active: editingType.is_active },
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to sync rate to Supabase:", err);
+    }
   };
 
   return (

@@ -240,6 +240,56 @@ export function MarketsPage() {
   const [tab, setTab] = React.useState<"ALL" | "GOV" | "FOREIGN" | "STOCK">("ALL");
   const [q, setQ] = React.useState("");
 
+  // Live Supabase Sync
+  React.useEffect(() => {
+    fetch("/api/admin/data?resource=markets")
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.success && res.data?.length) {
+          setRows((prev) =>
+            prev.map((m) => {
+              const live = res.data.find((d: any) => d.code === m.code);
+              if (!live) return m;
+              return {
+                ...m,
+                id: live.id,
+                close_before_minutes: live.close_minutes_before ?? m.close_before_minutes,
+                stream_url: live.stream_url ?? m.stream_url,
+                live_stream_url: live.stream_url ?? m.live_stream_url,
+                active: live.is_active ?? m.active,
+              };
+            })
+          );
+        }
+      })
+      .catch((err) => console.error("Could not load live markets:", err));
+  }, []);
+
+  const handleSaveMarket = async (updated: Market) => {
+    setRows((prev) => prev.map((r) => (r.code === updated.code ? updated : r)));
+    setEdit(null);
+    toast({ title: "บันทึกข้อมูลตลาดแล้ว", description: `${updated.name} (${updated.code}) อัปเดตเรียบร้อย` });
+
+    try {
+      await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_market",
+          payload: {
+            id: updated.id,
+            close_minutes_before: updated.close_before_minutes,
+            stream_url: updated.live_stream_url || updated.stream_url,
+            is_open: updated.active,
+            is_active: updated.active,
+          },
+        }),
+      });
+    } catch (e) {
+      console.error("Failed to sync market to Supabase:", e);
+    }
+  };
+
   const filtered = rows
     .filter((m) => {
       if (tab === "GOV") return m.kind === "GOVERNMENT" || m.code === "TH_GOV";
