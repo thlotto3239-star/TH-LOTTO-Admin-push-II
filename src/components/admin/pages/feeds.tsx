@@ -93,6 +93,28 @@ export function FeedsPage() {
   const [form, setForm] = React.useState<{ initial: NewsFeed } | null>(null);
   const [confirmDel, setConfirmDel] = React.useState<NewsFeed | null>(null);
 
+  React.useEffect(() => {
+    fetch("/api/admin/data?resource=content")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data?.announcements?.length > 0) {
+          setRows(
+            res.data.announcements.map((a: any, idx: number) => ({
+              id: String(a.id),
+              title: a.title || "ประกาศจากระบบ",
+              body: a.content || "",
+              type: "system" as const,
+              link_url: "",
+              is_active: Boolean(a.is_active),
+              display_order: Number(a.display_order || idx + 1),
+              created_at: a.created_at ? new Date(a.created_at).toLocaleDateString("th-TH") : "—",
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const sorted = [...rows].sort((a, b) => a.display_order - b.display_order);
 
   const move = (id: string, dir: -1 | 1) => {

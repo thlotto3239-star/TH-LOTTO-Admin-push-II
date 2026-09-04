@@ -101,6 +101,27 @@ export function SlidersPage() {
   const dragId = React.useRef<string | null>(null);
   const [dragOverId, setDragOverId] = React.useState<string | null>(null);
 
+  React.useEffect(() => {
+    fetch("/api/admin/data?resource=content")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data?.sliders?.length > 0) {
+          setRows(
+            res.data.sliders.map((s: any) => ({
+              id: String(s.id),
+              title: s.title || "",
+              image_url: s.image_url || "",
+              link_url: s.link_url || s.link || "",
+              display_order: Number(s.display_order || 1),
+              is_active: Boolean(s.is_active),
+              created_at: s.created_at || s.updated_at || "",
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const sorted = [...rows].sort((a, b) => a.display_order - b.display_order);
 
   const move = (id: string, dir: -1 | 1) => {

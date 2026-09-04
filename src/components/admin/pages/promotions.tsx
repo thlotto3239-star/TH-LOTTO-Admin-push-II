@@ -190,6 +190,43 @@ export function PromotionsPage() {
   const [form, setForm] = React.useState<{ initial: Promotion } | null>(null);
   const [confirmDel, setConfirmDel] = React.useState<Promotion | null>(null);
 
+  React.useEffect(() => {
+    fetch("/api/admin/data?resource=content")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data?.promotions?.length > 0) {
+          setRows(
+            res.data.promotions.map((p: any) => ({
+              id: String(p.id),
+              title: p.title || "",
+              description: p.description || "",
+              image_url: p.image_url || "",
+              bonus_rate: Number(p.bonus_rate || 0),
+              bonus_amount: Number(p.bonus_amount || 0),
+              min_deposit: Number(p.min_deposit || 0),
+              max_withdrawal: Number(p.max_withdrawal || 0),
+              turnover_multiplier: Number(p.turnover_multiplier || 1),
+              type: p.type || "percent",
+              allowed_game: p.allowed_game || "all",
+              badge_text: p.badge_text || "โปรโมชั่น",
+              background_color: p.background_color || "#10b981",
+              default_amount: Number(p.default_amount || 100),
+              target_view: p.target_view || "deposit",
+              is_active: Boolean(p.is_active),
+              line1: p.line1 || p.title || "",
+              line2: p.line2 || (Number(p.bonus_rate) > 0 ? `+${p.bonus_rate}%` : "พิเศษ"),
+              max_uses_per_user: Number(p.max_uses_per_user || 1),
+              max_uses_total: Number(p.max_uses_total || 1000),
+              max_uses_per_day: Number(p.max_uses_per_day || 100),
+              starts_at: p.starts_at || "",
+              expires_at: p.expires_at || "",
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="space-y-4">
       <PageHeader title="โปรโมชั่น" description={`ตารางโปรโมชั่น · ทั้งหมด ${rows.length} โปร · เปิดใช้งาน ${rows.filter((r) => r.is_active).length} โปร`}>
