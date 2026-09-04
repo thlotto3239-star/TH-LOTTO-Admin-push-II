@@ -13,13 +13,28 @@ import { MARKETS, BET_TYPES, BET_TYPE_LABEL, DAY_LABELS, fmtTHB, mktShort, type 
 import { cn } from "@/lib/utils";
 
 function MarketCard({ m, onEdit, onToggle }: { m: Market; onEdit: () => void; onToggle: (v: boolean) => void }) {
+  const [imgErr, setImgErr] = React.useState(false);
+  const logo = !imgErr && (m.logo_url || m.image_url);
+
   return (
     <Panel className="flex flex-col p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="flex size-11 items-center justify-center rounded-2xl text-[11px] font-black text-white" style={{ backgroundColor: m.color }}>
-            {mktShort(m.code)}
-          </span>
+          {logo ? (
+            <img
+              src={logo}
+              alt={m.name}
+              onError={() => setImgErr(true)}
+              className="size-11 rounded-2xl object-cover bg-white ring-1 ring-neutral-200/80 shrink-0 shadow-xs p-0.5"
+            />
+          ) : (
+            <span
+              className="flex size-11 items-center justify-center rounded-2xl text-[11px] font-black text-white shrink-0"
+              style={{ backgroundColor: m.color }}
+            >
+              {mktShort(m.code)}
+            </span>
+          )}
           <div>
             <p className="font-bold text-neutral-900">{m.name}</p>
             <div className="mt-1 flex flex-wrap items-center gap-1">
@@ -156,6 +171,9 @@ function EditMarketModal({ m, onClose, onSave }: { m: Market; onClose: () => voi
               <Field label="ลิงก์ถ่ายทอดสด (YouTube Live)">
                 <Input value={form.youtube_url ?? ""} onChange={(e) => set("youtube_url", e.target.value || null)} placeholder="https://youtube.com/live/..." className={inputCls} />
               </Field>
+              <Field label="ลิงก์โลโก้ตลาด (Logo URL)">
+                <Input value={form.logo_url ?? ""} onChange={(e) => set("logo_url", e.target.value || null)} placeholder="https://..." className={inputCls} />
+              </Field>
               <Field label="วันออกผลรางวัล (เลือกวัน อา–ส)">
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {DAY_LABELS.map((d, i) => {
@@ -253,9 +271,11 @@ export function MarketsPage() {
               return {
                 ...m,
                 id: live.id,
-                close_before_minutes: live.close_minutes_before ?? m.close_before_minutes,
-                stream_url: live.stream_url ?? m.stream_url,
-                live_stream_url: live.stream_url ?? m.live_stream_url,
+                name: live.name || m.name,
+                logo_url: live.logo_url ?? live.image_url ?? m.logo_url,
+                image_url: live.image_url ?? m.image_url,
+                close_minutes: live.close_minutes_before ?? m.close_minutes,
+                youtube_url: live.stream_url ?? m.youtube_url,
                 active: live.is_active ?? m.active,
               };
             })
@@ -278,8 +298,10 @@ export function MarketsPage() {
           action: "update_market",
           payload: {
             id: updated.id,
-            close_minutes_before: updated.close_before_minutes,
-            stream_url: updated.live_stream_url || updated.stream_url,
+            name: updated.name,
+            logo_url: updated.logo_url,
+            close_minutes_before: updated.close_minutes,
+            stream_url: updated.youtube_url,
             is_open: updated.active,
             is_active: updated.active,
           },

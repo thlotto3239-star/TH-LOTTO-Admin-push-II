@@ -404,10 +404,17 @@ export async function POST(req: NextRequest) {
 
     switch (action) {
       case "update_market": {
-        const { id, close_minutes_before, stream_url, is_open, is_active } = payload;
+        const { id, name, close_minutes_before, stream_url, logo_url, is_open, is_active } = payload;
+        const updateData: any = {};
+        if (name !== undefined) updateData.name = name;
+        if (close_minutes_before !== undefined) updateData.close_minutes_before = close_minutes_before;
+        if (stream_url !== undefined) updateData.stream_url = stream_url;
+        if (logo_url !== undefined) updateData.logo_url = logo_url;
+        if (is_open !== undefined) updateData.is_open = is_open;
+        if (is_active !== undefined) updateData.is_active = is_active;
         const { data, error } = await supabaseAdmin
           .from("lottery_markets")
-          .update({ close_minutes_before, stream_url, is_open, is_active })
+          .update(updateData)
           .eq("id", id)
           .select();
         if (error) throw error;

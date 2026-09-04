@@ -1,11 +1,11 @@
 // ─── TH-LOTTO Admin Panel — Mock Data ตามสเปกระบบเดิม (UI Demo) ──────────────
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-export const fmtTHB = (n: number) =>
-  "฿" + n.toLocaleString("th-TH", { maximumFractionDigits: 0 });
+export const fmtTHB = (n?: number | null) =>
+  "฿" + Number(n || 0).toLocaleString("th-TH", { maximumFractionDigits: 0 });
 
-export const fmtNum = (n: number, d = 0) =>
-  n.toLocaleString("th-TH", { maximumFractionDigits: d, minimumFractionDigits: d });
+export const fmtNum = (n?: number | null, d = 0) =>
+  Number(n || 0).toLocaleString("th-TH", { maximumFractionDigits: d, minimumFractionDigits: d });
 
 export const fmtDT = (iso: string) => {
   const d = new Date(iso);
@@ -385,6 +385,8 @@ export interface Market {
   hot: boolean;
   active: boolean;
   youtube_url: string | null;
+  logo_url?: string | null;
+  image_url?: string | null;
   rates: Record<BetType, number>;
   limits: { min_bet: number; max_bet: number; max_per_number: number };
 }
@@ -405,27 +407,27 @@ export const mktShort = (code: string): string => MKT_SHORT[code] ?? code.slice(
 
 // 21 ตลาดจริงบนฐานข้อมูล Supabase Production (ตามข้อ 2.2 ใน SYSTEM_ARCHITECTURE_MANUAL.md)
 export const MARKETS: Market[] = [
-  { id: "mkt-01", name: "หวยรัฐบาลไทย", code: "TH_GOV", color: "#0d9488", kind: "GOVERNMENT", draw_days: [1, 16], draw_time: "15:30", close_minutes: 20, popular: true, hot: true, active: true, youtube_url: "https://youtube.com/live/gdlive", rates: gRates, limits: { min_bet: 1, max_bet: 5000, max_per_number: 100000 } },
-  { id: "mkt-02", name: "ลาวพัฒนา", code: "LAO", color: "#be123c", kind: "OTHER", draw_days: [1, 3, 5], draw_time: "20:30", close_minutes: 10, popular: true, hot: true, active: true, youtube_url: "https://youtube.com/live/laoxyz", rates: sRates, limits: { min_bet: 1, max_bet: 2000, max_per_number: 30000 } },
-  { id: "mkt-03", name: "ฮานอยพิเศษ", code: "HANOI_SPECIAL", color: "#e11d48", kind: "OTHER", draw_days: [0, 1, 2, 3, 4, 5, 6], draw_time: "17:30", close_minutes: 20, popular: true, hot: false, active: true, youtube_url: "https://youtube.com/live/hanoispecial", rates: sRates, limits: { min_bet: 1, max_bet: 2000, max_per_number: 30000 } },
-  { id: "mkt-04", name: "ฮานอยปกติ", code: "HANOI", color: "#dc2626", kind: "OTHER", draw_days: [0, 1, 2, 3, 4, 5, 6], draw_time: "18:30", close_minutes: 20, popular: true, hot: false, active: true, youtube_url: "https://youtube.com/live/hanoixyz", rates: sRates, limits: { min_bet: 1, max_bet: 2000, max_per_number: 30000 } },
-  { id: "mkt-05", name: "ฮานอย VIP", code: "HANOI_VIP", color: "#991b1b", kind: "OTHER", draw_days: [0, 1, 2, 3, 4, 5, 6], draw_time: "19:30", close_minutes: 20, popular: true, hot: true, active: true, youtube_url: "https://youtube.com/live/hanoivip", rates: sRates, limits: { min_bet: 1, max_bet: 2000, max_per_number: 30000 } },
-  { id: "mkt-06", name: "หวยมาเลย์", code: "MALAY", color: "#287e0b", kind: "OTHER", draw_days: [0, 3, 6], draw_time: "18:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 2000, max_per_number: 30000 } },
-  { id: "mkt-07", name: "หุ้นนิเคอิเช้า", code: "NIKKEI_MORNING", color: "#7c3aed", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "09:30", close_minutes: 20, popular: true, hot: false, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
-  { id: "mkt-08", name: "หุ้นจีนเช้า", code: "CHINA_MORNING", color: "#ea580c", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "11:00", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
-  { id: "mkt-09", name: "หุ้นฮั่งเส็งเช้า", code: "HANGSENG_MORNING", color: "#c026d3", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "11:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
-  { id: "mkt-10", name: "หุ้นไต้หวัน", code: "STOCK_TAIWAN", color: "#0284c7", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "13:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
-  { id: "mkt-11", name: "หุ้นเกาหลี", code: "STOCK_KOREA", color: "#4f46e5", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "13:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
-  { id: "mkt-12", name: "หุ้นนิเคอิบ่าย", code: "NIKKEI_AFTERNOON", color: "#6d28d9", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "14:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
-  { id: "mkt-13", name: "หุ้นจีนบ่าย", code: "CHINA_AFTERNOON", color: "#c2410c", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "14:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
-  { id: "mkt-14", name: "หุ้นฮั่งเส็งบ่าย", code: "HANGSENG_AFTERNOON", color: "#db2777", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "15:00", close_minutes: 20, popular: true, hot: false, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
-  { id: "mkt-15", name: "หุ้นสิงคโปร์", code: "STOCK_SG", color: "#059669", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "17:00", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
-  { id: "mkt-16", name: "หุ้นอินเดีย", code: "STOCK_INDIA", color: "#2563eb", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "17:00", close_minutes: 20, popular: false, hot: true, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
-  { id: "mkt-17", name: "หุ้นอียิปต์", code: "STOCK_EGYPT", color: "#d97706", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "21:00", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
-  { id: "mkt-18", name: "หุ้นรัสเซีย", code: "STOCK_RUSSIA", color: "#475569", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "21:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
-  { id: "mkt-19", name: "หุ้นเยอรมัน", code: "STOCK_GERMANY", color: "#0891b2", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "22:00", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
-  { id: "mkt-20", name: "หุ้นอังกฤษ", code: "STOCK_ENGLAND", color: "#1e3a8a", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "22:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
-  { id: "mkt-21", name: "หวยหุ้นดาวน์โจนส์", code: "STOCK_DOWJONES", color: "#f59e0b", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "02:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "mkt-01", name: "หวยรัฐบาลไทย", code: "TH_GOV", color: "#0d9488", kind: "GOVERNMENT", draw_days: [1, 16], draw_time: "15:30", close_minutes: 20, popular: true, hot: true, active: true, youtube_url: "https://youtube.com/live/gdlive", logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/th_gov_official.png", rates: gRates, limits: { min_bet: 1, max_bet: 5000, max_per_number: 100000 } },
+  { id: "mkt-02", name: "ลาวพัฒนา", code: "LAO", color: "#be123c", kind: "OTHER", draw_days: [1, 3, 5], draw_time: "20:30", close_minutes: 10, popular: true, hot: true, active: true, youtube_url: "https://youtube.com/live/laoxyz", logo_url: "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/d3Nyjgtntlkei3MGYjuM/pub/fqW29ieijwwJQMBAwWoC.png", rates: sRates, limits: { min_bet: 1, max_bet: 2000, max_per_number: 30000 } },
+  { id: "mkt-03", name: "ฮานอยพิเศษ", code: "HANOI_SPECIAL", color: "#e11d48", kind: "OTHER", draw_days: [0, 1, 2, 3, 4, 5, 6], draw_time: "17:30", close_minutes: 20, popular: true, hot: false, active: true, youtube_url: "https://youtube.com/live/hanoispecial", logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781454312295.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 2000, max_per_number: 30000 } },
+  { id: "mkt-04", name: "ฮานอยปกติ", code: "HANOI", color: "#dc2626", kind: "OTHER", draw_days: [0, 1, 2, 3, 4, 5, 6], draw_time: "18:30", close_minutes: 20, popular: true, hot: false, active: true, youtube_url: "https://youtube.com/live/hanoixyz", logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781454321881.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 2000, max_per_number: 30000 } },
+  { id: "mkt-05", name: "ฮานอย VIP", code: "HANOI_VIP", color: "#991b1b", kind: "OTHER", draw_days: [0, 1, 2, 3, 4, 5, 6], draw_time: "19:30", close_minutes: 20, popular: true, hot: true, active: true, youtube_url: "https://youtube.com/live/hanoivip", logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781454321881.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 2000, max_per_number: 30000 } },
+  { id: "mkt-06", name: "หวยมาเลย์", code: "MALAY", color: "#287e0b", kind: "OTHER", draw_days: [0, 3, 6], draw_time: "18:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781525171823.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 2000, max_per_number: 30000 } },
+  { id: "mkt-07", name: "หุ้นนิเคอิเช้า", code: "NIKKEI_MORNING", color: "#7c3aed", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "09:30", close_minutes: 20, popular: true, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781452606206.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "mkt-08", name: "หุ้นจีนเช้า", code: "CHINA_MORNING", color: "#ea580c", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "11:00", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781452908429.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "mkt-09", name: "หุ้นฮั่งเส็งเช้า", code: "HANGSENG_MORNING", color: "#c026d3", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "11:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781454049603.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "mkt-10", name: "หุ้นไต้หวัน", code: "STOCK_TAIWAN", color: "#0284c7", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "13:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781452679787.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "mkt-11", name: "หุ้นเกาหลี", code: "STOCK_KOREA", color: "#4f46e5", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "13:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781452733510.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "mkt-12", name: "หุ้นนิเคอิบ่าย", code: "NIKKEI_AFTERNOON", color: "#6d28d9", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "14:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781453833260.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "mkt-13", name: "หุ้นจีนบ่าย", code: "CHINA_AFTERNOON", color: "#c2410c", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "14:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781452899201.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "mkt-14", name: "หุ้นฮั่งเส็งบ่าย", code: "HANGSENG_AFTERNOON", color: "#db2777", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "15:00", close_minutes: 20, popular: true, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781454082055.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "mkt-15", name: "หุ้นสิงคโปร์", code: "STOCK_SG", color: "#059669", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "17:00", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781453140808.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "mkt-16", name: "หุ้นอินเดีย", code: "STOCK_INDIA", color: "#2563eb", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "17:00", close_minutes: 20, popular: false, hot: true, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781453238397.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "mkt-17", name: "หุ้นอียิปต์", code: "STOCK_EGYPT", color: "#d97706", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "21:00", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781453327973.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "mkt-18", name: "หุ้นรัสเซีย", code: "STOCK_RUSSIA", color: "#475569", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "21:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781453281694.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "mkt-19", name: "หุ้นเยอรมัน", code: "STOCK_GERMANY", color: "#0891b2", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "22:00", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781453342469.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "mkt-20", name: "หุ้นอังกฤษ", code: "STOCK_ENGLAND", color: "#1e3a8a", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "22:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781453384284.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "mkt-21", name: "หวยหุ้นดาวน์โจนส์", code: "STOCK_DOWJONES", color: "#f59e0b", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "02:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781454167391.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
 ];
 
 export const DAY_LABELS = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
@@ -454,26 +456,32 @@ export const RESTRICTED_NUMBERS: RestrictedNumber[] = [
 
 // ── Instant 1-Min Bet Types (public.instant_bet_types — ข้อ 3.2 ในคู่มือ) ────
 export interface InstantBetTypeConfig {
+  id?: string;
   code: string;
   name: string;
+  name_th?: string;
   rate: number;
+  payout_rate?: number;
   min_digits: number;
   max_digits: number;
+  min_bet?: number;
+  max_bet?: number;
+  digit_length?: number;
   is_positioned: boolean;
   display_order: number;
   is_active: boolean;
 }
 
 export const INSTANT_BET_TYPES: InstantBetTypeConfig[] = [
-  { code: "2top", name: "2 ตัวบน", rate: 90, min_digits: 2, max_digits: 2, is_positioned: false, display_order: 1, is_active: true },
-  { code: "2bottom", name: "2 ตัวล่าง", rate: 90, min_digits: 2, max_digits: 2, is_positioned: false, display_order: 2, is_active: true },
-  { code: "3top", name: "3 ตัวบน", rate: 900, min_digits: 3, max_digits: 3, is_positioned: false, display_order: 3, is_active: true },
-  { code: "3toad", name: "3 ตัวโต๊ด", rate: 180, min_digits: 3, max_digits: 3, is_positioned: false, display_order: 4, is_active: true },
-  { code: "3front", name: "3 ตัวหน้า", rate: 900, min_digits: 3, max_digits: 3, is_positioned: false, display_order: 5, is_active: true },
-  { code: "3back", name: "3 ตัวท้าย", rate: 900, min_digits: 3, max_digits: 3, is_positioned: false, display_order: 6, is_active: true },
-  { code: "6straight", name: "6 ตัวตรง", rate: 15000, min_digits: 6, max_digits: 6, is_positioned: false, display_order: 7, is_active: true },
-  { code: "pin_top", name: "ปักหลักบน", rate: 9.9, min_digits: 0, max_digits: 0, is_positioned: true, display_order: 8, is_active: true },
-  { code: "pin_bottom", name: "ปักหลักล่าง", rate: 9.9, min_digits: 0, max_digits: 0, is_positioned: true, display_order: 9, is_active: true },
+  { code: "2top", name: "2 ตัวบน", name_th: "2 ตัวบน", rate: 90, payout_rate: 90, min_digits: 2, max_digits: 2, digit_length: 2, min_bet: 1, max_bet: 50000, is_positioned: false, display_order: 1, is_active: true },
+  { code: "2bottom", name: "2 ตัวล่าง", name_th: "2 ตัวล่าง", rate: 90, payout_rate: 90, min_digits: 2, max_digits: 2, digit_length: 2, min_bet: 1, max_bet: 50000, is_positioned: false, display_order: 2, is_active: true },
+  { code: "3top", name: "3 ตัวบน", name_th: "3 ตัวบน", rate: 900, payout_rate: 900, min_digits: 3, max_digits: 3, digit_length: 3, min_bet: 1, max_bet: 30000, is_positioned: false, display_order: 3, is_active: true },
+  { code: "3toad", name: "3 ตัวโต๊ด", name_th: "3 ตัวโต๊ด", rate: 180, payout_rate: 180, min_digits: 3, max_digits: 3, digit_length: 3, min_bet: 1, max_bet: 30000, is_positioned: false, display_order: 4, is_active: true },
+  { code: "3front", name: "3 ตัวหน้า", name_th: "3 ตัวหน้า", rate: 900, payout_rate: 900, min_digits: 3, max_digits: 3, digit_length: 3, min_bet: 1, max_bet: 30000, is_positioned: false, display_order: 5, is_active: true },
+  { code: "3back", name: "3 ตัวท้าย", name_th: "3 ตัวท้าย", rate: 900, payout_rate: 900, min_digits: 3, max_digits: 3, digit_length: 3, min_bet: 1, max_bet: 30000, is_positioned: false, display_order: 6, is_active: true },
+  { code: "6straight", name: "6 ตัวตรง", name_th: "6 ตัวตรง", rate: 15000, payout_rate: 15000, min_digits: 6, max_digits: 6, digit_length: 6, min_bet: 1, max_bet: 10000, is_positioned: false, display_order: 7, is_active: true },
+  { code: "pin_top", name: "ปักหลักบน", name_th: "ปักหลักบน", rate: 9.9, payout_rate: 9.9, min_digits: 1, max_digits: 1, digit_length: 1, min_bet: 1, max_bet: 100000, is_positioned: true, display_order: 8, is_active: true },
+  { code: "pin_bottom", name: "ปักหลักล่าง", name_th: "ปักหลักล่าง", rate: 9.9, payout_rate: 9.9, min_digits: 1, max_digits: 1, digit_length: 1, min_bet: 1, max_bet: 100000, is_positioned: true, display_order: 9, is_active: true },
 ];
 
 // ── Global Bets / Tickets (public.bets — 417 แถวในระบบจริง) ─────────────────
@@ -529,7 +537,7 @@ export interface DrawSchedule {
 export const DRAW_SCHEDULES: DrawSchedule[] = [
   { id: "ds-01", market_name: "หุ้นฮั่งเส็งบ่าย", market_code: "HANGSENG_AFTERNOON", market_color: "#db2777", kind: "OTHER", draw_date: "04/09/2569", close_time: "14:40", status: "OPEN", total_bet: 214800, winners: 0, total_payout: 0 },
   { id: "ds-02", market_name: "ฮานอยพิเศษ", market_code: "HANOI_SPECIAL", market_color: "#e11d48", kind: "OTHER", draw_date: "04/09/2569", close_time: "17:10", status: "OPEN", total_bet: 142500, winners: 0, total_payout: 0 },
-  { id: "ds-03", market_name: "ฮานอยปกติ", market_code: "HANOI", market_code_color: "#dc2626", kind: "OTHER", draw_date: "04/09/2569", close_time: "18:10", status: "OPEN", total_bet: 289400, winners: 0, total_payout: 0 },
+  { id: "ds-03", market_name: "ฮานอยปกติ", market_code: "HANOI", market_color: "#dc2626", kind: "OTHER", draw_date: "04/09/2569", close_time: "18:10", status: "OPEN", total_bet: 289400, winners: 0, total_payout: 0 },
   { id: "ds-04", market_name: "ฮานอย VIP", market_code: "HANOI_VIP", market_color: "#991b1b", kind: "OTHER", draw_date: "04/09/2569", close_time: "19:10", status: "OPEN", total_bet: 183200, winners: 0, total_payout: 0 },
   { id: "ds-05", market_name: "ลาวพัฒนา", market_code: "LAO", market_color: "#be123c", kind: "OTHER", draw_date: "04/09/2569", close_time: "20:20", status: "OPEN", total_bet: 312000, winners: 0, total_payout: 0 },
   { id: "ds-06", market_name: "หวยรัฐบาลไทย", market_code: "TH_GOV", market_color: "#0d9488", kind: "GOVERNMENT", draw_date: "16/09/2569", close_time: "15:10", status: "AWARDING", total_bet: 502700, winners: 0, total_payout: 0 },
@@ -800,7 +808,7 @@ export const MEMBER_WITHDRAW_ROWS: MemberWithdrawRow[] = [
 // ── Admin notifications (กระดิ่ง) ────────────────────────────────────────────
 export interface AdminNotification {
   id: string; title: string; message: string; type: "info" | "warning" | "success"; date: string; read: boolean;
-  target_page?: AdminPage;
+  target_page?: string;
 }
 
 export const ADMIN_NOTIFS: AdminNotification[] = [
