@@ -100,6 +100,18 @@ function WalletModal({ member, onClose, onAdjust }: { member: Member; onClose: (
   );
 }
 
+function normalizeBank(b: string | null | undefined): string {
+  if (!b) return "OTHER";
+  if (b.includes("กสิกร") || b.toUpperCase() === "KBANK") return "KBANK";
+  if (b.includes("ไทยพาณิชย์") || b.toUpperCase() === "SCB") return "SCB";
+  if (b.includes("กรุงเทพ") || b.toUpperCase() === "BBL") return "BBL";
+  if (b.includes("กรุงไทย") || b.toUpperCase() === "KTB") return "KTB";
+  if (b.includes("กรุงศรี") || b.toUpperCase() === "BAY") return "BAY";
+  if (b.includes("ทหารไทย") || b.toUpperCase() === "TTB") return "TTB";
+  if (b.includes("ออมสิน") || b.toUpperCase() === "GSB") return "GSB";
+  return b;
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 export function MembersPage() {
   const { openMember } = useAdminNav();
@@ -110,6 +122,103 @@ export function MembersPage() {
   const [page, setPage] = React.useState(1);
   const [edit, setEdit] = React.useState<Member | null>(null);
   const [wallet, setWallet] = React.useState<Member | null>(null);
+
+  const fetchMembers = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/data?resource=members");
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        const mapped: Member[] = json.data.map((p: any) => {
+          const w = Array.isArray(p.wallets) ? p.wallets[0] : p.wallets;
+          return {
+            id: p.id,
+            member_id: p.member_id || p.id.slice(0, 8).toUpperCase(),
+            full_name: p.full_name || "ไม่ระบุชื่อ",
+            phone: p.phone || "-",
+            bank_code: normalizeBank(p.bank_name),
+            bank_account_number: p.bank_account_number || "-",
+            bank_account_name: p.bank_account_name || p.full_name || "-",
+            vip_level: typeof p.vip_level === "number" ? p.vip_level : 0,
+            status: (p.status as Member["status"]) || "active",
+            balance: Number(w?.balance || 0),
+            commission_balance: Number(w?.commission_balance || 0),
+            total_bets: 0,
+            total_won: 0,
+            created_at: p.created_at || new Date().toISOString(),
+          };
+        });
+        setRows(mapped);
+      }
+    } catch (e) {
+      console.error("Failed to load members:", e);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
+
+  const handleSaveMember = async (m: Member) => {
+    setRows((p) => p.map((r) => (r.id === m.id ? m : r)));
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_member",
+          payload: {
+            id: m.id,
+            full_name: m.full_name,
+            phone: m.phone,
+            bank_name: m.bank_code,
+            bank_account_number: m.bank_account_number,
+            bank_account_name: m.bank_account_name,
+            status: m.status,
+            vip_level: m.vip_level,
+          },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: "บันทึกข้อมูลสมาชิกแล้ว", description: `อัปเดตสมาชิก ${m.member_id} ในระบบเรียบร้อย` });
+        fetchMembers();
+      } else {
+        toast({ title: "เกิดข้อผิดพลาด", description: json.error, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "เชื่อมต่อล้มเหลว", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleAdjustWallet = async (id: string, delta: number, note: string) => {
+    setRows((p) => p.map((r) => (r.id === id ? { ...r, balance: Math.max(0, r.balance + delta) } : r)));
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "adjust_wallet",
+          payload: {
+            user_id: id,
+            delta,
+            note,
+          },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({
+          title: delta > 0 ? "เพิ่มยอดกระเป๋าแล้ว" : "ลดยอดกระเป๋าแล้ว",
+          description: `${fmtTHB(Math.abs(delta))} · ${note}`,
+        });
+        fetchMembers();
+      } else {
+        toast({ title: "เกิดข้อผิดพลาด", description: json.error, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "เชื่อมต่อล้มเหลว", description: e.message, variant: "destructive" });
+    }
+  };
 
   const exportCsv = () => {
     const headers = ["MemberID", "FullName", "Phone", "Bank", "AccountNo", "VIP", "Status", "Balance", "TotalBets", "TotalWon", "CreatedAt"];
@@ -142,7 +251,7 @@ export function MembersPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="จัดการสมาชิก" description={`ข้อมูลสมาชิกและกระเป๋าเงิน · ทั้งหมด ${rows.length} คน · 20 คนต่อหน้า`}>
+      <PageHeader title="จัดการสมาชิก" description={`ข้อมูลสมาชิกและกระเป๋าเงินจริง · ทั้งหมด ${rows.length} คน · 20 คนต่อหน้า`}>
         <Btn variant="outline" className="rounded-full" onClick={exportCsv}><Download className="size-4" /> ส่งออก CSV</Btn>
       </PageHeader>
 
@@ -210,15 +319,12 @@ export function MembersPage() {
         <Pagination page={page} pages={pages} onChange={setPage} />
       </Panel>
 
-      {edit ? <EditModal member={edit} onClose={() => setEdit(null)} onSave={(m) => setRows((p) => p.map((r) => (r.id === m.id ? m : r)))} /> : null}
+      {edit ? <EditModal member={edit} onClose={() => setEdit(null)} onSave={handleSaveMember} /> : null}
       {wallet ? (
         <WalletModal
           member={rows.find((r) => r.id === wallet.id) ?? wallet}
           onClose={() => setWallet(null)}
-          onAdjust={(id, delta, note) => {
-            setRows((p) => p.map((r) => (r.id === id ? { ...r, balance: Math.max(0, r.balance + delta) } : r)));
-            toast({ title: delta > 0 ? "เพิ่มยอดกระเป๋าแล้ว" : "ลดยอดกระเป๋าแล้ว", description: `${fmtTHB(Math.abs(delta))} · ${note}` });
-          }}
+          onAdjust={handleAdjustWallet}
         />
       ) : null}
     </div>

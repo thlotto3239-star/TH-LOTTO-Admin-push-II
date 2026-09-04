@@ -32,14 +32,21 @@ function SlipModal({ req, onClose }: { req: DepositReq | null; onClose: () => vo
             <div className="flex justify-between gap-3"><span className="text-neutral-400">ธนาคาร</span><BankBadge code={req.member.bank_code} /></div>
             <div className="flex justify-between gap-3"><span className="text-neutral-400">เวลาโอน</span><span className="font-medium text-neutral-800">{String(t.getHours()).padStart(2, "0")}:{String(t.getMinutes()).padStart(2, "0")} น.</span></div>
             <div className="flex justify-between gap-3"><span className="text-neutral-400">รหัสอ้างอิง</span><span className="font-mono text-xs text-neutral-500">FT{t.getTime().toString().slice(-9)}</span></div>
-            <div className="mt-2 flex items-center justify-center rounded-xl border border-dashed border-neutral-300 bg-neutral-50 py-6">
-              <div className="grid grid-cols-7 gap-0.5">
-                {Array.from({ length: 21 }).map((_, i) => (
-                  <span key={i} className={cn("size-2 rounded-[2px]", (i * 7 + req.amount) % 3 === 0 ? "bg-neutral-800" : "bg-transparent")} />
-                ))}
+            {req.slip_url ? (
+              <div className="mt-2 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900/5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={req.slip_url} alt="สลิปโอนเงินจริง" className="max-h-80 w-full object-contain" />
               </div>
-            </div>
-            <p className="text-center text-[10px] text-neutral-400">ภาพสลิปจาก slip_url (ตัวอย่าง UI)</p>
+            ) : (
+              <div className="mt-2 flex items-center justify-center rounded-xl border border-dashed border-neutral-300 bg-neutral-50 py-6">
+                <div className="grid grid-cols-7 gap-0.5">
+                  {Array.from({ length: 21 }).map((_, i) => (
+                    <span key={i} className={cn("size-2 rounded-[2px]", (i * 7 + req.amount) % 3 === 0 ? "bg-neutral-800" : "bg-transparent")} />
+                  ))}
+                </div>
+              </div>
+            )}
+            <p className="text-center text-[10px] text-neutral-400">{req.slip_url ? "สลิปจริงจาก Supabase Storage" : "ไม่มีภาพสลิปแนบมา"}</p>
           </div>
         </div>
       </DialogContent>
@@ -134,10 +141,45 @@ function ActionModal({
 export function DepositsPage() {
   const { toast } = useToast();
   const [rows, setRows] = React.useState<DepositReq[]>(DEPOSITS);
-  const [tab, setTab] = React.useState("PENDING");
+  const [tab, setTab] = React.useState("ALL");
   const [q, setQ] = React.useState("");
   const [slip, setSlip] = React.useState<DepositReq | null>(null);
   const [action, setAction] = React.useState<{ req: DepositReq; mode: "approve" | "reject" } | null>(null);
+
+  const fetchDeposits = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/data?resource=deposits");
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        const mapped: DepositReq[] = json.data.map((d: any) => ({
+          id: d.id,
+          created_at: d.created_at,
+          amount: Number(d.amount),
+          status: d.status as DepositReq["status"],
+          promo_code: d.promo_code,
+          slip_url: d.slip_url,
+          admin_note: d.admin_note,
+          approved_at: d.approved_at,
+          approver_name: d.approved_by ? "Admin" : null,
+          member: {
+            full_name: d.profiles?.full_name || "ไม่ระบุชื่อ",
+            member_id: d.profiles?.member_id || (d.user_id ? d.user_id.slice(0, 8) : "MB-000"),
+            phone: d.profiles?.phone || "-",
+            bank_code: d.profiles?.bank_name || "KBANK",
+            bank_account_number: d.profiles?.bank_account_number || "-",
+            bank_account_name: d.profiles?.bank_account_name || d.profiles?.full_name || "-",
+          },
+        }));
+        setRows(mapped);
+      }
+    } catch (e) {
+      console.error("Failed to load deposits:", e);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchDeposits();
+  }, [fetchDeposits]);
 
   const counts = {
     PENDING: rows.filter((r) => r.status === "PENDING").length,
@@ -157,9 +199,24 @@ export function DepositsPage() {
       );
     });
 
-  const update = (id: string, status: "APPROVED" | "REJECTED", note: string) => {
+  const update = async (id: string, status: "APPROVED" | "REJECTED", note: string) => {
     setRows((p) => p.map((r) => (r.id === id ? { ...r, status, admin_note: note, approved_at: new Date().toISOString(), approver_name: "Owner" } : r)));
-    toast({ title: status === "APPROVED" ? "อนุมัติรายการฝากแล้ว" : "ปฏิเสธรายการแล้ว", description: `RPC admin_${status === "APPROVED" ? "approve" : "reject"}_deposit เรียกสำเร็จ (ตัวอย่าง)` });
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update_deposit", payload: { id, status, admin_note: note } }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: status === "APPROVED" ? "อนุมัติรายการฝากแล้ว" : "ปฏิเสธรายการแล้ว", description: `อัปเดตสถานะ Supabase เรียบร้อย` });
+        fetchDeposits();
+      } else {
+        toast({ title: "เกิดข้อผิดพลาด", description: json.error, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "เกิดข้อผิดพลาดในการเชื่อมต่อ", description: e.message, variant: "destructive" });
+    }
   };
 
   const exportCsv = () => {

@@ -80,7 +80,27 @@ export async function GET(req: NextRequest) {
       case "deposits": {
         const { data, error } = await supabaseAdmin
           .from("deposit_requests")
-          .select("*")
+          .select(`
+            id,
+            user_id,
+            amount,
+            slip_url,
+            status,
+            admin_note,
+            created_at,
+            updated_at,
+            promo_code,
+            approved_by,
+            approved_at,
+            profiles!deposit_requests_profile_fkey (
+              full_name,
+              member_id,
+              phone,
+              bank_name,
+              bank_account_number,
+              bank_account_name
+            )
+          `)
           .order("created_at", { ascending: false });
         if (error) throw error;
         return NextResponse.json({ success: true, data });
@@ -89,7 +109,25 @@ export async function GET(req: NextRequest) {
       case "withdrawals": {
         const { data, error } = await supabaseAdmin
           .from("withdraw_requests")
-          .select("*")
+          .select(`
+            id,
+            user_id,
+            amount,
+            status,
+            admin_note,
+            created_at,
+            updated_at,
+            approved_by,
+            approved_at,
+            profiles!withdraw_requests_profile_fkey (
+              full_name,
+              member_id,
+              phone,
+              bank_name,
+              bank_account_number,
+              bank_account_name
+            )
+          `)
           .order("created_at", { ascending: false });
         if (error) throw error;
         return NextResponse.json({ success: true, data });
@@ -137,12 +175,15 @@ export async function GET(req: NextRequest) {
             status,
             announced_at,
             lottery_markets (
+              id,
               name,
-              code
+              code,
+              color,
+              category
             )
           `)
           .order("draw_date", { ascending: false })
-          .limit(50);
+          .limit(100);
         if (error) throw error;
         return NextResponse.json({ success: true, data });
       }
@@ -235,6 +276,113 @@ export async function POST(req: NextRequest) {
           .eq("id", id);
         if (error) throw error;
         return NextResponse.json({ success: true });
+      }
+
+      case "update_deposit": {
+        const { id, status, admin_note } = payload;
+        const { data: dep, error: depErr } = await supabaseAdmin
+          .from("deposit_requests")
+          .select("user_id, amount, status")
+          .eq("id", id)
+          .single();
+        if (depErr) throw depErr;
+
+        const { data, error } = await supabaseAdmin
+          .from("deposit_requests")
+          .update({
+            status,
+            admin_note,
+            approved_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", id)
+          .select();
+        if (error) throw error;
+
+        if (status === "APPROVED" && dep.status !== "APPROVED") {
+          const { data: w } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", dep.user_id).single();
+          if (w) {
+            const newBal = Number(w.balance) + Number(dep.amount);
+            await supabaseAdmin.from("wallets").update({ balance: newBal, updated_at: new Date().toISOString() }).eq("user_id", dep.user_id);
+            await supabaseAdmin.from("transactions").insert([{
+              user_id: dep.user_id,
+              type: "DEPOSIT",
+              amount: Number(dep.amount),
+              status: "COMPLETED",
+              reference_id: id,
+              note: admin_note || "ฝากเงินสำเร็จ (อนุมัติผ่านแผงควบคุม)",
+              balance_after: newBal,
+            }]).catch(() => {});
+          }
+        }
+        return NextResponse.json({ success: true, data });
+      }
+
+      case "update_member": {
+        const { id, full_name, phone, bank_name, bank_account_number, bank_account_name, status, vip_level } = payload;
+        const { data, error } = await supabaseAdmin
+          .from("profiles")
+          .update({
+            full_name,
+            phone,
+            bank_name,
+            bank_account_number,
+            bank_account_name,
+            status,
+            vip_level: String(vip_level),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", id)
+          .select();
+        if (error) throw error;
+        return NextResponse.json({ success: true, data });
+      }
+
+      case "adjust_wallet": {
+        const { user_id, delta, note } = payload;
+        const { data: w, error: wErr } = await supabaseAdmin
+          .from("wallets")
+          .select("balance")
+          .eq("user_id", user_id)
+          .single();
+        if (wErr) throw wErr;
+        const newBal = Math.max(0, Number(w.balance) + Number(delta));
+        const { data, error } = await supabaseAdmin
+          .from("wallets")
+          .update({ balance: newBal, updated_at: new Date().toISOString() })
+          .eq("user_id", user_id)
+          .select();
+        if (error) throw error;
+        await supabaseAdmin.from("transactions").insert([{
+          user_id,
+          type: delta > 0 ? "ADMIN_ADJUST_ADD" : "ADMIN_ADJUST_SUB",
+          amount: Math.abs(delta),
+          status: "COMPLETED",
+          note: note || (delta > 0 ? "เพิ่มยอดกระเป๋าโดยแอดมิน" : "ลดยอดกระเป๋าโดยแอดมิน"),
+          balance_after: newBal,
+        }]).catch(() => {});
+        return NextResponse.json({ success: true, data, balance: newBal });
+      }
+
+      case "record_result": {
+        const { market_id, draw_date, result_main, result_3top, result_2top, result_2bottom, result_3front, result_3bottom } = payload;
+        const { data, error } = await supabaseAdmin
+          .from("lottery_results")
+          .upsert([{
+            market_id,
+            draw_date,
+            result_main,
+            result_3top,
+            result_2top,
+            result_2bottom,
+            result_3front,
+            result_3bottom,
+            status: "SETTLED",
+            announced_at: new Date().toISOString(),
+          }], { onConflict: "market_id,draw_date" })
+          .select();
+        if (error) throw error;
+        return NextResponse.json({ success: true, data });
       }
 
       default:
