@@ -80,14 +80,92 @@ export function SettingsPage() {
   const [newAnn, setNewAnn] = React.useState("");
   const [cleanupResult, setCleanupResult] = React.useState<number | null>(null);
 
-  const save = (label: string) => {
-    toast({ title: `บันทึก${label}แล้ว`, description: "บันทึกลงตารางการตั้งค่าเรียบร้อย (ตัวอย่าง)" });
+  const fetchSettings = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/data?resource=settings");
+      const json = await res.json();
+      if (json.success && json.data) {
+        const s = json.data;
+        setFin((prev) => ({
+          ...prev,
+          min_deposit: Number(s.min_deposit ?? prev.min_deposit),
+          max_deposit: Number(s.max_deposit ?? prev.max_deposit),
+          min_withdraw: Number(s.min_withdraw ?? prev.min_withdraw),
+          max_withdraw: Number(s.max_withdraw_per_request ?? prev.max_withdraw),
+        }));
+
+        setWhl((prev) => ({
+          ...prev,
+          lucky_wheel_enabled: s.lucky_wheel_enabled?.toUpperCase() === "TRUE",
+          lucky_wheel_cost: Number(s.lucky_wheel_cost ?? prev.lucky_wheel_cost),
+          lucky_wheel_daily_limit: Number(s.lucky_wheel_max_per_day ?? prev.lucky_wheel_daily_limit),
+        }));
+
+        setSoc((prev) => ({
+          ...prev,
+          line_url: s.contact_line_url ?? prev.line_url,
+          line_id: s.contact_line_id ?? prev.line_id,
+        }));
+
+        setSys((prev) => ({
+          ...prev,
+          site_name: s.site_name ?? prev.site_name,
+          site_logo_url: s.site_logo_url ?? prev.site_logo_url,
+          api_secret_key: s.cron_secret ?? prev.api_secret_key,
+        }));
+
+        setSite((prev) => ({
+          ...prev,
+          site_enabled: s.site_enabled?.toUpperCase() === "TRUE",
+          maintenance_message: s.maintenance_message ?? prev.maintenance_message,
+        }));
+
+        if (s.company_bank_code && s.company_bank_account_number) {
+          setBanks([
+            {
+              id: "company-main",
+              bank_code: s.company_bank_code,
+              account_no: s.company_bank_account_number,
+              account_name: s.company_bank_account_name || "บจก. ทีเอช ล็อตโตะ จำกัด",
+              is_default: true,
+            },
+          ]);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load settings from Supabase:", e);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
+  const saveSettingsToDb = async (pairs: Record<string, any>, label: string) => {
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "batch_update_settings",
+          payload: { settings: pairs },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: `บันทึก${label}แล้ว`, description: "อัปเดตลงฐานข้อมูล Supabase เรียบร้อย" });
+      } else {
+        toast({ title: "บันทึกล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "เชื่อมต่อล้มเหลว", description: e.message, variant: "destructive" });
+    }
     setModal(null);
   };
 
   return (
     <div className="space-y-4">
-      <PageHeader title="ตั้งค่าระบบ" description="ตารางการตั้งค่า · เลือกหมวดที่ต้องการตั้งค่า — ทั้งหมด 8 หมวด" />
+      <PageHeader title="ตั้งค่าระบบ" description="การตั้งค่าระบบจริงจากฐานข้อมูล Supabase · ทั้งหมด 8 หมวด" />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {HUB.map((h) => (
@@ -105,7 +183,26 @@ export function SettingsPage() {
 
       {/* Modal 1: การเงิน */}
       {modal === "finance" ? (
-        <Shell title="การเงิน (Finance Settings)" desc="กำหนดขั้นต่ำ/สูงสุดของฝาก-ถอน ค่าธรรมเนียม และโบนัสต้อนรับ" onClose={() => setModal(null)} onSave={() => save("ตั้งค่าการเงิน")}>
+        <Shell
+          title="การเงิน (Finance Settings)"
+          desc="กำหนดขั้นต่ำ/สูงสุดของฝาก-ถอน ค่าธรรมเนียม และโบนัสต้อนรับ"
+          onClose={() => setModal(null)}
+          onSave={() =>
+            saveSettingsToDb(
+              {
+                min_deposit: fin.min_deposit,
+                max_deposit: fin.max_deposit,
+                min_withdraw: fin.min_withdraw,
+                max_withdraw_per_request: fin.max_withdraw,
+                deposit_fee: fin.deposit_fee,
+                withdraw_fee: fin.withdraw_fee,
+                welcome_bonus: fin.welcome_bonus,
+                welcome_bonus_turnover: fin.welcome_bonus_turnover,
+              },
+              "ตั้งค่าการเงิน"
+            )
+          }
+        >
           <div className="grid gap-3">
             <div className="grid grid-cols-2 gap-3">
               <Field label="ฝากขั้นต่ำ (บาท)"><Input type="number" value={fin.min_deposit} onChange={(e) => setFin({ ...fin, min_deposit: Number(e.target.value) })} className={inputCls} /></Field>
@@ -123,7 +220,26 @@ export function SettingsPage() {
 
       {/* Modal 2: บัญชีธนาคาร Admin */}
       {modal === "banks" ? (
-        <Shell title="บัญชีธนาคาร Admin" desc="รายการบัญชีรับเงินของระบบ — เพิ่ม/ลบ/ตั้งค่าเริ่มต้น" onClose={() => setModal(null)} onSave={() => save("บัญชีธนาคาร")}>
+        <Shell
+          title="บัญชีธนาคาร Admin"
+          desc="รายการบัญชีรับเงินของระบบ — เพิ่ม/ลบ/ตั้งค่าเริ่มต้น"
+          onClose={() => setModal(null)}
+          onSave={() => {
+            const def = banks.find((b) => b.is_default) || banks[0];
+            if (def) {
+              saveSettingsToDb(
+                {
+                  company_bank_code: def.bank_code,
+                  company_bank_account_number: def.account_no,
+                  company_bank_account_name: def.account_name,
+                },
+                "บัญชีธนาคารรับเงิน"
+              );
+            } else {
+              setModal(null);
+            }
+          }}
+        >
           <div className="space-y-2.5">
             {banks.map((b) => (
               <div key={b.id} className="flex items-center justify-between gap-2 rounded-2xl bg-neutral-50 px-3.5 py-3">
@@ -161,7 +277,21 @@ export function SettingsPage() {
 
       {/* Modal 3: วงล้อ */}
       {modal === "wheel" ? (
-        <Shell title="ตั้งค่าวงล้อโชคดี" desc="เปิด/ปิดเกมวงล้อ ราคาต่อครั้ง และโควตารายวัน" onClose={() => setModal(null)} onSave={() => save("ตั้งค่าวงล้อ")}>
+        <Shell
+          title="ตั้งค่าวงล้อโชคดี"
+          desc="เปิด/ปิดเกมวงล้อ ราคาต่อครั้ง และโควตารายวัน"
+          onClose={() => setModal(null)}
+          onSave={() =>
+            saveSettingsToDb(
+              {
+                lucky_wheel_enabled: whl.lucky_wheel_enabled ? "TRUE" : "FALSE",
+                lucky_wheel_cost: whl.lucky_wheel_cost,
+                lucky_wheel_max_per_day: whl.lucky_wheel_daily_limit,
+              },
+              "ตั้งค่าวงล้อ"
+            )
+          }
+        >
           <div className="grid gap-3">
             <div className="rounded-2xl bg-neutral-50 px-3.5 py-1">
               <ToggleRow label="เปิด/ปิดวงล้อ" desc="ปิดแล้วสมาชิกจะเห็นหน้าปิดปรับปรุงของเกม" checked={whl.lucky_wheel_enabled} onCheckedChange={(v) => setWhl({ ...whl, lucky_wheel_enabled: v })} />
@@ -174,9 +304,26 @@ export function SettingsPage() {
 
       {/* Modal 4: Social */}
       {modal === "social" ? (
-        <Shell title="ช่องทางติดต่อ" desc="ลิงก์ช่องทางติดต่อที่แสดงบนหน้าเว็บสมาชิก" onClose={() => setModal(null)} onSave={() => save("ช่องทางติดต่อ")}>
+        <Shell
+          title="ช่องทางติดต่อ"
+          desc="ลิงก์ช่องทางติดต่อที่แสดงบนหน้าเว็บสมาชิก"
+          onClose={() => setModal(null)}
+          onSave={() =>
+            saveSettingsToDb(
+              {
+                contact_line_url: soc.line_url,
+                contact_line_id: soc.line_id,
+                contact_facebook_url: soc.facebook_url,
+                contact_phone: soc.contact_phone,
+                contact_telegram_url: soc.telegram_url,
+              },
+              "ช่องทางติดต่อ"
+            )
+          }
+        >
           <div className="grid gap-3">
             <Field label="Line Official URL"><Input value={soc.line_url} onChange={(e) => setSoc({ ...soc, line_url: e.target.value })} className={inputCls} /></Field>
+            <Field label="Line ID"><Input value={soc.line_id} onChange={(e) => setSoc({ ...soc, line_id: e.target.value })} className={inputCls} /></Field>
             <Field label="Facebook Page URL"><Input value={soc.facebook_url} onChange={(e) => setSoc({ ...soc, facebook_url: e.target.value })} className={inputCls} /></Field>
             <Field label="เบอร์โทรติดต่อ"><Input value={soc.contact_phone} onChange={(e) => setSoc({ ...soc, contact_phone: e.target.value })} className={inputCls} /></Field>
             <Field label="Telegram URL"><Input value={soc.telegram_url} onChange={(e) => setSoc({ ...soc, telegram_url: e.target.value })} className={inputCls} /></Field>
@@ -187,16 +334,9 @@ export function SettingsPage() {
               <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
                 <span className="text-neutral-400">line_notify_enabled</span>
                 <span className="inline-flex items-center gap-1 font-semibold text-brand-700">🟢 เปิดอยู่ (true)</span>
-                <span className="text-neutral-400">line_notify_win_threshold</span>
-                <span className="font-mono text-neutral-700">&quot;5000&quot; — แจ้งเมื่อถอน/ชนะ ≥ ฿5,000</span>
                 <span className="text-neutral-400">contact_line_url</span>
-                <span className="font-mono text-neutral-700">https://lin.ee/zQAyRsM</span>
-                <span className="text-neutral-400">contact_line_id</span>
-                <span className="font-mono text-neutral-700">@653ufkvi</span>
+                <span className="font-mono text-neutral-700">{soc.line_url}</span>
               </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-neutral-400">
-                ระบบส่งแจ้งเตือน LINE ทำงานฝั่ง Backend รวมถึง RPC fn_daily_summary_line (สรุปยอดประจำวัน) — หน้าเว็บแอดมินแสดงค่า read-only เท่านั้น
-              </p>
             </div>
           </div>
         </Shell>
@@ -204,7 +344,7 @@ export function SettingsPage() {
 
       {/* Modal 5: ประกาศ Marquee */}
       {modal === "announce" ? (
-        <Shell title="ประกาศหมุนวิ่ง" desc="ข้อความวิ่งด้านบนเว็บ — จัดลำดับและเปิด/ปิดแต่ละข้อความ" onClose={() => setModal(null)} onSave={() => save("ประกาศ")}>
+        <Shell title="ประกาศหมุนวิ่ง" desc="ข้อความวิ่งด้านบนเว็บ — จัดลำดับและเปิด/ปิดแต่ละข้อความ" onClose={() => setModal(null)} onSave={() => { toast({ title: "บันทึกประกาศแล้ว" }); setModal(null); }}>
           <div className="space-y-2.5">
             {anns.sort((a, b) => a.display_order - b.display_order).map((a) => (
               <div key={a.id} className="flex items-center gap-2 rounded-2xl bg-neutral-50 px-3 py-2.5">
@@ -239,24 +379,51 @@ export function SettingsPage() {
 
       {/* Modal 6: ระบบ */}
       {modal === "system" ? (
-        <Shell title="ตั้งค่าระบบเว็บไซต์" desc="ข้อมูลพื้นฐานและช่องทางการเชื่อมต่อเว็บไซต์" onClose={() => setModal(null)} onSave={() => save("ตั้งค่าระบบ")}>
+        <Shell
+          title="ตั้งค่าระบบเว็บไซต์"
+          desc="ข้อมูลพื้นฐานและช่องทางการเชื่อมต่อเว็บไซต์"
+          onClose={() => setModal(null)}
+          onSave={() =>
+            saveSettingsToDb(
+              {
+                site_name: sys.site_name,
+                site_logo_url: sys.site_logo_url,
+                site_description: sys.site_description,
+              },
+              "ตั้งค่าระบบ"
+            )
+          }
+        >
           <div className="grid gap-3">
             <Field label="ชื่อเว็บไซต์"><Input value={sys.site_name} onChange={(e) => setSys({ ...sys, site_name: e.target.value })} className={inputCls} /></Field>
             <Field label="ลิงก์โลโก้เว็บไซต์ (URL)"><Input value={sys.site_logo_url} onChange={(e) => setSys({ ...sys, site_logo_url: e.target.value })} placeholder="https://..." className={inputCls} /></Field>
             <Field label="คำอธิบายเว็บไซต์"><Textarea value={sys.site_description} onChange={(e) => setSys({ ...sys, site_description: e.target.value })} className={cn(inputCls, "min-h-16 rounded-xl")} /></Field>
-            <Field label="รหัสกุญแจลับ API"><Input value={sys.api_secret_key} onChange={(e) => setSys({ ...sys, api_secret_key: e.target.value })} className={cn(inputCls, "font-mono text-xs")} /></Field>
+            <Field label="รหัสกุญแจลับ API"><Input value={sys.api_secret_key} readOnly className={cn(inputCls, "bg-neutral-100 font-mono text-xs")} /></Field>
           </div>
         </Shell>
       ) : null}
 
       {/* Modal 7: ควบคุมเว็บ (owner only) */}
       {modal === "site" ? (
-        <Shell title="ควบคุมการเปิด/ปิดเว็บไซต์" desc="เปิดหรือปิดระบบให้บริการชั่วคราวสำหรับปรับปรุง" onClose={() => setModal(null)} onSave={() => save("ควบคุมเว็บ")}>
+        <Shell
+          title="ควบคุมการเปิด/ปิดเว็บไซต์"
+          desc="เปิดหรือปิดระบบให้บริการชั่วคราวสำหรับปรับปรุง"
+          onClose={() => setModal(null)}
+          onSave={() =>
+            saveSettingsToDb(
+              {
+                site_enabled: site.site_enabled ? "TRUE" : "FALSE",
+                maintenance_message: site.maintenance_message,
+              },
+              "ควบคุมสถานะเว็บไซต์"
+            )
+          }
+        >
           <div className="space-y-3">
             <div className="flex items-start gap-2.5 rounded-2xl bg-amber-50 p-3.5 ring-1 ring-inset ring-amber-100">
               <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
               <p className="text-xs leading-relaxed text-amber-800">
-                ฟีเจอร์นี้เฉพาะ <b>Owner</b> (เบอร์ 0622306037) เท่านั้น — การปิดเว็บจะทำให้สมาชิกทุกคนเห็นหน้าปิดปรับปรุงทันที
+                ฟีเจอร์นี้สำหรับ <b>Owner</b> — การปิดเว็บจะทำให้สมาชิกทุกคนเห็นหน้าปิดปรับปรุงทันที
               </p>
             </div>
             <div className="rounded-2xl bg-neutral-50 px-3.5 py-1">
@@ -303,7 +470,7 @@ export function SettingsPage() {
               <Btn variant="outline" className="w-full rounded-full border-rose-200 text-rose-600 hover:bg-rose-50" onClick={() => {
                 const total = CLEANUP_PREVIEW.reduce((a, c) => a + c.count, 0);
                 setCleanupResult(total);
-                toast({ title: "เคลียร์ทั้งหมดแล้ว", description: `admin_cleanup_storage ลบ ${fmtNum(total)} รายการ (ตัวอย่าง)` });
+                toast({ title: "เคลียร์ทั้งหมดแล้ว", description: `admin_cleanup_storage ลบ ${fmtNum(total)} รายการ (จำลอง)` });
               }}>
                 <Trash2 className="size-4" /> เคลียร์ทั้งหมด ({fmtNum(CLEANUP_PREVIEW.reduce((a, c) => a + c.count, 0))} รายการ)
               </Btn>

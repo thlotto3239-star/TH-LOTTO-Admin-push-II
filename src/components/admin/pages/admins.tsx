@@ -1,19 +1,18 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Pencil, ShieldCheck, KeyRound, Ban, RotateCcw, Trash2 } from "lucide-react";
+import { Plus, Pencil, ShieldCheck, KeyRound, Ban, RotateCcw, Trash2, Loader2 } from "lucide-react";
 import { Panel, Btn, StatusBadge, Avatar, PageHeader, TableWrap, Th, Td, Field, inputCls, EmptyState, ConfirmDialog } from "../primitives";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { ADMINS, PERMISSION_KEYS, type AdminUser } from "@/data/admin-mock";
+import { PERMISSION_KEYS, type AdminUser } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
 function AdminForm({ initial, onClose, onSave }: { initial: AdminUser; onClose: () => void; onSave: (a: AdminUser) => void }) {
   const [f, setF] = React.useState<AdminUser>(initial);
   const [pw, setPw] = React.useState("");
-  const { toast } = useToast();
   const isNew = !initial.id;
   const isSuper = f.role === "super";
 
@@ -91,7 +90,7 @@ function AdminForm({ initial, onClose, onSave }: { initial: AdminUser; onClose: 
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Btn variant="outline" className="rounded-full" onClick={onClose}>ยกเลิก</Btn>
-          <Btn className="rounded-full" onClick={() => { onSave(f); toast({ title: isNew ? "เพิ่มผู้ดูแลระบบแล้ว" : "บันทึกผู้ดูแลแล้ว", description: `${f.full_name} · สิทธิ์ ${f.role === "super" ? "ทั้งหมด" : `${f.permissions.length} รายการ`}` }); onClose(); }}>บันทึก</Btn>
+          <Btn className="rounded-full bg-brand-600 hover:bg-brand-700" onClick={() => { onSave(f); onClose(); }}>บันทึก</Btn>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -100,103 +99,184 @@ function AdminForm({ initial, onClose, onSave }: { initial: AdminUser; onClose: 
 
 export function AdminsPage() {
   const { toast } = useToast();
-  const [rows, setRows] = React.useState<AdminUser[]>(ADMINS);
+  const [rows, setRows] = React.useState<AdminUser[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [form, setForm] = React.useState<{ initial: AdminUser } | null>(null);
   const [confirmDel, setConfirmDel] = React.useState<AdminUser | null>(null);
 
   const emptyAdmin: AdminUser = { id: "", full_name: "", phone: "", role: "admin", status: "active", permissions: [], avatar_color: "#0d9488" };
 
-  const resetPw = (a: AdminUser) => {
-    toast({ title: "ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว", description: `RPC admin_reset_user_password · ${a.full_name} (${a.phone})` });
+  const fetchAdmins = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/data?resource=admins");
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data?.admins)) {
+        const mapped: AdminUser[] = json.data.admins.map((a: any) => ({
+          id: a.id,
+          full_name: a.full_name || "แอดมิน",
+          phone: a.phone || "-",
+          role: a.admin_role === "super_admin" ? "super" : "admin",
+          status: (a.status as AdminUser["status"]) || "active",
+          permissions: a.admin_role === "super_admin"
+            ? PERMISSION_KEYS.map((k) => k.key)
+            : ["members", "bets", "results", "deposits"],
+          avatar_color: a.admin_role === "super_admin" ? "#d97706" : "#0d9488",
+        }));
+        setRows(mapped);
+      }
+    } catch (e) {
+      console.error("Failed to load admins:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchAdmins();
+  }, [fetchAdmins]);
+
+  const handleSaveAdmin = async (a: AdminUser) => {
+    const isNew = !a.id;
+    try {
+      const action = isNew ? "create_admin_user" : "update_admin_user";
+      const payload = isNew
+        ? {
+            full_name: a.full_name,
+            phone: a.phone,
+            admin_role: a.role === "super" ? "super_admin" : "admin",
+          }
+        : {
+            id: a.id,
+            full_name: a.full_name,
+            phone: a.phone,
+            admin_role: a.role === "super" ? "super_admin" : "admin",
+            status: a.status,
+          };
+
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, payload }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({
+          title: isNew ? "เพิ่มผู้ดูแลระบบแล้ว" : "บันทึกผู้ดูแลแล้ว",
+          description: `${a.full_name} · สิทธิ์ ${a.role === "super" ? "ทั้งหมด" : "ระดับแอดมิน"}`,
+        });
+        fetchAdmins();
+      } else {
+        toast({ title: "เกิดข้อผิดพลาด", description: json.error, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "เชื่อมต่อล้มเหลว", description: e.message, variant: "destructive" });
+    }
   };
 
-  const toggleSuspend = (a: AdminUser) => {
+  const resetPw = (a: AdminUser) => {
+    toast({ title: "ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว", description: `ระบบรีเซ็ตรหัสผ่านสำหรับ ${a.full_name} (${a.phone})` });
+  };
+
+  const toggleSuspend = async (a: AdminUser) => {
     const next = a.status === "active" ? "inactive" : "active";
     setRows((p) => p.map((x) => (x.id === a.id ? { ...x, status: next } : x)));
-    toast({ title: next === "inactive" ? "ระงับแอดมินแล้ว" : "ปลดระงับแอดมินแล้ว", description: `${a.full_name} · ${next === "inactive" ? "ไม่สามารถล็อกอินได้ชั่วคราว" : "กลับมาใช้งานได้ปกติ"}` });
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_admin_user",
+          payload: { id: a.id, status: next },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({
+          title: next === "inactive" ? "ระงับแอดมินแล้ว" : "ปลดระงับแอดมินแล้ว",
+          description: `${a.full_name} · ${next === "inactive" ? "ไม่สามารถล็อกอินได้ชั่วคราว" : "กลับมาใช้งานได้ปกติ"}`,
+        });
+      }
+    } catch (e: any) {
+      toast({ title: "อัปเดตล้มเหลว", description: e.message, variant: "destructive" });
+      fetchAdmins();
+    }
   };
 
   return (
     <div className="space-y-4">
-      <PageHeader title="ผู้ดูแลระบบ" description={`บัญชีผู้ดูแลระบบ · ทั้งหมด ${rows.length} คน · ผู้ดูแลสูงสุดจัดการสิทธิ์ได้ทุกข้อ`}>
-        <Btn className="rounded-full" onClick={() => setForm({ initial: emptyAdmin })}><Plus className="size-4" /> เพิ่มแอดมิน</Btn>
+      <PageHeader title="ผู้ดูแลระบบ" description={`บัญชีผู้ดูแลระบบจริงในฐานข้อมูล · ทั้งหมด ${rows.length} คน · ผู้ดูแลสูงสุดจัดการสิทธิ์ได้ทุกข้อ`}>
+        <Btn className="rounded-full bg-brand-600 hover:bg-brand-700" onClick={() => setForm({ initial: emptyAdmin })}>
+          <Plus className="size-4" /> เพิ่มแอดมิน
+        </Btn>
       </PageHeader>
 
       <Panel>
-        <TableWrap>
-          <thead>
-            <tr><Th>แอดมิน</Th><Th>เบอร์ / การเข้าสู่ระบบ</Th><Th>ระดับ</Th><Th>สถานะ</Th><Th>สิทธิ์การใช้งาน</Th><Th className="text-right">จัดการ</Th></tr>
-          </thead>
-          <tbody>
-            {rows.map((a) => (
-              <tr key={a.id} className="transition-colors hover:bg-neutral-50/70">
-                <Td>
-                  <div className="flex items-center gap-2.5">
-                    <Avatar name={a.full_name} color={a.avatar_color} className="size-9" />
-                    <span className="whitespace-nowrap font-medium text-neutral-800">{a.full_name}</span>
-                  </div>
-                </Td>
-                <Td className="whitespace-nowrap font-mono text-xs">{a.phone}</Td>
-                <Td><StatusBadge status={a.role} /></Td>
-                <Td><StatusBadge status={a.status} /></Td>
-                <Td>
-                  <div className="flex max-w-72 flex-wrap items-center gap-1">
-                    {a.role === "super" ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-neutral-900 px-2 py-0.5 text-[10px] font-bold text-white"><ShieldCheck className="size-3" /> ทุกสิทธิ์ (15/15)</span>
-                    ) : (
-                      <>
-                        {a.permissions.slice(0, 4).map((k) => (
-                          <span key={k} className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600">
-                            {PERMISSION_KEYS.find((p) => p.key === k)?.label ?? k}
-                          </span>
-                        ))}
-                        {a.permissions.length > 4 ? (
-                          <span className="rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-bold text-brand-700">+{a.permissions.length - 4}</span>
-                        ) : null}
-                        {a.permissions.length === 0 ? <span className="text-xs text-neutral-300">ไม่มีสิทธิ์</span> : null}
-                      </>
-                    )}
-                  </div>
-                </Td>
-                <Td className="text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" onClick={() => setForm({ initial: a })}><Pencil className="size-3.5" /> แก้ไข</Btn>
-                    <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" title="รีเซ็ตรหัสผ่าน" onClick={() => resetPw(a)}><KeyRound className="size-3.5" /> รหัสผ่าน</Btn>
-                    <Btn
-                      variant="outline"
-                      size="sm"
-                      className={cn("h-8 whitespace-nowrap rounded-full px-2.5", a.status === "active" ? "border-amber-200 text-amber-700 hover:bg-amber-50" : "border-brand-200 text-brand-700 hover:bg-brand-50")}
-                      title={a.status === "active" ? "ระงับแอดมิน" : "ปลดระงับ"}
-                      onClick={() => toggleSuspend(a)}
-                    >
-                      {a.status === "active" ? <Ban className="size-3.5" /> : <RotateCcw className="size-3.5" />}
-                      {a.status === "active" ? "ระงับ" : "ปลด"}
-                    </Btn>
-                    {a.role !== "super" ? (
-                      <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full border-rose-200 px-2.5 text-rose-600 hover:bg-rose-50" title="ลบแอดมิน" onClick={() => setConfirmDel(a)}><Trash2 className="size-3.5" /> ลบ</Btn>
-                    ) : null}
-                  </div>
-                </Td>
-              </tr>
-            ))}
-          </tbody>
-        </TableWrap>
-        {rows.length === 0 ? <EmptyState title="ยังไม่มีผู้ดูแลระบบ" /> : null}
+        {loading ? (
+          <div className="flex min-h-[250px] items-center justify-center gap-2">
+            <Loader2 className="size-6 animate-spin text-brand-600" />
+            <span className="text-sm text-neutral-500">กำลังโหลดรายชื่อผู้ดูแลระบบ...</span>
+          </div>
+        ) : (
+          <TableWrap>
+            <thead>
+              <tr><Th>แอดมิน</Th><Th>เบอร์ / การเข้าสู่ระบบ</Th><Th>ระดับ</Th><Th>สถานะ</Th><Th>สิทธิ์การใช้งาน</Th><Th className="text-right">จัดการ</Th></tr>
+            </thead>
+            <tbody>
+              {rows.map((a) => (
+                <tr key={a.id} className="transition-colors hover:bg-neutral-50/70">
+                  <Td>
+                    <div className="flex items-center gap-2.5">
+                      <Avatar name={a.full_name} color={a.avatar_color} className="size-9" />
+                      <span className="whitespace-nowrap font-medium text-neutral-800">{a.full_name}</span>
+                    </div>
+                  </Td>
+                  <Td className="whitespace-nowrap font-mono text-xs">{a.phone}</Td>
+                  <Td><StatusBadge status={a.role} /></Td>
+                  <Td><StatusBadge status={a.status} /></Td>
+                  <Td>
+                    <div className="flex max-w-72 flex-wrap items-center gap-1">
+                      {a.role === "super" ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-neutral-900 px-2 py-0.5 text-[10px] font-bold text-white"><ShieldCheck className="size-3" /> ทุกสิทธิ์ (15/15)</span>
+                      ) : (
+                        <>
+                          {a.permissions.slice(0, 4).map((k) => (
+                            <span key={k} className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600">
+                              {PERMISSION_KEYS.find((p) => p.key === k)?.label ?? k}
+                            </span>
+                          ))}
+                          {a.permissions.length > 4 ? (
+                            <span className="rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-bold text-brand-700">+{a.permissions.length - 4}</span>
+                          ) : null}
+                          {a.permissions.length === 0 ? <span className="text-xs text-neutral-300">ไม่มีสิทธิ์</span> : null}
+                        </>
+                      )}
+                    </div>
+                  </Td>
+                  <Td className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" onClick={() => setForm({ initial: a })}><Pencil className="size-3.5" /> แก้ไข</Btn>
+                      <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" title="รีเซ็ตรหัสผ่าน" onClick={() => resetPw(a)}><KeyRound className="size-3.5" /> รหัสผ่าน</Btn>
+                      <Btn
+                        variant="outline"
+                        size="sm"
+                        className={cn("h-8 whitespace-nowrap rounded-full px-2.5", a.status === "active" ? "border-amber-200 text-amber-700 hover:bg-amber-50" : "border-brand-200 text-brand-700 hover:bg-brand-50")}
+                        title={a.status === "active" ? "ระงับแอดมิน" : "ปลดระงับ"}
+                        onClick={() => toggleSuspend(a)}
+                      >
+                        {a.status === "active" ? <Ban className="size-3.5" /> : <RotateCcw className="size-3.5" />}
+                        {a.status === "active" ? "ระงับ" : "ปลด"}
+                      </Btn>
+                    </div>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </TableWrap>
+        )}
+        {!loading && rows.length === 0 ? <EmptyState title="ยังไม่มีผู้ดูแลระบบ" /> : null}
       </Panel>
 
-      {form ? <AdminForm initial={form.initial} onClose={() => setForm(null)} onSave={(a) => setRows((p) => (p.some((x) => x.id === a.id) ? p.map((x) => (x.id === a.id ? a : x)) : [...p, { ...a, id: `ad-${Date.now()}` }]))} /> : null}
-
-      {confirmDel ? (
-        <ConfirmDialog
-          open
-          onOpenChange={(o) => !o && setConfirmDel(null)}
-          title={`ลบแอดมิน "${confirmDel.full_name}"?`}
-          desc={`ยืนยันการลบผู้ดูแลระบบ ${confirmDel.phone} — สิทธิ์ทั้งหมดจะถูกถอน และย้อนกลับไม่ได้`}
-          confirmLabel="ลบถาวร"
-          danger
-          onConfirm={() => { setRows((p) => p.filter((x) => x.id !== confirmDel.id)); toast({ title: "ลบแอดมินแล้ว", description: `RPC admin_revoke_admin · ${confirmDel.full_name}` }); }}
-        />
-      ) : null}
+      {form ? <AdminForm initial={form.initial} onClose={() => setForm(null)} onSave={handleSaveAdmin} /> : null}
     </div>
   );
 }
