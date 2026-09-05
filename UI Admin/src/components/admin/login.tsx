@@ -221,17 +221,25 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string) => void }) {
     }
   };
 
-  const handleGoogle = () => {
+  const handleGoogle = async () => {
     if (loading || googleLoading) return;
     setGoogleLoading(true);
-    toast({
-      title: "กำลังเชื่อมต่อบัญชีกูเกิล",
-      description: "โปรดเลือกบัญชีอีเมลของผู้ดูแลเพื่อเข้าสู่ระบบ",
-    });
-    window.setTimeout(() => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/admin`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "เข้าสู่ระบบด้วย Google ไม่สำเร็จ",
+        description: err.message || "เกิดข้อผิดพลาดในการเชื่อมต่อ",
+      });
       setGoogleLoading(false);
-      onLogin("เจ้าของเว็บ");
-    }, 1100);
+    }
   };
 
   return (
