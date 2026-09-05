@@ -38,10 +38,10 @@ import {
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
-import { ADMIN_NOTIFS, type AdminNotification } from "@/data/admin-mock";
+import { useAdminCounts, type AdminNotificationItem } from "./store";
 
 // ─── Navigation (19 หน้าตามเช็คลิสต์เมนูเต็ม) ─────────────────────────────────
-const NAV: { group: string; items: { id: PageId; label: string; icon: React.ComponentType<{ className?: string }>; badge?: (n: { dep: number; wth: number }) => number }[] }[] = [
+const NAV: { group: string; items: { id: PageId; label: string; icon: React.ComponentType<{ className?: string }>; badge?: (n: { dep: number; wth: number; kyc: number; res: number }) => number }[] }[] = [
   {
     group: "ภาพรวม",
     items: [{ id: "dashboard", label: "แผงควบคุม", icon: LayoutDashboard }],
@@ -98,8 +98,9 @@ const NAV: { group: string; items: { id: PageId; label: string; icon: React.Comp
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { page, navigate } = useAdminNav();
+  const { dep, wth, kyc, res } = useAdminCounts();
+  const counts = { dep, wth, kyc, res };
   const go = (id: PageId) => { navigate(id); onNavigate?.(); };
-  const counts = { dep: 6, wth: 4, kyc: 2, res: 1 };
   return (
     <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
       {NAV.map((g) => (
@@ -160,23 +161,21 @@ function Brand({ compact }: { compact?: boolean }) {
 
 function NotificationBell() {
   const { toast } = useToast();
-  const { setPage } = useAdminNav();
+  const { navigate } = useAdminNav();
+  const { notifications, unread_notifications, markNotificationRead, markAllNotificationsRead } = useAdminCounts();
   const [mounted, setMounted] = React.useState(false);
   const [open, setOpen] = React.useState(false);
-  const [notifs, setNotifs] = React.useState<AdminNotification[]>(ADMIN_NOTIFS);
   React.useEffect(() => setMounted(true), []);
-  const unread = notifs.filter((n) => !n.read).length;
 
-  const handleOpenItem = (n: AdminNotification) => {
-    // Mark this specific notification as read immediately
-    setNotifs((p) => p.map((item) => (item.id === n.id ? { ...item, read: true } : item)));
+  const handleOpenItem = (n: AdminNotificationItem) => {
+    markNotificationRead(n.id);
     setOpen(false);
 
     if (n.target_page) {
-      setPage(n.target_page);
+      navigate(n.target_page as PageId);
       toast({
         title: "เปิดหน้าที่เกี่ยวข้อง",
-        description: `กำลังนำคุณไปยังหน้า "${PAGE_META[n.target_page]?.title || n.target_page}"`,
+        description: `กำลังนำคุณไปยังหน้า "${PAGE_META[n.target_page as PageId]?.title || n.target_page}"`,
       });
     }
   };
@@ -190,9 +189,9 @@ function NotificationBell() {
           aria-label="การแจ้งเตือน"
         >
           <Bell className="size-5" />
-          {unread > 0 ? (
+          {unread_notifications > 0 ? (
             <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-xs ring-2 ring-white">
-              {unread}
+              {unread_notifications}
             </span>
           ) : null}
         </button>
@@ -201,14 +200,14 @@ function NotificationBell() {
         <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
           <div>
             <p className="text-sm font-bold text-neutral-900">การแจ้งเตือนระบบ</p>
-            <p className="text-[11px] text-neutral-400">ยังไม่อ่าน {unread} รายการ</p>
+            <p className="text-[11px] text-neutral-400">ยังไม่อ่าน {unread_notifications} รายการ</p>
           </div>
           <Btn
             variant="ghost"
             size="sm"
             className="h-7 rounded-full text-xs text-brand-600 hover:bg-brand-50"
             onClick={() => {
-              setNotifs((p) => p.map((n) => ({ ...n, read: true })));
+              markAllNotificationsRead();
               toast({ title: "อ่านทั้งหมดแล้ว", description: "ทำเครื่องหมายอ่านแล้วทุกรายการ" });
             }}
           >
@@ -216,10 +215,10 @@ function NotificationBell() {
           </Btn>
         </div>
         <div className="max-h-80 overflow-y-auto divide-y divide-neutral-50">
-          {notifs.length === 0 ? (
+          {notifications.length === 0 ? (
             <div className="p-6 text-center text-xs text-neutral-400">ไม่มีการแจ้งเตือน</div>
           ) : (
-            notifs.map((n) => (
+            notifications.map((n) => (
               <button
                 key={n.id}
                 onClick={() => handleOpenItem(n)}
@@ -245,7 +244,7 @@ function NotificationBell() {
                   <p className="mt-0.5 line-clamp-2 text-xs text-neutral-500">{n.message}</p>
                   {n.target_page ? (
                     <div className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-brand-600 group-hover:underline">
-                      <span>ไปยัง {PAGE_META[n.target_page]?.title || n.target_page}</span>
+                      <span>ไปยัง {PAGE_META[n.target_page as PageId]?.title || n.target_page}</span>
                       <span aria-hidden>→</span>
                     </div>
                   ) : null}
@@ -349,8 +348,15 @@ function AdminUserSwitcher({ onLogout }: { onLogout?: () => void }) {
 
 export function AdminApp({ onLogout }: { onLogout?: () => void } = {}) {
   const { page } = useAdminNav();
+  const { fetchCounts } = useAdminCounts();
   const [mobileNav, setMobileNav] = React.useState(false);
   const meta = PAGE_META[page];
+
+  React.useEffect(() => {
+    fetchCounts();
+    const timer = setInterval(fetchCounts, 15000);
+    return () => clearInterval(timer);
+  }, [fetchCounts]);
 
   const renderPage = () => {
     switch (page) {
@@ -393,7 +399,7 @@ export function AdminApp({ onLogout }: { onLogout?: () => void } = {}) {
       {/* Main */}
       <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-64">
         {/* Topbar */}
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-neutral-200 bg-white/90 px-4 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-neutral-200 bg-white/95 backdrop-blur-md transform-gpu px-4 sm:px-6">
           <Sheet open={mobileNav} onOpenChange={setMobileNav}>
             <SheetTrigger asChild>
               <button className="flex size-10 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 lg:hidden" aria-label="เปิดเมนู">

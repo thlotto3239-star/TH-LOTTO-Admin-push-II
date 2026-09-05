@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { SLIDERS, type Slider } from "@/data/admin-mock";
+import { type Slider } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
 const EMPTY_SLIDE: Slider = {
@@ -95,17 +95,17 @@ function SliderForm({
 
 export function SlidersPage() {
   const { toast } = useToast();
-  const [rows, setRows] = React.useState<Slider[]>(SLIDERS);
+  const [rows, setRows] = React.useState<Slider[]>([]);
   const [form, setForm] = React.useState<{ initial: Slider } | null>(null);
   const [confirmDel, setConfirmDel] = React.useState<Slider | null>(null);
   const dragId = React.useRef<string | null>(null);
   const [dragOverId, setDragOverId] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
+  const loadSliders = React.useCallback(() => {
     fetch("/api/admin/data?resource=content")
       .then((r) => r.json())
       .then((res) => {
-        if (res.success && res.data?.sliders?.length > 0) {
+        if (res.success && Array.isArray(res.data?.sliders)) {
           setRows(
             res.data.sliders.map((s: any) => ({
               id: String(s.id),
@@ -122,7 +122,26 @@ export function SlidersPage() {
       .catch(() => {});
   }, []);
 
+  React.useEffect(() => {
+    loadSliders();
+  }, [loadSliders]);
+
   const sorted = [...rows].sort((a, b) => a.display_order - b.display_order);
+
+  const saveReorder = async (arr: Slider[]) => {
+    try {
+      await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reorder_sliders",
+          payload: { items: arr.map((r, k) => ({ id: r.id, display_order: k + 1 })) },
+        }),
+      });
+    } catch {
+      // no-op
+    }
+  };
 
   const move = (id: string, dir: -1 | 1) => {
     setRows((prev) => {
@@ -131,9 +150,11 @@ export function SlidersPage() {
       const j = i + dir;
       if (j < 0 || j >= arr.length) return prev;
       [arr[i], arr[j]] = [arr[j], arr[i]];
-      return arr.map((r, k) => ({ ...r, display_order: k + 1 }));
+      const updated = arr.map((r, k) => ({ ...r, display_order: k + 1 }));
+      saveReorder(updated);
+      return updated;
     });
-    toast({ title: dir === -1 ? "ย้ายขึ้นแล้ว" : "ย้ายลงแล้ว", description: "บันทึกลำดับใหม่เรียบร้อย" });
+    toast({ title: dir === -1 ? "ย้ายขึ้นแล้ว" : "ย้ายลงแล้ว", description: "บันทึกลำดับใหม่ลงฐานข้อมูลเรียบร้อย" });
   };
 
   const dropOn = (targetId: string) => {
@@ -147,9 +168,72 @@ export function SlidersPage() {
       const to = arr.findIndex((r) => r.id === targetId);
       const [item] = arr.splice(from, 1);
       arr.splice(to, 0, item);
-      return arr.map((r, k) => ({ ...r, display_order: k + 1 }));
+      const updated = arr.map((r, k) => ({ ...r, display_order: k + 1 }));
+      saveReorder(updated);
+      return updated;
     });
-    toast({ title: "จัดเรียงสไลด์แล้ว", description: "บันทึกลำดับใหม่เรียบร้อย" });
+    toast({ title: "จัดเรียงสไลด์แล้ว", description: "บันทึกลำดับใหม่ลงฐานข้อมูลเรียบร้อย" });
+  };
+
+  const handleToggle = async (s: Slider, active: boolean) => {
+    setRows((rws) => rws.map((x) => (x.id === s.id ? { ...x, is_active: active } : x)));
+    try {
+      await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "upsert_slider",
+          payload: { ...s, is_active: active },
+        }),
+      });
+      toast({ title: active ? "เปิดสไลด์แล้ว" : "ปิดสไลด์แล้ว", description: "อัปเดตสถานะสไลด์ในระบบเรียบร้อย" });
+    } catch {
+      toast({ title: "เกิดข้อผิดพลาด", description: "ไม่สามารถบันทึกสถานะได้", variant: "destructive" });
+    }
+  };
+
+  const handleSaveForm = async (s: Slider) => {
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "upsert_slider",
+          payload: s,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: "บันทึกสไลด์สำเร็จ", description: `${s.title} บันทึกลงระบบแล้ว` });
+        loadSliders();
+      } else {
+        toast({ title: "บันทึกล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "บันทึกล้มเหลว", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (s: Slider) => {
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete_slider",
+          payload: { id: s.id },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: "ลบสไลด์แล้ว", description: s.title });
+        loadSliders();
+      } else {
+        toast({ title: "ลบล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "ลบล้มเหลว", description: err.message, variant: "destructive" });
+    }
   };
 
   return (
@@ -211,7 +295,7 @@ export function SlidersPage() {
                     <ChevronDown className="size-4" />
                   </Btn>
                   <div className="ml-1 flex items-center gap-2">
-                    <Switch checked={s.is_active} onCheckedChange={(v) => { setRows((rws) => rws.map((x) => (x.id === s.id ? { ...x, is_active: v } : x))); toast({ title: v ? "เปิดสไลด์แล้ว" : "ปิดสไลด์แล้ว", description: "อัปเดตสถานะสไลด์เรียบร้อย" }); }} aria-label="เปิด/ปิดสไลด์" />
+                    <Switch checked={s.is_active} onCheckedChange={(v) => handleToggle(s, v)} aria-label="เปิด/ปิดสไลด์" />
                   </div>
                   <Btn size="sm" variant="outline" className="ml-auto h-8 rounded-full px-3" onClick={() => setForm({ initial: s })}>
                     <Pencil className="size-3.5" /> แก้ไข
@@ -230,13 +314,7 @@ export function SlidersPage() {
         <SliderForm
           initial={form.initial}
           onClose={() => setForm(null)}
-          onSave={(s) =>
-            setRows((rws) =>
-              rws.some((x) => x.id === s.id)
-                ? rws.map((x) => (x.id === s.id ? s : x))
-                : [...rws, { ...s, id: `sl-${Date.now()}`, created_at: "วันนี้" }]
-            )
-          }
+          onSave={handleSaveForm}
         />
       ) : null}
 
@@ -248,10 +326,7 @@ export function SlidersPage() {
           desc={`ยืนยันการลบ "${confirmDel.title}" · ย้อนกลับไม่ได้`}
           confirmLabel="ลบถาวร"
           onOpenChange={() => setConfirmDel(null)}
-          onConfirm={() => {
-            setRows((rws) => rws.filter((x) => x.id !== confirmDel.id).map((r, k) => ({ ...r, display_order: k + 1 })));
-            toast({ title: "ลบสไลด์แล้ว", description: confirmDel.title });
-          }}
+          onConfirm={() => handleDelete(confirmDel)}
         />
       ) : null}
     </div>

@@ -59,30 +59,123 @@ export function DataManagementPage() {
     toast({ title: "รีเฟรชสถิติตารางจากฐานข้อมูลสดแล้ว" });
   };
 
-  const doExport = (name: string, format: "csv" | "json", rows: number) => {
-    if (format === "csv") {
-      const csv = toCsv(["export", name, `rows=${rows}`, `date=${new Date().toLocaleDateString("th-TH")}`]);
-      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const doExport = async (name: string, table: string, format: "csv" | "json", fallbackRows: number) => {
+    try {
+      toast({ title: `กำลังดึงข้อมูล ${name}...`, description: "กำลังดาวน์โหลดข้อมูลจริงจากระบบ" });
+      const res = await fetch(`/api/admin/data?resource=export&table=${table}`);
+      const json = await res.json();
+      const exportData = json.success && Array.isArray(json.data) ? json.data : [];
+      const rowCount = exportData.length || fallbackRows;
+
+      let blob: Blob;
+      if (format === "json") {
+        const jsonStr = JSON.stringify(exportData, null, 2);
+        blob = new Blob([jsonStr], { type: "application/json;charset=utf-8" });
+      } else {
+        if (exportData.length > 0) {
+          const headers = Object.keys(exportData[0]);
+          const csvLines = [
+            headers.join(","),
+            ...exportData.map((row: any) =>
+              headers
+                .map((h) => {
+                  const val = row[h];
+                  if (val === null || val === undefined) return '""';
+                  const str = typeof val === "object" ? JSON.stringify(val) : String(val);
+                  return `"${str.replace(/"/g, '""')}"`;
+                })
+                .join(",")
+            ),
+          ];
+          blob = new Blob(["\uFEFF" + csvLines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+        } else {
+          const csv = toCsv(["export", name, `rows=${rowCount}`, `date=${new Date().toLocaleDateString("th-TH")}`]);
+          blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+        }
+      }
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `thlotto-${name}-${Date.now()}.csv`;
+      a.download = `thlotto-${table}-${new Date().toISOString().slice(0, 10)}.${format}`;
       a.click();
       URL.revokeObjectURL(url);
+
+      const sizeStr = blob.size > 1024 * 1024
+        ? `${(blob.size / (1024 * 1024)).toFixed(2)} MB`
+        : `${(blob.size / 1024).toFixed(1)} KB`;
+
+      toast({ title: `ส่งออก ${format.toUpperCase()} สำเร็จ`, description: `${name} (${table}) · ${fmtNum(rowCount)} แถว` });
+      setBackups((p) => [
+        {
+          id: `bp-${Date.now()}`,
+          type: format,
+          scope: `${name} (${table})`,
+          file_size: sizeStr,
+          rows_exported: rowCount,
+          by: "เจ้าของเว็บ",
+          at: new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }),
+        },
+        ...p,
+      ]);
+    } catch (err: any) {
+      toast({ title: "ส่งออกล้มเหลว", description: err.message, variant: "destructive" });
     }
-    toast({ title: `ส่งออก${format.toUpperCase()}แล้ว`, description: `${name} · ${fmtNum(rows)} แถว` });
-    setBackups((p) => [
-      { id: `bp-${Date.now()}`, type: format, scope: name, file_size: `${(rows / 1000).toFixed(1)} MB`, rows_exported: rows, by: "เจ้าของเว็บ", at: "วันนี้" },
-      ...p,
-    ]);
   };
 
-  const doBackup = () => {
-    setBackups((p) => [
-      { id: `bp-${Date.now()}`, type: "database", scope: "สำรองทั้งระบบ", file_size: `${(totalMb + 30).toFixed(1)} MB`, rows_exported: totalRows, by: "เจ้าของเว็บ", at: "วันนี้" },
-      ...p,
-    ]);
-    toast({ title: "สำรองฐานข้อมูลแล้ว", description: `สำรองข้อมูล ${fmtNum(totalRows)} แถว เรียบร้อย · ระบบจะแจ้งเตือนเมื่อเสร็จ` });
+  const doBackup = async () => {
+    try {
+      toast({ title: "กำลังสร้างไฟล์สำรองทั้งระบบ...", description: "กำลังดึงข้อมูลหลักจากฐานข้อมูล" });
+      const tablesToBackup = ["profiles", "bets", "transactions", "lottery_results", "settings"];
+      const results = await Promise.all(
+        tablesToBackup.map(async (tbl) => {
+          try {
+            const r = await fetch(`/api/admin/data?resource=export&table=${tbl}`);
+            const j = await r.json();
+            return { [tbl]: j.success ? j.data : [] };
+          } catch {
+            return { [tbl]: [] };
+          }
+        })
+      );
+
+      const combinedData: Record<string, any> = {
+        meta: {
+          system: "THLOTTO-II",
+          exported_at: new Date().toISOString(),
+          description: "Full Database Backup Snapshot",
+        },
+        tables: Object.assign({}, ...results),
+      };
+
+      const jsonStr = JSON.stringify(combinedData, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `thlotto-full-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      const sizeStr = `${(blob.size / (1024 * 1024)).toFixed(2)} MB`;
+      const exportedCount = Object.values(combinedData.tables).reduce((acc: number, cur: any) => acc + (Array.isArray(cur) ? cur.length : 0), 0);
+
+      setBackups((p) => [
+        {
+          id: `bp-${Date.now()}`,
+          type: "database",
+          scope: "สำรองทั้งระบบ (Full Snapshot)",
+          file_size: sizeStr,
+          rows_exported: exportedCount || totalRows,
+          by: "เจ้าของเว็บ",
+          at: new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }),
+        },
+        ...p,
+      ]);
+      toast({ title: "สำรองฐานข้อมูลสำเร็จ", description: `ดาวน์โหลดไฟล์สำรองเรียบร้อย (${sizeStr})` });
+    } catch (err: any) {
+      toast({ title: "สำรองล้มเหลว", description: err.message, variant: "destructive" });
+    }
   };
 
   const groups = [...new Set(tables.map((t) => t.group))];
@@ -136,26 +229,30 @@ export function DataManagementPage() {
             <p className="mt-0.5 text-xs text-neutral-400">ดาวน์โหลดไฟล์รายกลุ่มข้อมูล</p>
           </div>
           <div className="divide-y divide-neutral-100">
-            {EXPORT_SETS.map((e) => (
-              <div key={e.table} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-5 py-3.5">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-neutral-900">{e.name}</p>
-                  <p className="font-mono text-[11px] text-neutral-400">{e.table} · {fmtNum(e.rows)} แถว</p>
+            {EXPORT_SETS.map((e) => {
+              const liveStat = tables.find((t) => t.table === e.table);
+              const displayRows = liveStat ? liveStat.rows : e.rows;
+              return (
+                <div key={e.table} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-5 py-3.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-neutral-900">{e.name}</p>
+                    <p className="font-mono text-[11px] text-neutral-400">{e.table} · {fmtNum(displayRows)} แถว</p>
+                  </div>
+                  <div className="flex shrink-0 gap-1.5">
+                    {e.formats.includes("csv") ? (
+                      <Btn size="sm" variant="outline" className="h-8 rounded-full px-3" onClick={() => doExport(e.name, e.table, "csv", displayRows)}>
+                        <FileSpreadsheet className="size-3.5 text-brand-600" /> ไฟล์ตาราง
+                      </Btn>
+                    ) : null}
+                    {e.formats.includes("json") ? (
+                      <Btn size="sm" variant="outline" className="h-8 rounded-full px-3" onClick={() => doExport(e.name, e.table, "json", displayRows)}>
+                        <FileJson className="size-3.5 text-sky-600" /> ไฟล์ข้อมูล
+                      </Btn>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="flex shrink-0 gap-1.5">
-                  {e.formats.includes("csv") ? (
-                    <Btn size="sm" variant="outline" className="h-8 rounded-full px-3" onClick={() => doExport(e.name, "csv", e.rows)}>
-                      <FileSpreadsheet className="size-3.5 text-brand-600" /> ไฟล์ตาราง
-                    </Btn>
-                  ) : null}
-                  {e.formats.includes("json") ? (
-                    <Btn size="sm" variant="outline" className="h-8 rounded-full px-3" onClick={() => doExport(e.name, "json", e.rows)}>
-                      <FileJson className="size-3.5 text-sky-600" /> ไฟล์ข้อมูล
-                    </Btn>
-                  ) : null}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Panel>
 

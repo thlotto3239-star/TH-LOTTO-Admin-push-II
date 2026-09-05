@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { ARTICLES, ARTICLE_CATEGORIES, fmtNum, type Article } from "@/data/admin-mock";
+import { ARTICLE_CATEGORIES, fmtNum, type Article } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
 const EMPTY_ARTICLE: Article = {
@@ -132,18 +132,18 @@ function ArticleForm({
 
 export function ArticlesPage() {
   const { toast } = useToast();
-  const [rows, setRows] = React.useState<Article[]>(ARTICLES);
+  const [rows, setRows] = React.useState<Article[]>([]);
   const [q, setQ] = React.useState("");
   const [cat, setCat] = React.useState("all");
   const [page, setPage] = React.useState(1);
   const [form, setForm] = React.useState<{ initial: Article } | null>(null);
   const [confirmDel, setConfirmDel] = React.useState<Article | null>(null);
 
-  React.useEffect(() => {
+  const loadArticles = React.useCallback(() => {
     fetch("/api/admin/data?resource=content")
       .then((r) => r.json())
       .then((res) => {
-        if (res.success && res.data?.articles?.length > 0) {
+        if (res.success && Array.isArray(res.data?.articles)) {
           setRows(
             res.data.articles.map((a: any) => ({
               id: String(a.id),
@@ -151,6 +151,7 @@ export function ArticlesPage() {
               slug: String(a.id),
               category: a.category || "ข่าวสาร",
               content: a.content || "",
+              excerpt: a.sub_content || (a.content ? a.content.slice(0, 100) : ""),
               image_url: a.image_url || "",
               views: 0,
               is_published: Boolean(a.is_published),
@@ -161,6 +162,74 @@ export function ArticlesPage() {
       })
       .catch(() => {});
   }, []);
+
+  React.useEffect(() => {
+    loadArticles();
+  }, [loadArticles]);
+
+  const handleToggle = async (a: Article, published: boolean) => {
+    setRows((rws) => rws.map((x) => (x.id === a.id ? { ...x, is_published: published } : x)));
+    try {
+      await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "upsert_article",
+          payload: { ...a, is_published: published },
+        }),
+      });
+      toast({ title: published ? "เผยแพร่บทความแล้ว" : "ซ่อนบทความแล้ว", description: a.title });
+    } catch {
+      toast({ title: "เกิดข้อผิดพลาด", description: "ไม่สามารถบันทึกสถานะได้", variant: "destructive" });
+    }
+  };
+
+  const handleSave = async (a: Article) => {
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "upsert_article",
+          payload: {
+            ...a,
+            sub_content: a.excerpt || "",
+          },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: "บันทึกบทความสำเร็จ", description: a.title });
+        loadArticles();
+      } else {
+        toast({ title: "บันทึกล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "บันทึกล้มเหลว", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (a: Article) => {
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete_article",
+          payload: { id: a.id },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: "ลบบทความแล้ว", description: a.title });
+        loadArticles();
+      } else {
+        toast({ title: "ลบล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "ลบล้มเหลว", description: err.message, variant: "destructive" });
+    }
+  };
 
   const filtered = rows.filter(
     (r) =>
@@ -272,16 +341,7 @@ export function ArticlesPage() {
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={a.is_published}
-                        onCheckedChange={(v) => {
-                          setRows((rws) =>
-                            rws.map((x) =>
-                              x.id === a.id
-                                ? { ...x, is_published: v, published_at: v && x.published_at === "—" ? "วันนี้" : x.published_at }
-                                : x
-                            )
-                          );
-                          toast({ title: v ? "เผยแพร่บทความแล้ว" : "ซ่อนบทความแล้ว", description: a.title });
-                        }}
+                        onCheckedChange={(v) => handleToggle(a, v)}
                       />
                       <span className="text-xs font-medium text-neutral-600">{a.is_published ? "เผยแพร่อยู่" : "ฉบับร่าง"}</span>
                     </div>
@@ -309,11 +369,7 @@ export function ArticlesPage() {
         <ArticleForm
           initial={form.initial}
           onClose={() => setForm(null)}
-          onSave={(a) =>
-            setRows((rws) =>
-              rws.some((x) => x.id === a.id) ? rws.map((x) => (x.id === a.id ? a : x)) : [{ ...a, id: `ar-${Date.now()}` }, ...rws]
-            )
-          }
+          onSave={handleSave}
         />
       ) : null}
 
@@ -325,10 +381,7 @@ export function ArticlesPage() {
           desc={`ยืนยันการลบ "${confirmDel.title}" · ย้อนกลับไม่ได้`}
           confirmLabel="ลบถาวร"
           onOpenChange={() => setConfirmDel(null)}
-          onConfirm={() => {
-            setRows((rws) => rws.filter((x) => x.id !== confirmDel.id));
-            toast({ title: "ลบบทความแล้ว", description: confirmDel.title });
-          }}
+          onConfirm={() => handleDelete(confirmDel)}
         />
       ) : null}
     </div>

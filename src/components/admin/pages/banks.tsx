@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { BANK_DISPLAYS, BANK_ACCOUNT_BOOK, BANKS, bankOf, type BankAccountBook } from "@/data/admin-mock";
+import { BANK_DISPLAYS, BANKS, bankOf, type BankAccountBook } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
 const EMPTY_ACC: BankAccountBook = {
@@ -87,7 +87,7 @@ function AccountForm({ initial, onClose, onSave }: { initial: BankAccountBook; o
 export function BanksPage() {
   const { toast } = useToast();
   const [displays, setDisplays] = React.useState(BANK_DISPLAYS);
-  const [accounts, setAccounts] = React.useState<BankAccountBook[]>(BANK_ACCOUNT_BOOK);
+  const [accounts, setAccounts] = React.useState<BankAccountBook[]>([]);
   const [form, setForm] = React.useState<{ initial: BankAccountBook } | null>(null);
   const [confirmDel, setConfirmDel] = React.useState<BankAccountBook | null>(null);
 
@@ -95,7 +95,7 @@ export function BanksPage() {
     fetch("/api/admin/data?resource=content")
       .then((r) => r.json())
       .then((res) => {
-        if (res.success && res.data?.banks?.length > 0) {
+        if (res.success && Array.isArray(res.data?.banks) && res.data.banks.length > 0) {
           setDisplays(
             res.data.banks.map((b: any, idx: number) => ({
               code: (b.code || "").toLowerCase(),
@@ -104,25 +104,24 @@ export function BanksPage() {
             }))
           );
         }
-        if (res.success && res.data?.settings?.length > 0) {
+        if (res.success && Array.isArray(res.data?.settings) && res.data.settings.length > 0) {
           const dict: Record<string, string> = {};
           res.data.settings.forEach((s: any) => {
             if (s.key) dict[s.key] = s.value;
           });
           if (dict.company_bank_account_number) {
-            setAccounts((prev) => [
+            setAccounts([
               {
                 id: "sb-company-1",
                 bank_code: (dict.company_bank_code || "kbank").toLowerCase(),
                 account_no: dict.company_bank_account_number || "",
-                account_name: dict.company_bank_account_name || dict.bank_account_name || "",
+                account_name: dict.company_bank_account_name || dict.bank_account_name || "บริษัท ทีเอช ล็อตโต้ จำกัด",
                 branch: "สำนักงานใหญ่",
                 qr_code_url: dict.bank_qr_url || "",
                 account_type: "deposit" as const,
                 is_default: true,
                 is_active: true,
               },
-              ...prev.filter((a) => a.id !== "sb-company-1"),
             ]);
           }
         }
@@ -153,6 +152,56 @@ export function BanksPage() {
     toast({ title: "ตั้งบัญชีหลักแล้ว", description: `${bankOf(acc.bank_code).name} · ${acc.account_no}` });
   };
 
+  const handleToggleBank = async (code: string, active: boolean) => {
+    setDisplays((prev) => prev.map((x) => (x.code === code ? { ...x, is_active: active } : x)));
+    try {
+      await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "upsert_bank",
+          payload: { code: code.toUpperCase(), is_active: active },
+        }),
+      });
+      toast({ title: active ? `เปิดใช้ ${code.toUpperCase()}` : `ปิดใช้ ${code.toUpperCase()}`, description: "อัปเดตสถานะธนาคารในระบบเรียบร้อย" });
+    } catch {
+      toast({ title: "เกิดข้อผิดพลาด", description: "ไม่สามารถบันทึกสถานะได้", variant: "destructive" });
+    }
+  };
+
+  const handleSaveAccount = async (a: BankAccountBook) => {
+    setAccounts((prev) => {
+      let next = prev.some((x) => x.id === a.id) ? prev.map((x) => (x.id === a.id ? a : x)) : [...prev, { ...a, id: `bk-${Date.now()}` }];
+      if (a.is_default) {
+        next = next.map((x) => (x.id !== a.id && x.bank_code === a.bank_code && x.account_type === a.account_type ? { ...x, is_default: false } : x));
+      }
+      return next;
+    });
+
+    try {
+      await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "batch_update_settings",
+          payload: {
+            settings: [
+              { key: "company_bank_code", value: a.bank_code },
+              { key: "company_bank_account_number", value: a.account_no },
+              { key: "company_bank_account_name", value: a.account_name },
+              { key: "bank_account_name", value: a.account_name },
+              ...(a.qr_code_url ? [{ key: "bank_qr_url", value: a.qr_code_url }] : []),
+            ],
+          },
+        }),
+      });
+      toast({ title: "บันทึกบัญชีธนาคารแล้ว", description: `${bankOf(a.bank_code).name} · ${a.account_no}` });
+    } catch {
+      toast({ title: "เกิดข้อผิดพลาด", description: "ไม่สามารถบันทึกลงระบบได้", variant: "destructive" });
+    }
+    setForm(null);
+  };
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -164,7 +213,6 @@ export function BanksPage() {
         </Btn>
       </PageHeader>
 
-      {/* 1) ธนาคารที่รองรับ */}
       <Panel className="p-5">
         <div className="mb-4 flex items-center justify-between">
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-neutral-400">
@@ -189,14 +237,14 @@ export function BanksPage() {
                   <img
                     src={b.logo_url}
                     alt={b.name}
-                    className="size-9 shrink-0 rounded-xl object-contain bg-white p-1 ring-1 ring-neutral-200/80 shadow-xs"
+                    className="size-9 shrink-0 rounded-xl object-contain bg-white p-1 ring-1 ring-neutral-200/80 shadow-2xs"
                     onError={(e) => {
                       (e.currentTarget as HTMLElement).style.display = "none";
                     }}
                   />
                 ) : (
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl text-[10px] font-black tracking-tight text-white" style={{ backgroundColor: b.color }}>
-                    {b.short.slice(0, 3)}
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white" style={{ backgroundColor: b.color }}>
+                    {b.short}
                   </span>
                 )}
                 <div className="min-w-0 flex-1">
@@ -205,10 +253,7 @@ export function BanksPage() {
                 </div>
                 <Switch
                   checked={d.is_active}
-                  onCheckedChange={(v) => {
-                    setDisplays((prev) => prev.map((x) => (x.code === d.code ? { ...x, is_active: v } : x)));
-                    toast({ title: v ? `เปิดใช้ ${b.name}` : `ปิดใช้ ${b.name}`, description: "อัปเดตสถานะธนาคารเรียบร้อย" });
-                  }}
+                  onCheckedChange={(v) => handleToggleBank(d.code, v)}
                   aria-label={`เปิด/ปิด ${b.name}`}
                 />
               </div>
@@ -217,7 +262,6 @@ export function BanksPage() {
         </div>
       </Panel>
 
-      {/* 2) บัญชีรับ-โอนเงิน */}
       <Panel>
         <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
           <div>
@@ -294,15 +338,7 @@ export function BanksPage() {
         <AccountForm
           initial={form.initial}
           onClose={() => setForm(null)}
-          onSave={(a) =>
-            setAccounts((prev) => {
-              let next = prev.some((x) => x.id === a.id) ? prev.map((x) => (x.id === a.id ? a : x)) : [...prev, { ...a, id: `bk-${Date.now()}` }];
-              if (a.is_default) {
-                next = next.map((x) => (x.id !== a.id && x.bank_code === a.bank_code && x.account_type === a.account_type ? { ...x, is_default: false } : x));
-              }
-              return next;
-            })
-          }
+          onSave={handleSaveAccount}
         />
       ) : null}
 

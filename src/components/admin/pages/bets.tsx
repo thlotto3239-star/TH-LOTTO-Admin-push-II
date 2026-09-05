@@ -2,15 +2,70 @@
 
 import * as React from "react";
 import { Search, Eye, FileText, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
-import { Panel, Btn, PageHeader, TableWrap, Th, Td, StatusBadge, EmptyState } from "../primitives";
+import { Panel, Btn, PageHeader, TableWrap, Th, Td, StatusBadge, EmptyState, Avatar } from "../primitives";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GLOBAL_BETS, MARKETS, type GlobalBet, fmtTHB } from "@/data/admin-mock";
+import { MARKETS, type GlobalBet, fmtTHB, mktShort } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
+// Format bet type to friendly Thai without touching DB or data types
+export function formatBetTypeThai(type: string): string {
+  if (!type) return "-";
+  const raw = type.trim();
+  const upper = raw.toUpperCase();
+
+  const mapping: Record<string, string> = {
+    "2TOP": "2 ตัวบน",
+    "2BOTTOM": "2 ตัวล่าง",
+    "3TOP": "3 ตัวบน",
+    "3TOAD": "3 ตัวโต๊ด",
+    "3TODE": "3 ตัวโต๊ด",
+    "3FRONT": "3 ตัวหน้า",
+    "3BOTTOM": "3 ตัวล่าง",
+    "3BACK": "3 ตัวท้าย",
+    "4TOP": "4 ตัวบน",
+    "6STRAIGHT": "6 ตัวตรง",
+    "RUN_UP": "วิ่งบน",
+    "RUN_DOWN": "วิ่งล่าง",
+    "RUN_TOP": "วิ่งบน",
+    "RUN_BOTTOM": "วิ่งล่าง",
+    "PIN_TOP": "ปักหลักบน",
+    "PIN_BOTTOM": "ปักหลักล่าง",
+  };
+
+  if (mapping[upper]) return mapping[upper];
+
+  // If already Thai like "2ตัวบน", format with space "2 ตัวบน"
+  if (/^[2346]ตัว/.test(raw)) {
+    return raw.replace(/^([2346])ตัว/, "$1 ตัว");
+  }
+  return raw;
+}
+
+// Split created_at into separate Time (top) and Date (bottom)
+export function formatDateTimeSplit(val: string): { time: string; date: string } {
+  if (!val) return { time: "-", date: "" };
+
+  const d = new Date(val);
+  if (!isNaN(d.getTime())) {
+    const time = d.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const date = d.toLocaleDateString("th-TH", { day: "2-digit", month: "2-digit", year: "numeric" });
+    return { time, date };
+  }
+
+  // Fallback if string is like "04/09/2569 11:20:15"
+  const parts = val.trim().split(/[ ,]+/);
+  if (parts.length >= 2) {
+    if (parts[0].includes("/") || parts[0].includes("-")) {
+      return { date: parts[0], time: parts[1] };
+    }
+  }
+  return { time: val, date: "" };
+}
+
 export function BetsPage() {
-  const [rows, setRows] = React.useState<GlobalBet[]>(GLOBAL_BETS);
+  const [rows, setRows] = React.useState<GlobalBet[]>([]);
   const [statusFilter, setStatusFilter] = React.useState<string>("ALL");
   const [marketFilter, setMarketFilter] = React.useState<string>("ALL");
   const [q, setQ] = React.useState<string>("");
@@ -21,25 +76,37 @@ export function BetsPage() {
     fetch("/api/admin/data?resource=bets&limit=100")
       .then((r) => r.json())
       .then((res) => {
-        if (res.success && res.data?.length) {
-          const mapped: GlobalBet[] = res.data.map((b: any, idx: number) => {
-            const mkt = MARKETS.find((m) => m.id === b.market_id || m.code === b.lottery_code) || MARKETS[0];
+        if (res.success && Array.isArray(res.data)) {
+          const mapped: GlobalBet[] = res.data.map((b: any) => {
+            const mkt = MARKETS.find((m) => m.id === b.market_id || m.code === (b.lottery_markets?.code || b.lottery_code)) || MARKETS[0];
+            const memberId = b.profiles?.member_id || (b.user_id ? b.user_id.substring(0, 8).toUpperCase() : "MB-GUEST");
+            const memberName = b.profiles?.full_name || b.profiles?.username || ("สมาชิก #" + memberId);
+            const memberPhone = b.profiles?.phone || "-";
+            const memberAvatar = b.profiles?.avatar_url || null;
+            const marketName = b.lottery_markets?.name || mkt.name;
+            const marketCode = b.lottery_markets?.code || b.lottery_code || mkt.code;
+            const marketColor = mkt.color || "#059669";
+            const marketLogo = b.lottery_markets?.logo_url || mkt.logo_url || null;
             return {
               id: b.id,
               bet_no: "TK-" + (b.id.substring(0, 8).toUpperCase()),
-              member_id: b.user_id ? b.user_id.substring(0, 8) : "MB-GUEST",
-              member_name: "สมาชิก " + (b.user_id ? b.user_id.substring(0, 6) : "#" + (idx + 1)),
-              member_phone: "08x-xxx-" + (1000 + (idx % 9000)),
-              market_code: b.lottery_code || mkt.code,
-              market_name: mkt.name,
-              market_color: mkt.color,
+              member_id: memberId,
+              member_name: memberName,
+              member_phone: memberPhone,
+              member_avatar: memberAvatar,
+              market_code: marketCode,
+              market_name: marketName,
+              market_color: marketColor,
+              market_logo: marketLogo,
+              draw_date: b.draw_date ? new Date(b.draw_date).toLocaleDateString("th-TH") : "-",
               bet_type: b.bet_type || "2BOTTOM",
               numbers: b.numbers || "00",
               amount: parseFloat(b.amount) || 0,
               payout_rate: parseFloat(b.payout_rate) || 90,
-              payout_amount: parseFloat(b.payout_amount) || 0,
+              payout_amount: parseFloat(b.actual_payout ?? b.payout_amount) || 0,
               status: (b.status ? b.status.toUpperCase() : "PENDING") as any,
-              created_at: new Date(b.created_at).toLocaleString("th-TH"),
+              is_paid: Boolean(b.is_paid),
+              created_at: b.created_at || new Date().toISOString(),
             };
           });
           setRows(mapped);
@@ -144,13 +211,12 @@ export function BetsPage() {
 
       {/* Table */}
       <Panel>
-        <TableWrap className="min-w-[920px]">
+        <TableWrap className="min-w-[960px]">
           <thead>
             <tr>
               <Th>เวลาแทง</Th>
-              <Th>รหัสโพย</Th>
+              <Th>ตลาดหวย / รหัสโพย</Th>
               <Th>สมาชิก</Th>
-              <Th>ตลาดหวย</Th>
               <Th>ประเภท</Th>
               <Th>ตัวเลข</Th>
               <Th className="text-right">ยอดแทง</Th>
@@ -161,57 +227,119 @@ export function BetsPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((b) => (
-              <tr key={b.id} className="transition-colors hover:bg-neutral-50/70">
-                <Td className="whitespace-nowrap text-xs text-neutral-500">{b.created_at}</Td>
-                <Td className="whitespace-nowrap font-mono text-xs font-bold text-neutral-800">{b.bet_no}</Td>
-                <Td>
-                  <div>
-                    <p className="font-medium text-neutral-900">{b.member_name}</p>
-                    <p className="font-mono text-[11px] text-neutral-400">{b.member_phone}</p>
-                  </div>
-                </Td>
-                <Td>
-                  <div className="flex items-center gap-1.5 whitespace-nowrap">
-                    <span className="size-2 rounded-full" style={{ backgroundColor: b.market_color }} />
-                    <span className="text-xs font-semibold">{b.market_name}</span>
-                  </div>
-                </Td>
-                <Td className="whitespace-nowrap text-xs">{b.bet_type}</Td>
-                <Td>
-                  <span className="rounded-md bg-neutral-100 px-2 py-0.5 font-mono text-xs font-bold text-neutral-800">
-                    {b.numbers}
-                  </span>
-                </Td>
-                <Td className="whitespace-nowrap text-right font-mono text-xs font-bold text-neutral-900">
-                  {fmtTHB(b.amount)}
-                </Td>
-                <Td className="whitespace-nowrap text-right font-mono text-xs text-neutral-500">
-                  ×{b.payout_rate}
-                </Td>
-                <Td className="whitespace-nowrap text-right font-mono text-xs font-bold">
-                  {b.payout_amount > 0 ? (
-                    <span className="text-brand-600">+{fmtTHB(b.payout_amount)}</span>
-                  ) : (
-                    <span className="text-neutral-400">—</span>
-                  )}
-                </Td>
-                <Td>
-                  <StatusBadge status={b.status} />
-                </Td>
-                <Td className="text-right">
-                  <Btn
-                    variant="outline"
-                    size="sm"
-                    className="size-8 rounded-full p-0"
-                    title="ดูรายละเอียดโพย"
-                    onClick={() => setSelectedBet(b)}
-                  >
-                    <Eye className="size-3.5" />
-                  </Btn>
-                </Td>
-              </tr>
-            ))}
+            {filtered.map((b) => {
+              const dt = formatDateTimeSplit(b.created_at);
+              return (
+                <tr key={b.id} className="transition-colors hover:bg-neutral-50/70">
+                  {/* เวลาแทง: เวลาอยู่ด้านบนวันที่ ใน badge สีแดง ตัวเลขสีขาว */}
+                  <Td className="whitespace-nowrap">
+                    <div className="flex flex-col items-start gap-1">
+                      <span className="inline-flex items-center justify-center rounded-full bg-rose-500 px-2.5 py-0.5 font-mono text-[11px] font-bold text-white shadow-xs">
+                        {dt.time}
+                      </span>
+                      {dt.date ? (
+                        <span className="pl-0.5 font-mono text-[11px] font-medium text-neutral-400">
+                          {dt.date}
+                        </span>
+                      ) : null}
+                    </div>
+                  </Td>
+
+                  {/* ตลาดหวย / รหัสโพย: โลโก้หวย + ชื่อหวยด้านบน + รหัสโพยด้านล่าง */}
+                  <Td>
+                    <div className="flex items-center gap-2.5 whitespace-nowrap">
+                      {b.market_logo ? (
+                        <img
+                          src={b.market_logo}
+                          alt={b.market_name}
+                          className="size-9 rounded-2xl object-cover bg-white p-0.5 ring-1 ring-neutral-200/80 shadow-xs shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <span
+                          className="flex size-9 items-center justify-center rounded-2xl text-[11px] font-black text-white shrink-0 shadow-xs"
+                          style={{ backgroundColor: b.market_color || "#059669" }}
+                        >
+                          {mktShort(b.market_code)}
+                        </span>
+                      )}
+                      <div>
+                        <p className="font-bold text-neutral-900 leading-tight">{b.market_name}</p>
+                        <p className="font-mono text-[11px] font-bold text-neutral-400 mt-0.5">{b.bet_no}</p>
+                      </div>
+                    </div>
+                  </Td>
+
+                  {/* สมาชิก: แสดงโปรไฟล์ Avatar */}
+                  <Td>
+                    <div className="flex items-center gap-2.5 whitespace-nowrap">
+                      <Avatar
+                        name={b.member_name}
+                        imageUrl={b.member_avatar}
+                        className="size-9 text-xs shrink-0 ring-1 ring-neutral-200"
+                      />
+                      <div>
+                        <p className="font-semibold text-neutral-900 leading-tight">{b.member_name}</p>
+                        <p className="font-mono text-[11px] text-neutral-400 mt-0.5">{b.member_phone}</p>
+                      </div>
+                    </div>
+                  </Td>
+
+                  {/* ประเภท: แสดงผลภาษาไทย 2 ตัวบน, 2 ตัวล่าง, ฯลฯ */}
+                  <Td className="whitespace-nowrap">
+                    <span className="inline-flex items-center rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-bold text-neutral-700">
+                      {formatBetTypeThai(b.bet_type)}
+                    </span>
+                  </Td>
+
+                  {/* ตัวเลข: สีฟิลสถานะ เขียวแบรนด์ ตัวเลข สีขาว */}
+                  <Td>
+                    <span className="inline-flex items-center justify-center min-w-[48px] rounded-xl bg-brand-600 px-3 py-1 font-mono text-sm font-black tracking-widest text-white shadow-xs">
+                      {b.numbers}
+                    </span>
+                  </Td>
+
+                  {/* ยอดแทง */}
+                  <Td className="whitespace-nowrap text-right font-mono text-xs font-bold text-neutral-900">
+                    {fmtTHB(b.amount)}
+                  </Td>
+
+                  {/* อัตราจ่าย */}
+                  <Td className="whitespace-nowrap text-right font-mono text-xs text-neutral-500">
+                    ×{b.payout_rate}
+                  </Td>
+
+                  {/* เงินรางวัล */}
+                  <Td className="whitespace-nowrap text-right font-mono text-xs font-bold">
+                    {b.payout_amount > 0 ? (
+                      <span className="text-brand-600">+{fmtTHB(b.payout_amount)}</span>
+                    ) : (
+                      <span className="text-neutral-400">—</span>
+                    )}
+                  </Td>
+
+                  {/* สถานะ */}
+                  <Td>
+                    <StatusBadge status={b.status} />
+                  </Td>
+
+                  {/* ดูโพย */}
+                  <Td className="text-right">
+                    <Btn
+                      variant="outline"
+                      size="sm"
+                      className="size-8 rounded-full p-0"
+                      title="ดูรายละเอียดโพย"
+                      onClick={() => setSelectedBet(b)}
+                    >
+                      <Eye className="size-3.5" />
+                    </Btn>
+                  </Td>
+                </tr>
+              );
+            })}
           </tbody>
         </TableWrap>
         {filtered.length === 0 ? <EmptyState title="ไม่พบรายการแทงตามเงื่อนไขที่เลือก" /> : null}
@@ -227,26 +355,36 @@ export function BetsPage() {
                 รายละเอียดโพย {selectedBet.bet_no}
               </DialogTitle>
               <DialogDescription>
-                งวดวันที่ {selectedBet.draw_date} · บันทึกเมื่อ {selectedBet.created_at}
+                งวดวันที่ {selectedBet.draw_date}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-3 rounded-2xl bg-neutral-50 p-4 text-xs">
-              <div className="flex justify-between border-b border-neutral-200/60 pb-2">
+              <div className="flex justify-between items-center border-b border-neutral-200/60 pb-2">
                 <span className="text-neutral-500">สมาชิกผู้แทง:</span>
-                <span className="font-semibold text-neutral-900">{selectedBet.member_name} ({selectedBet.member_phone})</span>
+                <div className="flex items-center gap-2">
+                  <Avatar name={selectedBet.member_name} imageUrl={selectedBet.member_avatar} className="size-6 text-[10px]" />
+                  <span className="font-semibold text-neutral-900">{selectedBet.member_name} ({selectedBet.member_phone})</span>
+                </div>
               </div>
-              <div className="flex justify-between border-b border-neutral-200/60 pb-2">
+              <div className="flex justify-between items-center border-b border-neutral-200/60 pb-2">
                 <span className="text-neutral-500">ตลาดหวย:</span>
-                <span className="font-semibold" style={{ color: selectedBet.market_color }}>{selectedBet.market_name}</span>
+                <div className="flex items-center gap-2">
+                  {selectedBet.market_logo ? (
+                    <img src={selectedBet.market_logo} alt={selectedBet.market_name} className="size-5 rounded-lg object-cover" />
+                  ) : null}
+                  <span className="font-bold text-neutral-900">{selectedBet.market_name}</span>
+                </div>
               </div>
               <div className="flex justify-between border-b border-neutral-200/60 pb-2">
                 <span className="text-neutral-500">ประเภทการแทง:</span>
-                <span className="font-medium text-neutral-800">{selectedBet.bet_type}</span>
+                <span className="font-bold text-neutral-800">{formatBetTypeThai(selectedBet.bet_type)}</span>
               </div>
-              <div className="flex justify-between border-b border-neutral-200/60 pb-2">
+              <div className="flex justify-between items-center border-b border-neutral-200/60 pb-2">
                 <span className="text-neutral-500">ตัวเลขที่แทง:</span>
-                <span className="font-mono text-sm font-black text-neutral-900">{selectedBet.numbers}</span>
+                <span className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-3 py-0.5 font-mono text-sm font-black text-white shadow-xs">
+                  {selectedBet.numbers}
+                </span>
               </div>
               <div className="flex justify-between border-b border-neutral-200/60 pb-2">
                 <span className="text-neutral-500">ยอดเงินที่แทง:</span>

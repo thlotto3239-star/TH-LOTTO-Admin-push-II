@@ -198,6 +198,7 @@ export interface DepositReq {
   approved_at: string | null;
   approver_name: string | null;
   admin_note: string | null;
+  slip_url?: string | null;
 }
 
 const dSeed = new Date(2026, 7, 4, 12, 0);
@@ -290,16 +291,17 @@ export interface FeedItem {
   id: string;
   time: string;
   // deposit/withdraw
-  member?: { full_name: string; member_id: string };
+  member?: { full_name: string; member_id: string; avatar_url?: string | null };
   bank_code?: string;
   account_no?: string;
   account_name?: string;
   amount?: number;
-  status?: TxStatus;
+  status?: any;
   // bet
   market?: string;
   market_code?: string;
   market_color?: string;
+  market_logo?: string | null;
   numbers?: string;
   bet_type?: string;
   // alert
@@ -316,32 +318,32 @@ const mk = (minAgo: number) => {
 export const ACTIVITY_FEED: FeedItem[] = [
   { kind: "deposit", id: "f1", time: mk(3), member: { full_name: "ทิพวรรณ สายสุนทร", member_id: "M10290" }, bank_code: "kbank", account_no: "1099283746", amount: 1500, status: "PENDING" },
   { kind: "alert", id: "f2", time: mk(6), alert: "LOTTERY_ALERT", alert_market: "หุ้นฮั่งเส็งบ่าย" },
-  { kind: "bet", id: "f3", time: mk(9), member: { full_name: "สมชาย ใจดี", member_id: "M10234" }, market: "หวยรัฐบาลไทย", market_code: "TH_GOV", market_color: "#0d9488", numbers: "123, 456", bet_type: "3ตัวบน", amount: 200 },
+  { kind: "bet", id: "f3", time: mk(9), member: { full_name: "สมชาย ใจดี", member_id: "M10234" }, market: "หวยรัฐบาลไทย", market_code: "TH_GOV", market_color: "#0d9488", numbers: "123, 456", bet_type: "3TOP", amount: 200, status: "pending" },
   { kind: "withdraw", id: "f4", time: mk(14), member: { full_name: "ปกรณ์ ธนกร", member_id: "M10308" }, bank_code: "scb", account_no: "4019283746", account_name: "ปกรณ์ ธนกร", amount: 3000, status: "PENDING" },
   { kind: "deposit", id: "f5", time: mk(18), member: { full_name: "นภัสสร วงศ์สุวรรณ", member_id: "M10271" }, bank_code: "bbl", account_no: "8102345678", amount: 1200, status: "APPROVED" },
-  { kind: "bet", id: "f6", time: mk(23), member: { full_name: "จิราพร แสงทอง", member_id: "M10345" }, market: "ลาวพัฒนา", market_code: "LAO", market_color: "#be123c", numbers: "77", bet_type: "2ตัวล่าง", amount: 500 },
+  { kind: "bet", id: "f6", time: mk(23), member: { full_name: "จิราพร แสงทอง", member_id: "M10345" }, market: "ลาวพัฒนา", market_code: "LAO", market_color: "#be123c", numbers: "77", bet_type: "2BOTTOM", amount: 500, status: "won" },
   { kind: "alert", id: "f7", time: mk(27), alert: "LOTTERY_CLOSED", alert_market: "ฮานอยปกติ · งวด 18:15" },
   { kind: "withdraw", id: "f8", time: mk(31), member: { full_name: "ธนกฤต ศรีสุข", member_id: "M10382" }, bank_code: "ktb", account_no: "9021837465", account_name: "ธนกฤต ศรีสุข", amount: 8000, status: "APPROVED" },
   { kind: "deposit", id: "f9", time: mk(38), member: { full_name: "อารยา กมลรัตน์", member_id: "M10419" }, bank_code: "gsb", account_no: "1200987654", amount: 3000, status: "PENDING" },
-  { kind: "bet", id: "f10", time: mk(44), member: { full_name: "วีระชัย พรหมดี", member_id: "M10456" }, market: "หุ้นนิเคอิเช้า", market_code: "NIKKEI_MORNING", market_color: "#7c3aed", numbers: "045", bet_type: "3โต๊ด", amount: 300 },
+  { kind: "bet", id: "f10", time: mk(44), member: { full_name: "วีระชัย พรหมดี", member_id: "M10456" }, market: "หุ้นนิเคอิเช้า", market_code: "NIKKEI_MORNING", market_color: "#7c3aed", numbers: "045", bet_type: "3TODE", amount: 300, status: "pending" },
   { kind: "alert", id: "f11", time: mk(52), alert: "LOTTERY_RESULT", alert_market: "หุ้นอินเดีย" },
   { kind: "withdraw", id: "f12", time: mk(58), member: { full_name: "กัญญาณัฐ อินทร์แสง", member_id: "M10493" }, bank_code: "ttb", account_no: "2384719283", account_name: "กัญญาณัฐ อินทร์แสง", amount: 1500, status: "REJECTED" },
   { kind: "deposit", id: "f13", time: mk(65), member: { full_name: "ณัฐวุฒิ ชัยมงคล", member_id: "M10530" }, bank_code: "baac", account_no: "5588990012", amount: 10000, status: "APPROVED" },
-  { kind: "bet", id: "f14", time: mk(72), member: { full_name: "พิมพ์ลภัส เจริญยศ", member_id: "M10567" }, market: "หุ้นเยอรมัน", market_code: "STOCK_GERMANY", market_color: "#0891b2", numbers: "89", bet_type: "2ตัวบน", amount: 1000 },
+  { kind: "bet", id: "f14", time: mk(72), member: { full_name: "พิมพ์ลภัส เจริญยศ", member_id: "M10567" }, market: "หุ้นเยอรมัน", market_code: "STOCK_GERMANY", market_color: "#0891b2", numbers: "89", bet_type: "2TOP", amount: 1000, status: "won" },
   { kind: "deposit", id: "f15", time: mk(81), member: { full_name: "ศักดิ์สิทธิ์ บุญเรือง", member_id: "M10604" }, bank_code: "bay", account_no: "6701234567", amount: 800, status: "PENDING" },
   { kind: "withdraw", id: "f16", time: mk(90), member: { full_name: "เบญจวรรณ ทองคำ", member_id: "M10641" }, bank_code: "ghb", account_no: "7788990011", account_name: "เบญจวรรณ ทองคำ", amount: 5000, status: "APPROVED" },
-  { kind: "bet", id: "f17", time: mk(98), member: { full_name: "อดิศร วัฒนชัย", member_id: "M10678" }, market: "หวยมาเลย์", market_code: "MALAY", market_color: "#287e0b", numbers: "234, 432", bet_type: "3ตัวหน้า", amount: 150 },
+  { kind: "bet", id: "f17", time: mk(98), member: { full_name: "อดิศร วัฒนชัย", member_id: "M10678" }, market: "หวยมาเลย์", market_code: "MALAY", market_color: "#287e0b", numbers: "234, 432", bet_type: "3FRONT", amount: 150, status: "pending" },
   { kind: "deposit", id: "f18", time: mk(105), member: { full_name: "ชนิดาภา เลิศประเสริฐ", member_id: "M10715" }, bank_code: "isbt", account_no: "8811223344", amount: 250, status: "APPROVED" },
-  { kind: "bet", id: "f19", time: mk(112), member: { full_name: "กิตติภพ รัตนโชติ", member_id: "M10752" }, market: "หุ้นฮั่งเส็งบ่าย", market_code: "HANGSENG_AFTERNOON", market_color: "#e11d48", numbers: "56", bet_type: "2ตัวล่าง", amount: 700 },
+  { kind: "bet", id: "f19", time: mk(112), member: { full_name: "กิตติภพ รัตนโชติ", member_id: "M10752" }, market: "หุ้นฮั่งเส็งบ่าย", market_code: "HANGSENG_AFTERNOON", market_color: "#e11d48", numbers: "56", bet_type: "2BOTTOM", amount: 700, status: "lost" },
   { kind: "withdraw", id: "f20", time: mk(119), member: { full_name: "สุพิชญา ดวงแก้ว", member_id: "M10789" }, bank_code: "kbank", account_no: "3344556677", account_name: "สุพิชญา ดวงแก้ว", amount: 4200, status: "PENDING" },
   { kind: "deposit", id: "f21", time: mk(126), member: { full_name: "ธชย ปรัชญาพร", member_id: "M10826" }, bank_code: "scb", account_no: "9988776655", amount: 2000, status: "PENDING" },
   { kind: "alert", id: "f22", time: mk(133), alert: "LOTTERY_ALERT", alert_market: "ลาวพัฒนา" },
-  { kind: "bet", id: "f23", time: mk(140), member: { full_name: "รัตนาภรณ์ สุขสันต์", member_id: "M10863" }, market: "ฮานอยปกติ", market_code: "HANOI", market_color: "#dc2626", numbers: "912", bet_type: "3ตัวบน", amount: 250 },
+  { kind: "bet", id: "f23", time: mk(140), member: { full_name: "รัตนาภรณ์ สุขสันต์", member_id: "M10863" }, market: "ฮานอยปกติ", market_code: "HANOI", market_color: "#dc2626", numbers: "912", bet_type: "3TOP", amount: 250, status: "won" },
   { kind: "withdraw", id: "f24", time: mk(147), member: { full_name: "นนทบุรี เกษมสันต์", member_id: "M10900" }, bank_code: "gsb", account_no: "1122334455", account_name: "นนทบุรี เกษมสันต์", amount: 9800, status: "APPROVED" },
   { kind: "deposit", id: "f25", time: mk(154), member: { full_name: "ปิยะพงษ์ อาจหาญ", member_id: "M10937" }, bank_code: "ttb", account_no: "6677889900", amount: 600, status: "APPROVED" },
-  { kind: "bet", id: "f26", time: mk(161), member: { full_name: "วรรณิดา พงษ์ไพบูลย์", member_id: "M10974" }, market: "หุ้นอินเดีย", market_code: "STOCK_INDIA", market_color: "#2563eb", numbers: "30", bet_type: "2ตัวบน", amount: 450 },
+  { kind: "bet", id: "f26", time: mk(161), member: { full_name: "วรรณิดา พงษ์ไพบูลย์", member_id: "M10974" }, market: "หุ้นอินเดีย", market_code: "STOCK_INDIA", market_color: "#2563eb", numbers: "30", bet_type: "2TOP", amount: 450, status: "lost" },
   { kind: "alert", id: "f27", time: mk(168), alert: "LOTTERY_CLOSED", alert_market: "หุ้นนิเคอิเช้า · งวด 15:15" },
-  { kind: "bet", id: "f28", time: mk(175), member: { full_name: "จักรพงษ์ มีสุข", member_id: "M11011" }, market: "หวยมาเลย์", market_code: "MALAY", market_color: "#287e0b", numbers: "07", bet_type: "วิ่งล่าง", amount: 1200 },
+  { kind: "bet", id: "f28", time: mk(175), member: { full_name: "จักรพงษ์ มีสุข", member_id: "M11011" }, market: "หวยมาเลย์", market_code: "MALAY", market_color: "#287e0b", numbers: "07", bet_type: "RUN_DOWN", amount: 1200, status: "pending" },
   { kind: "deposit", id: "f29", time: mk(182), member: { full_name: "ณิชานันท์ รุ่งเรือง", member_id: "M11048" }, bank_code: "baac", account_no: "4433221100", amount: 5000, status: "APPROVED" },
   { kind: "withdraw", id: "f30", time: mk(189), member: { full_name: "สมชาย ใจดี", member_id: "M10234" }, bank_code: "bbl", account_no: "1010202030", account_name: "สมชาย ใจดี", amount: 15000, status: "APPROVED" },
 ];
@@ -401,11 +403,11 @@ const MKT_SHORT: Record<string, string> = {
   NIKKEI_MORNING: "NKM", CHINA_MORNING: "CHM", HANGSENG_MORNING: "HSM", STOCK_TAIWAN: "TWN",
   STOCK_KOREA: "KOR", NIKKEI_AFTERNOON: "NKA", CHINA_AFTERNOON: "CHA", HANGSENG_AFTERNOON: "HSA",
   STOCK_SG: "SGP", STOCK_INDIA: "IND", STOCK_EGYPT: "EGY", STOCK_RUSSIA: "RUS", STOCK_GERMANY: "GER",
-  STOCK_ENGLAND: "ENG", STOCK_DOWJONES: "DOW",
+  STOCK_ENGLAND: "ENG", STOCK_DOWJONES: "DOW", THLOTTO_15M: "15M",
 };
 export const mktShort = (code: string): string => MKT_SHORT[code] ?? code.slice(0, 3);
 
-// 21 ตลาดจริงบนฐานข้อมูล Supabase Production (ตามข้อ 2.2 ใน SYSTEM_ARCHITECTURE_MANUAL.md)
+// 21 ตลาดจริงบนฐานข้อมูล Supabase Production (ตามข้อ 2.2 ใน SYSTEM_ARCHITECTURE_MANUAL.md) + ล็อตโต้ 15 นาที (TH-LOTTO 15M)
 export const MARKETS: Market[] = [
   { id: "mkt-01", name: "หวยรัฐบาลไทย", code: "TH_GOV", color: "#0d9488", kind: "GOVERNMENT", draw_days: [1, 16], draw_time: "15:30", close_minutes: 20, popular: true, hot: true, active: true, youtube_url: "https://youtube.com/live/gdlive", logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/th_gov_official.png", rates: gRates, limits: { min_bet: 1, max_bet: 5000, max_per_number: 100000 } },
   { id: "mkt-02", name: "ลาวพัฒนา", code: "LAO", color: "#be123c", kind: "OTHER", draw_days: [1, 3, 5], draw_time: "20:30", close_minutes: 10, popular: true, hot: true, active: true, youtube_url: "https://youtube.com/live/laoxyz", logo_url: "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/d3Nyjgtntlkei3MGYjuM/pub/fqW29ieijwwJQMBAwWoC.png", rates: sRates, limits: { min_bet: 1, max_bet: 2000, max_per_number: 30000 } },
@@ -428,6 +430,7 @@ export const MARKETS: Market[] = [
   { id: "mkt-19", name: "หุ้นเยอรมัน", code: "STOCK_GERMANY", color: "#0891b2", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "22:00", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781453342469.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
   { id: "mkt-20", name: "หุ้นอังกฤษ", code: "STOCK_ENGLAND", color: "#1e3a8a", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "22:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781453384284.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
   { id: "mkt-21", name: "หวยหุ้นดาวน์โจนส์", code: "STOCK_DOWJONES", color: "#f59e0b", kind: "OTHER", draw_days: [1, 2, 3, 4, 5], draw_time: "02:30", close_minutes: 20, popular: false, hot: false, active: true, youtube_url: null, logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781454167391.jpg", rates: sRates, limits: { min_bet: 1, max_bet: 3000, max_per_number: 50000 } },
+  { id: "2ecc136e-0734-4be0-9e26-cf3149cb84cd", name: "ล็อตโต้ 15 นาที", code: "THLOTTO_15M", color: "#166534", kind: "OTHER", draw_days: [0, 1, 2, 3, 4, 5, 6], draw_time: "23:45", close_minutes: 1, popular: true, hot: true, active: true, youtube_url: null, logo_url: "/icons/thlotto-15m.png", rates: sRates, limits: { min_bet: 1, max_bet: 5000, max_per_number: 50000 } },
 ];
 
 export const DAY_LABELS = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
@@ -491,9 +494,11 @@ export interface GlobalBet {
   member_id: string;
   member_name: string;
   member_phone: string;
+  member_avatar?: string | null;
   market_code: string;
   market_name: string;
   market_color: string;
+  market_logo?: string | null;
   draw_date: string;
   bet_type: string;
   numbers: string;
@@ -506,15 +511,15 @@ export interface GlobalBet {
 }
 
 export const GLOBAL_BETS: GlobalBet[] = [
-  { id: "bet-101", bet_no: "B260904-001", member_id: "M10234", member_name: "สมชาย ใจดี", member_phone: "081-234-5678", market_code: "TH_GOV", market_name: "หวยรัฐบาลไทย", market_color: "#0d9488", draw_date: "16/09/2569", bet_type: "3ตัวบน", numbers: "617, 716", amount: 200, payout_rate: 700, payout_amount: 0, status: "PENDING", is_paid: false, created_at: "04/09/2569 11:20" },
-  { id: "bet-102", bet_no: "B260904-002", member_id: "M10271", member_name: "นภัสสร วงศ์สุวรรณ", member_phone: "082-345-6789", market_code: "HANOI", market_name: "ฮานอยปกติ", market_color: "#dc2626", draw_date: "04/09/2569", bet_type: "2ตัวบน", numbers: "48", amount: 500, payout_rate: 95, payout_amount: 0, status: "PENDING", is_paid: false, created_at: "04/09/2569 11:25" },
-  { id: "bet-103", bet_no: "B260904-003", member_id: "M10308", member_name: "ปกรณ์ ธนกร", member_phone: "085-456-7890", market_code: "LAO", market_name: "ลาวพัฒนา", market_color: "#be123c", draw_date: "04/09/2569", bet_type: "2ตัวล่าง", numbers: "77", amount: 300, payout_rate: 95, payout_amount: 0, status: "PENDING", is_paid: false, created_at: "04/09/2569 11:32" },
-  { id: "bet-104", bet_no: "B260904-004", member_id: "M10345", member_name: "จิราพร แสงทอง", member_phone: "086-567-8901", market_code: "HANOI_VIP", market_name: "ฮานอย VIP", market_color: "#991b1b", draw_date: "04/09/2569", bet_type: "3ตัวบน", numbers: "548", amount: 150, payout_rate: 720, payout_amount: 108000, status: "WON", is_paid: true, created_at: "03/09/2569 17:40" },
-  { id: "bet-105", bet_no: "B260904-005", member_id: "M10382", member_name: "ธนกฤต ศรีสุข", member_phone: "089-678-9012", market_code: "NIKKEI_MORNING", market_name: "หุ้นนิเคอิเช้า", market_color: "#7c3aed", draw_date: "04/09/2569", bet_type: "3โต๊ด", numbers: "045", amount: 200, payout_rate: 190, payout_amount: 0, status: "LOST", is_paid: false, created_at: "04/09/2569 08:50" },
-  { id: "bet-106", bet_no: "B260904-006", member_id: "M10419", member_name: "อารยา กมลรัตน์", member_phone: "091-789-0123", market_code: "HANGSENG_AFTERNOON", market_name: "หุ้นฮั่งเส็งบ่าย", market_color: "#db2777", draw_date: "04/09/2569", bet_type: "2ตัวล่าง", numbers: "56", amount: 400, payout_rate: 95, payout_amount: 0, status: "PENDING", is_paid: false, created_at: "04/09/2569 11:45" },
-  { id: "bet-107", bet_no: "B260904-007", member_id: "M10456", member_name: "วีระชัย พรหมดี", member_phone: "092-890-1234", market_code: "MALAY", market_name: "หวยมาเลย์", market_color: "#287e0b", draw_date: "03/09/2569", bet_type: "3ตัวหน้า", numbers: "234", amount: 100, payout_rate: 720, payout_amount: 0, status: "LOST", is_paid: false, created_at: "03/09/2569 16:15" },
-  { id: "bet-108", bet_no: "B260904-008", member_id: "M10493", member_name: "กัญญาณัฐ อินทร์แสง", member_phone: "093-901-2345", market_code: "STOCK_GERMANY", market_name: "หุ้นเยอรมัน", market_color: "#0891b2", draw_date: "03/09/2569", bet_type: "2ตัวบน", numbers: "89", amount: 500, payout_rate: 95, payout_amount: 47500, status: "WON", is_paid: true, created_at: "03/09/2569 21:00" },
-  { id: "bet-109", bet_no: "B260904-009", member_id: "M10530", member_name: "ณัฐวุฒิ ชัยมงคล", member_phone: "094-012-3456", market_code: "STOCK_DOWJONES", market_name: "หวยหุ้นดาวน์โจนส์", market_color: "#f59e0b", draw_date: "03/09/2569", bet_type: "2ตัวบน", numbers: "54", amount: 250, payout_rate: 95, payout_amount: 0, status: "CANCELLED", is_paid: false, created_at: "03/09/2569 01:45" },
+  { id: "bet-101", bet_no: "B260904-001", member_id: "M10234", member_name: "สมชาย ใจดี", member_phone: "081-234-5678", member_avatar: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/avatars/8cd9dc58-d2eb-4aed-a5bc-f4cd74cb3ee4/1780530738154.jpg", market_code: "TH_GOV", market_name: "หวยรัฐบาลไทย", market_color: "#0d9488", market_logo: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/th_gov_official.png", draw_date: "16/09/2569", bet_type: "3TOP", numbers: "617, 716", amount: 200, payout_rate: 700, payout_amount: 0, status: "PENDING", is_paid: false, created_at: "04/09/2569 11:20:15" },
+  { id: "bet-102", bet_no: "B260904-002", member_id: "M10271", member_name: "นภัสสร วงศ์สุวรรณ", member_phone: "082-345-6789", member_avatar: null, market_code: "HANOI", market_name: "ฮานอยปกติ", market_color: "#dc2626", market_logo: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781454321881.jpg", draw_date: "04/09/2569", bet_type: "2TOP", numbers: "48", amount: 500, payout_rate: 95, payout_amount: 0, status: "PENDING", is_paid: false, created_at: "04/09/2569 11:25:40" },
+  { id: "bet-103", bet_no: "B260904-003", member_id: "M10308", member_name: "ปกรณ์ ธนกร", member_phone: "085-456-7890", member_avatar: null, market_code: "LAO", market_name: "ลาวพัฒนา", market_color: "#be123c", market_logo: "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/d3Nyjgtntlkei3MGYjuM/pub/fqW29ieijwwJQMBAwWoC.png", draw_date: "04/09/2569", bet_type: "2BOTTOM", numbers: "77", amount: 300, payout_rate: 95, payout_amount: 0, status: "PENDING", is_paid: false, created_at: "04/09/2569 11:32:02" },
+  { id: "bet-104", bet_no: "B260904-004", member_id: "M10345", member_name: "จิราพร แสงทอง", member_phone: "086-567-8901", member_avatar: null, market_code: "HANOI_VIP", market_name: "ฮานอย VIP", market_color: "#991b1b", market_logo: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781454321881.jpg", draw_date: "04/09/2569", bet_type: "3TOP", numbers: "548", amount: 150, payout_rate: 720, payout_amount: 108000, status: "WON", is_paid: true, created_at: "03/09/2569 17:40:11" },
+  { id: "bet-105", bet_no: "B260904-005", member_id: "M10382", member_name: "ธนกฤต ศรีสุข", member_phone: "089-678-9012", member_avatar: null, market_code: "NIKKEI_MORNING", market_name: "หุ้นนิเคอิเช้า", market_color: "#7c3aed", market_logo: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781452606206.jpg", draw_date: "04/09/2569", bet_type: "3TODE", numbers: "045", amount: 200, payout_rate: 190, payout_amount: 0, status: "LOST", is_paid: false, created_at: "04/09/2569 08:50:55" },
+  { id: "bet-106", bet_no: "B260904-006", member_id: "M10419", member_name: "อารยา กมลรัตน์", member_phone: "091-789-0123", member_avatar: null, market_code: "HANGSENG_AFTERNOON", market_name: "หุ้นฮั่งเส็งบ่าย", market_color: "#db2777", market_logo: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781454082055.jpg", draw_date: "04/09/2569", bet_type: "2BOTTOM", numbers: "56", amount: 400, payout_rate: 95, payout_amount: 0, status: "PENDING", is_paid: false, created_at: "04/09/2569 11:45:19" },
+  { id: "bet-107", bet_no: "B260904-007", member_id: "M10456", member_name: "วีระชัย พรหมดี", member_phone: "092-890-1234", member_avatar: null, market_code: "MALAY", market_name: "หวยมาเลย์", market_color: "#287e0b", market_logo: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781525171823.jpg", draw_date: "03/09/2569", bet_type: "3FRONT", numbers: "234", amount: 100, payout_rate: 720, payout_amount: 0, status: "LOST", is_paid: false, created_at: "03/09/2569 16:15:33" },
+  { id: "bet-108", bet_no: "B260904-008", member_id: "M10493", member_name: "กัญญาณัฐ อินทร์แสง", member_phone: "093-901-2345", member_avatar: null, market_code: "STOCK_GERMANY", market_name: "หุ้นเยอรมัน", market_color: "#0891b2", market_logo: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781453342469.jpg", draw_date: "03/09/2569", bet_type: "2TOP", numbers: "89", amount: 500, payout_rate: 95, payout_amount: 47500, status: "WON", is_paid: true, created_at: "03/09/2569 21:00:08" },
+  { id: "bet-109", bet_no: "B260904-009", member_id: "M10530", member_name: "ณัฐวุฒิ ชัยมงคล", member_phone: "094-012-3456", member_avatar: null, market_code: "STOCK_DOWJONES", market_name: "หวยหุ้นดาวน์โจนส์", market_color: "#f59e0b", market_logo: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781454167391.jpg", draw_date: "03/09/2569", bet_type: "2TOP", numbers: "54", amount: 250, payout_rate: 95, payout_amount: 0, status: "CANCELLED", is_paid: false, created_at: "03/09/2569 01:45:22" },
 ];
 
 // ── Results (draw_schedules + lottery_results) ──────────────────────────────
@@ -675,7 +680,7 @@ export const PROMOTIONS: Promotion[] = [
 // ── Settings (settings key-value) ───────────────────────────────────────────
 export const FINANCE_SETTINGS = { min_deposit: 100, max_deposit: 200000, min_withdraw: 300, max_withdraw: 100000, deposit_fee: 0, withdraw_fee: 0, welcome_bonus: 50, welcome_bonus_turnover: 2 };
 export const WHEEL_SETTINGS = { lucky_wheel_enabled: true, lucky_wheel_cost: 30, lucky_wheel_daily_limit: 5 };
-export const SOCIAL_SETTINGS = { line_url: "https://line.me/R/ti/p/@thlotto", facebook_url: "https://facebook.com/thlotto", contact_phone: "062-230-6037", telegram_url: "https://t.me/thlotto" };
+export const SOCIAL_SETTINGS = { line_id: "@thlotto", line_url: "https://line.me/R/ti/p/@thlotto", facebook_url: "https://facebook.com/thlotto", contact_phone: "062-230-6037", telegram_url: "https://t.me/thlotto" };
 export const SYSTEM_SETTINGS = { site_name: "TH-LOTTO", site_logo_url: "", site_description: "เว็บหวยออนไลน์ครบทุกตลาด ปลอดภัย จ่ายไว", api_secret_key: "sk_live_9f2e••••••••3a7b" };
 export const SITE_CONTROL = { site_enabled: true, maintenance_message: "ระบบกำลังปรับปรุง ขออภัยในความไม่สะดวก จะกลับมาให้บริการโดยเร็วที่สุด" };
 

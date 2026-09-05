@@ -7,7 +7,7 @@ import { BankSelector } from "../primitives";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { MEMBERS, fmtTHB, fmtD, type Member } from "@/data/admin-mock";
+import { fmtTHB, fmtD, type Member } from "@/data/admin-mock";
 import { useAdminNav } from "../store";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -116,7 +116,7 @@ function normalizeBank(b: string | null | undefined): string {
 export function MembersPage() {
   const { openMember } = useAdminNav();
   const { toast } = useToast();
-  const [rows, setRows] = React.useState<Member[]>(MEMBERS);
+  const [rows, setRows] = React.useState<Member[]>([]);
   const [q, setQ] = React.useState("");
   const [status, setStatus] = React.useState("all");
   const [page, setPage] = React.useState(1);
@@ -127,7 +127,7 @@ export function MembersPage() {
     try {
       const res = await fetch("/api/admin/data?resource=members");
       const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+      if (json.success && Array.isArray(json.data)) {
         const mapped: Member[] = json.data.map((p: any) => {
           const w = Array.isArray(p.wallets) ? p.wallets[0] : p.wallets;
           return {
@@ -139,7 +139,7 @@ export function MembersPage() {
             bank_account_number: p.bank_account_number || "-",
             bank_account_name: p.bank_account_name || p.full_name || "-",
             avatar_url: p.avatar_url || null,
-            vip_level: typeof p.vip_level === "number" ? p.vip_level : 0,
+            vip_level: typeof p.vip_level === "number" ? p.vip_level : (parseInt(String(p.vip_level || "").replace(/\D/g, ""), 10) || 0),
             status: (p.status as Member["status"]) || "active",
             balance: Number(w?.balance || 0),
             commission_balance: Number(w?.commission_balance || 0),

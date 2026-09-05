@@ -10,9 +10,10 @@ import {
 } from "recharts";
 import { Panel, StatCard, StatusBadge, Avatar, BankBadge, RealtimeDot, EmptyState } from "../primitives";
 import {
-  DASH_STATS, WEEKLY_CHART, ACTIVITY_FEED, TOP10_BETTORS, fmtTHB, fmtNum, fmtDT, mktShort,
+  MARKETS, fmtTHB, fmtNum, fmtDT, mktShort,
   type FeedItem,
 } from "@/data/admin-mock";
+import { formatBetTypeThai } from "./bets";
 import { cn } from "@/lib/utils";
 
 function AlertBadge({ kind }: { kind: NonNullable<FeedItem["alert"]> }) {
@@ -55,24 +56,54 @@ function FeedRow({ item }: { item: FeedItem }) {
   }
 
   if (item.kind === "bet") {
+    const mkt = MARKETS.find(
+      (m) => m.code === item.market_code || m.name === item.market
+    );
+    const logoUrl = item.market_logo || mkt?.logo_url;
+    const betTypeThai = formatBetTypeThai(item.bet_type ?? "");
+
     return (
-      <div className="flex items-center gap-3 px-4 py-3 hover:bg-neutral-50/70">
+      <div className="flex items-center gap-3 px-4 py-3 hover:bg-neutral-50/70 transition-colors">
         <Avatar name={item.member?.full_name ?? "?"} imageUrl={item.member?.avatar_url} className="size-9" />
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-neutral-800">
             {item.member?.full_name}
             <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] font-bold text-neutral-500">{item.member?.member_id}</span>
           </p>
-          <p className="mt-1 flex items-center gap-1.5 text-xs text-neutral-500">
-            <span className="flex size-4 items-center justify-center rounded-full text-[7px] font-black text-white" style={{ backgroundColor: item.market_color }}>
-              {mktShort(item.market_code ?? "")}
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-neutral-500">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={item.market}
+                className="size-4 rounded-full object-cover ring-1 ring-neutral-200"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            ) : (
+              <span
+                className="flex size-4 items-center justify-center rounded-full text-[7px] font-black text-white"
+                style={{ backgroundColor: item.market_color || "#059669" }}
+              >
+                {mktShort(item.market_code ?? "")}
+              </span>
+            )}
+            <span className="font-medium text-neutral-700">{item.market}</span>
+            <span className="text-neutral-300">·</span>
+            <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] font-medium text-neutral-600">
+              {betTypeThai}
             </span>
-            {item.market} · เลข <b className="font-mono text-neutral-700">{item.numbers}</b> ({item.bet_type})
-          </p>
+            <span className="inline-flex items-center rounded-md bg-emerald-600 px-1.5 py-0.5 font-mono text-[11px] font-bold text-white shadow-xs">
+              {item.numbers}
+            </span>
+          </div>
         </div>
         <div className="shrink-0 text-right">
           <p className="text-sm font-bold text-neutral-900">{fmtTHB(item.amount ?? 0)}</p>
-          <p className="text-[11px] text-neutral-400">{fmtDT(item.time)}</p>
+          <div className="mt-0.5 flex items-center justify-end gap-1.5">
+            {item.status ? <StatusBadge status={item.status} /> : <StatusBadge status="pending" />}
+            <span className="hidden text-[11px] text-neutral-400 sm:inline">{fmtDT(item.time)}</span>
+          </div>
         </div>
       </div>
     );
@@ -118,7 +149,7 @@ const FILTERS = [
 export function DashboardPage() {
   const [filter, setFilter] = React.useState<(typeof FILTERS)[number]["key"]>("all");
   const [liveStats, setLiveStats] = React.useState<any>(null);
-  const [liveFeed, setLiveFeed] = React.useState<FeedItem[]>(ACTIVITY_FEED);
+  const [liveFeed, setLiveFeed] = React.useState<FeedItem[]>([]);
 
   React.useEffect(() => {
     async function loadDash() {
@@ -128,26 +159,36 @@ export function DashboardPage() {
         if (json.success && json.data) {
           setLiveStats(json.data);
 
-          const betsFeed: FeedItem[] = (json.data.recentBets || []).map((b: any) => ({
-            id: `bet-${b.id}`,
-            time: b.created_at,
-            kind: "bet",
-            member: {
-              full_name: b.profiles?.full_name || "สมาชิก",
-              member_id: b.profiles?.member_id || (b.user_id ? b.user_id.slice(0, 8) : "MB"),
-              phone: "-",
-              avatar_url: b.profiles?.avatar_url || null,
-              bank_code: "KBANK",
-              bank_account_number: "-",
-              vip_level: 0,
-            },
-            market: b.lottery_markets?.name || "หวย",
-            market_code: b.lottery_markets?.code || "MKT",
-            market_color: b.lottery_markets?.color || "#059669",
-            bet_type: b.bet_type,
-            numbers: b.number,
-            amount: Number(b.amount),
-          }));
+          const betsFeed: FeedItem[] = (json.data.recentBets || []).map((b: any) => {
+            const mkt = MARKETS.find(
+              (m) => m.id === b.market_id || m.code === b.lottery_markets?.code || m.name === b.lottery_markets?.name
+            );
+            const statusUpper = (b.status || "PENDING").toUpperCase();
+            const mappedStatus = statusUpper === "WON" ? "won" : statusUpper === "LOST" ? "lost" : "pending";
+
+            return {
+              id: `bet-${b.id}`,
+              time: b.created_at,
+              kind: "bet",
+              member: {
+                full_name: b.profiles?.full_name || "สมาชิก",
+                member_id: b.profiles?.member_id || (b.user_id ? b.user_id.slice(0, 8) : "MB"),
+                phone: "-",
+                avatar_url: b.profiles?.avatar_url || null,
+                bank_code: "KBANK",
+                bank_account_number: "-",
+                vip_level: 0,
+              },
+              market: b.lottery_markets?.name || mkt?.name || "หวย",
+              market_code: b.lottery_markets?.code || mkt?.code || "MKT",
+              market_color: b.lottery_markets?.color || mkt?.color || "#059669",
+              market_logo: b.lottery_markets?.logo_url || mkt?.logo_url || null,
+              bet_type: b.bet_type,
+              numbers: b.numbers || b.number || "00",
+              amount: Number(b.amount),
+              status: mappedStatus,
+            };
+          });
 
           const depsFeed: FeedItem[] = (json.data.recentDeposits || []).map((d: any) => ({
             id: `dep-${d.id}`,
@@ -170,9 +211,7 @@ export function DashboardPage() {
           }));
 
           const merged = [...betsFeed, ...depsFeed].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-          if (merged.length > 0) {
-            setLiveFeed(merged);
-          }
+          setLiveFeed(merged);
         }
       } catch (e) {
         console.error("Failed to load dashboard data:", e);
@@ -182,18 +221,50 @@ export function DashboardPage() {
   }, []);
 
   const s = liveStats ? {
-    total_deposit_today: liveStats.totalDeposit,
-    total_withdraw_today: 0,
-    total_bet_today: liveStats.totalBet,
-    total_payout_today: liveStats.totalPayout,
-    pending_deposits: liveStats.depositPendingCount,
-    pending_withdrawals: liveStats.withdrawPendingCount,
-    new_members_today: liveStats.memberCount,
-    net_profit_today: (liveStats.totalDeposit + liveStats.totalBet) - liveStats.totalPayout,
-    active_members_7d: liveStats.memberCount,
+    total_deposit_today: liveStats.todayDeposit ?? 0,
+    total_withdraw_today: liveStats.todayWithdraw ?? 0,
+    total_bet_today: liveStats.todayBet ?? 0,
+    total_payout_today: liveStats.todayPayout ?? 0,
+    pending_deposits: liveStats.depositPendingCount ?? 0,
+    pending_withdrawals: liveStats.withdrawPendingCount ?? 0,
+    new_members_today: liveStats.memberCount ?? 0,
+    net_profit_today: ((liveStats.todayDeposit ?? 0) + (liveStats.todayBet ?? 0)) - (liveStats.todayPayout ?? 0),
+    active_members_7d: liveStats.memberCount ?? 0,
     bet_rate_per_person: liveStats.memberCount > 0 ? (liveStats.betCount / liveStats.memberCount) : 0,
+    withdrawal_rate: (liveStats.totalDeposit > 0) ? ((liveStats.totalWithdraw / liveStats.totalDeposit) * 100) : 0,
+  } : {
+    total_deposit_today: 0,
+    total_withdraw_today: 0,
+    total_bet_today: 0,
+    total_payout_today: 0,
+    pending_deposits: 0,
+    pending_withdrawals: 0,
+    new_members_today: 0,
+    net_profit_today: 0,
+    active_members_7d: 0,
+    bet_rate_per_person: 0,
     withdrawal_rate: 0,
-  } : DASH_STATS;
+  };
+
+  const [bettorPeriod, setBettorPeriod] = React.useState<"all" | "7d" | "today">("all");
+
+  const activeTopBettors: {
+    rank: number;
+    user_id?: string;
+    name: string;
+    member_id: string;
+    avatar_url?: string | null;
+    total_bet: number;
+    bet_count?: number;
+  }[] = (
+    bettorPeriod === "today"
+      ? liveStats?.topBettorsGrouped?.today
+      : bettorPeriod === "7d"
+      ? liveStats?.topBettorsGrouped?.week
+      : liveStats?.topBettorsGrouped?.all || liveStats?.topBettors
+  ) || [];
+  const maxBet = activeTopBettors[0]?.total_bet || 1;
+  const weeklyChartData = liveStats?.weeklyChart || [];
 
   const feed = liveFeed.filter((f) => filter === "all" || f.kind === filter).slice(0, 30);
 
@@ -207,8 +278,8 @@ export function DashboardPage() {
         <StatCard icon={Trophy} label="ยอดจ่ายรางวัล" value={fmtTHB(s.total_payout_today)} tone="neutral" />
         <StatCard icon={Hourglass} label="รอฝาก" value={`${s.pending_deposits} รายการ`} sub="รอการอนุมัติจากแอดมิน" tone="amber" />
         <StatCard icon={Hourglass} label="รอถอน" value={`${s.pending_withdrawals} รายการ`} sub="รอโอนเงินให้สมาชิก" tone="amber" />
-        <StatCard icon={UserPlus} label="สมาชิกใหม่วันนี้" value={`${s.new_members_today} คน`} sub="สมัครใหม่ภายใน 24 ชม." tone="brand" />
-        <StatCard icon={TrendingUp} label="กำไร/ขาดทุนวันนี้" value={fmtTHB(s.net_profit_today)} sub="(ยอดแทง + ฝาก) − (จ่ายรางวัล + ถอน)" tone="brand" />
+        <StatCard icon={UserPlus} label="สมาชิกใหม่วันนี้" value={`${s.new_members_today} คน`} sub="สมัครใหม่วันนี้" tone="brand" />
+        <StatCard icon={TrendingUp} label="กำไร/ขาดทุนวันนี้" value={fmtTHB(s.net_profit_today)} sub="คำนวณสุทธิวันนี้" tone="brand" />
       </div>
 
       {/* Advanced Stats Row */}
@@ -223,18 +294,18 @@ export function DashboardPage() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-base font-bold text-neutral-900">ภาพรวม 7 วันย้อนหลัง</h2>
-            <p className="mt-0.5 text-xs text-neutral-500">ข้อมูลจากธุรกรรม: ฝาก · ถอน · แทง (บาท)</p>
+            <p className="mt-0.5 text-xs text-neutral-500">ข้อมูลจากธุรกรรมจริง: ฝาก · ถอน · แทง (บาท)</p>
           </div>
-          <RealtimeDot label="เชื่อมต่อข้อมูลสดอัตโนมัติ" />
+          <RealtimeDot label="เชื่อมต่อข้อมูลสด Supabase" />
         </div>
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={WEEKLY_CHART} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
+            <BarChart data={weeklyChartData} margin={{ top: 12, right: 12, left: 0, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#737373" }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#737373" }} dy={4} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: "#a3a3a3" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${Math.round(v / 1000)}k`} />
               <Tooltip formatter={(v) => fmtTHB(Number(v))} contentStyle={{ borderRadius: 16, border: "1px solid #e5e5e5", fontSize: 12 }} />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Legend wrapperStyle={{ fontSize: 12, paddingTop: 6 }} />
               <Bar dataKey="DEPOSIT" name="ฝาก" fill="#287e0b" radius={[6, 6, 0, 0]} maxBarSize={26} />
               <Bar dataKey="WITHDRAW" name="ถอน" fill="#f43f5e" radius={[6, 6, 0, 0]} maxBarSize={26} />
               <Bar dataKey="BET" name="แทง" fill="#f59e0b" radius={[6, 6, 0, 0]} maxBarSize={26} />
@@ -249,16 +320,19 @@ export function DashboardPage() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-4 py-3.5 sm:px-5">
             <div>
               <h2 className="text-base font-bold text-neutral-900">ฟีดกิจกรรมล่าสุด</h2>
-              <p className="mt-0.5 text-xs text-neutral-500">ฝาก · ถอน · โพย · แจ้งเตือนตลาดหวย (รวม 30 รายการล่าสุด)</p>
+              <p className="mt-0.5 text-xs text-neutral-500">ฝาก · ถอน · โพย · แจ้งเตือนตลาดหวย (ข้อมูลจริงล่าสุด)</p>
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1 rounded-lg bg-neutral-100 p-1">
               {FILTERS.map((f) => (
                 <button
                   key={f.key}
+                  type="button"
                   onClick={() => setFilter(f.key)}
                   className={cn(
-                    "rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
-                    filter === f.key ? "bg-brand-600 text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                    "rounded-md px-3 py-1 text-xs font-semibold transition-all duration-200 cursor-pointer",
+                    filter === f.key
+                      ? "bg-white text-neutral-900 shadow-sm font-bold scale-[1.02]"
+                      : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/50"
                   )}
                 >
                   {f.label}
@@ -266,36 +340,133 @@ export function DashboardPage() {
               ))}
             </div>
           </div>
-          <div className="max-h-[520px] divide-y divide-neutral-100 overflow-y-auto">
-            {feed.length ? feed.map((item) => <FeedRow key={item.id} item={item} />) : <EmptyState />}
+          <div className="max-h-[520px] divide-y divide-neutral-100 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
+            {feed.length ? (
+              <div className="animate-in fade-in duration-200 divide-y divide-neutral-100">
+                {feed.map((item) => <FeedRow key={item.id} item={item} />)}
+              </div>
+            ) : (
+              <div className="p-8">
+                <EmptyState title="ยังไม่มีกิจกรรมล่าสุด" desc="รายการฝาก ถอน และการแทงจะปรากฏที่นี่แบบเรียลไทม์" />
+              </div>
+            )}
           </div>
         </Panel>
 
         <Panel>
-          <div className="border-b border-neutral-100 px-4 py-3.5 sm:px-5">
-            <h2 className="text-base font-bold text-neutral-900">10 อันดับผู้แทงสูงสุด</h2>
-            <p className="mt-0.5 text-xs text-neutral-500">ยอดแทงรวมทุกตลาด (วันนี้)</p>
-          </div>
-          <div className="divide-y divide-neutral-100">
-            {TOP10_BETTORS.map((t) => (
-              <div key={t.rank} className="flex items-center gap-3 px-4 py-3 sm:px-5">
-                <span
-                  className={cn(
-                    "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-black",
-                    t.rank === 1 ? "bg-amber-100 text-amber-700" : t.rank <= 3 ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-500"
-                  )}
-                >
-                  {t.rank}
+          <div className="flex flex-col gap-2.5 border-b border-neutral-100 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-neutral-900">อันดับผู้แทงสูงสุด</h2>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200/60">
+                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  ดึงสดจาก DB
                 </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-neutral-800">{t.name}</p>
-                  <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
-                    <div className="h-full rounded-full bg-brand-500" style={{ width: `${(t.total_bet / TOP10_BETTORS[0].total_bet) * 100}%` }} />
+              </div>
+              <p className="mt-0.5 text-xs text-neutral-500">
+                {bettorPeriod === "today" && "ยอดแทงสะสมวันนี้ (คำนวณจากตาราง public.bets)"}
+                {bettorPeriod === "7d" && "ยอดแทงสะสมย้อนหลัง 7 วัน (นับเฉพาะโพยจริง)"}
+                {bettorPeriod === "all" && "ยอดแทงสะสมตลอดกาลทุกโพยในระบบ"}
+              </p>
+            </div>
+            <div className="flex items-center gap-1 rounded-lg bg-neutral-100 p-1 text-xs font-semibold text-neutral-600">
+              <button
+                type="button"
+                onClick={() => setBettorPeriod("all")}
+                className={cn(
+                  "rounded-md px-2.5 py-1 transition-all duration-200 cursor-pointer",
+                  bettorPeriod === "all" ? "bg-white text-neutral-900 shadow-sm font-bold scale-[1.02]" : "hover:text-neutral-900 hover:bg-neutral-200/50"
+                )}
+              >
+                ทั้งหมด ({liveStats?.topBettorsGrouped?.all?.length ?? (liveStats?.topBettors?.length || 0)})
+              </button>
+              <button
+                type="button"
+                onClick={() => setBettorPeriod("7d")}
+                className={cn(
+                  "rounded-md px-2.5 py-1 transition-all duration-200 cursor-pointer",
+                  bettorPeriod === "7d" ? "bg-white text-neutral-900 shadow-sm font-bold scale-[1.02]" : "hover:text-neutral-900 hover:bg-neutral-200/50"
+                )}
+              >
+                7 วันล่าสุด ({liveStats?.topBettorsGrouped?.week?.length ?? 0})
+              </button>
+              <button
+                type="button"
+                onClick={() => setBettorPeriod("today")}
+                className={cn(
+                  "rounded-md px-2.5 py-1 transition-all duration-200 cursor-pointer",
+                  bettorPeriod === "today" ? "bg-white text-neutral-900 shadow-sm font-bold scale-[1.02]" : "hover:text-neutral-900 hover:bg-neutral-200/50"
+                )}
+              >
+                วันนี้ ({liveStats?.topBettorsGrouped?.today?.length ?? 0})
+              </button>
+            </div>
+          </div>
+
+          {activeTopBettors.length === 0 ? (
+            <div className="p-8 animate-in fade-in duration-200">
+              {bettorPeriod === "today" ? (
+                <EmptyState
+                  title="ยังไม่มีการแทงวันนี้ (0 รายการ)"
+                  desc="วันนี้ยังไม่มีสมาชิกส่งโพยในตาราง bets — ข้อมูลจะปรากฏทันทีเมื่อมีโพยแรกของวัน (สลับดูแท็บ '7 วันล่าสุด' หรือ 'ทั้งหมด' เพื่อดูสมาชิกที่มียอดแทงจริง)"
+                />
+              ) : (
+                <EmptyState
+                  title="ยังไม่มีข้อมูลผู้แทง"
+                  desc="ระบบจะคำนวณและจัดอันดับอัตโนมัติจากตาราง bets ทันทีที่มีการแทง"
+                />
+              )}
+            </div>
+          ) : (
+            <div className="divide-y divide-neutral-100 animate-in fade-in duration-200">
+              {activeTopBettors.map((t) => (
+                <div key={`${bettorPeriod}-${t.rank}-${t.member_id}`} className="flex items-center gap-3 px-4 py-3 sm:px-5 hover:bg-neutral-50/70 transition-colors">
+                  <span
+                    className={cn(
+                      "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-black shadow-sm",
+                      t.rank === 1
+                        ? "bg-amber-400 text-neutral-950 font-black"
+                        : t.rank === 2
+                        ? "bg-neutral-200 text-neutral-800 font-bold"
+                        : t.rank === 3
+                        ? "bg-amber-700 text-white font-bold"
+                        : "bg-neutral-100 text-neutral-500 font-semibold"
+                    )}
+                  >
+                    {t.rank}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-bold text-neutral-800">{t.name}</p>
+                      {t.member_id && (
+                        <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-mono font-medium text-neutral-600">
+                          {t.member_id}
+                        </span>
+                      )}
+                      {t.bet_count !== undefined && (
+                        <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700">
+                          {t.bet_count} โพย
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
+                      <div
+                        className="h-full rounded-full bg-brand-500 transition-all duration-500"
+                        style={{ width: `${Math.min(100, (t.total_bet / maxBet) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className="text-sm font-black text-neutral-900">{fmtTHB(t.total_bet)}</span>
+                    <p className="text-[10px] text-neutral-400 font-medium">ยอดแทงรวม</p>
                   </div>
                 </div>
-                <span className="shrink-0 text-sm font-bold text-neutral-900">{fmtTHB(t.total_bet)}</span>
-              </div>
-            ))}
+              ))}
+            </div>
+          )}
+          <div className="border-t border-neutral-100 bg-neutral-50/50 px-4 py-2 sm:px-5 flex items-center justify-between text-[11px] text-neutral-400">
+            <span>แหล่งข้อมูล: ตาราง <code className="text-neutral-600 font-mono">public.bets</code> เชื่อม <code className="text-neutral-600 font-mono">profiles</code></span>
+            <span>อัปเดตแบบเรียลไทม์</span>
           </div>
         </Panel>
       </div>
@@ -303,17 +474,17 @@ export function DashboardPage() {
       {/* Quick counters */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Panel className="flex items-center gap-4 p-5">
-          <div className="flex size-12 items-center justify-center rounded-full bg-amber-50 text-amber-600"><Eye className="size-5" /></div>
-          <div>
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600"><Eye className="size-5" /></div>
+          <div className="min-w-0 flex-1">
             <p className="text-sm text-neutral-500">รวมรายการรอดำเนินการ</p>
-            <p className="text-lg font-bold text-neutral-900">{s.pending_deposits + s.pending_withdrawals} รายการ (ฝาก {s.pending_deposits} · ถอน {s.pending_withdrawals})</p>
+            <p className="mt-0.5 truncate text-base font-bold text-neutral-900 sm:text-lg">{s.pending_deposits + s.pending_withdrawals} รายการ (ฝาก {s.pending_deposits} · ถอน {s.pending_withdrawals})</p>
           </div>
         </Panel>
         <Panel className="flex items-center gap-4 p-5">
-          <div className="flex size-12 items-center justify-center rounded-full bg-brand-50 text-brand-600"><TrendingUp className="size-5" /></div>
-          <div>
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600"><TrendingUp className="size-5" /></div>
+          <div className="min-w-0 flex-1">
             <p className="text-sm text-neutral-500">อัตราการชนะ (จ่าย ÷ แทง) วันนี้</p>
-            <p className="text-lg font-bold text-neutral-900">{fmtNum((s.total_payout_today / s.total_bet_today) * 100, 1)}% ของยอดแทง</p>
+            <p className="mt-0.5 truncate text-base font-bold text-neutral-900 sm:text-lg">{fmtNum((s.total_payout_today / (s.total_bet_today || 1)) * 100, 1)}% ของยอดแทง</p>
           </div>
         </Panel>
       </div>
