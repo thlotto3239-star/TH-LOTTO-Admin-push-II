@@ -75,7 +75,7 @@ function BrandPanel() {
         {/* โลโก้ + ชื่อระบบ */}
         <div className="flex items-center gap-3.5">
           <img
-            src="/logo-th.png"
+            src="/logo.svg"
             alt="โลโก้ TH-LOTTO"
             className="size-13 rounded-full object-cover ring-2 ring-white/25"
           />
@@ -133,7 +133,7 @@ function MobileBrandBand() {
       <div className="absolute -right-10 -top-14 size-40 rounded-full bg-brand-500/15 blur-xl" />
       <div className="relative flex items-center gap-3">
         <img
-          src="/logo-th.png"
+          src="/logo.svg"
           alt="โลโก้ TH-LOTTO"
           className="size-11 rounded-full object-cover ring-2 ring-white/25"
         />
