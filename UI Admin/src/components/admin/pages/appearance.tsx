@@ -228,7 +228,7 @@ export function AppearancePage() {
                 <div className="flex items-center justify-between rounded-2xl border border-neutral-100 px-3 py-2.5">
                   <div className="flex items-center gap-2">
                     <div className="flex size-8 items-center justify-center rounded-full text-xs font-black text-white" style={{ backgroundColor: s.primary_color }}>
-                      {s.logo_url ? <img src={s.logo_url} alt="" className="size-8 rounded-full object-cover" /> : <img src="/logo-th.png" alt="" className="size-8 rounded-full object-cover" />}
+                      {s.logo_url ? <img src={s.logo_url} alt="" className="size-8 rounded-full object-cover" /> : <img src="/logo.svg" alt="" className="size-8 rounded-full object-cover" />}
                     </div>
                     <span className="text-sm font-bold text-neutral-900">TH-LOTTO</span>
                   </div>

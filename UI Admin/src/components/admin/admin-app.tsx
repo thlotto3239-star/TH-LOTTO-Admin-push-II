@@ -148,7 +148,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 function Brand({ compact }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-2.5 border-b border-neutral-100 px-5 py-4">
-      <img src="/logo-th.png" alt="TH-LOTTO" className="size-9 rounded-full object-cover ring-1 ring-neutral-200" />
+      <img src="/logo.svg" alt="TH-LOTTO" className="size-9 rounded-full object-cover ring-1 ring-neutral-200" />
       {!compact ? (
         <div>
           <p className="text-sm font-bold tracking-tight text-neutral-900">TH-LOTTO</p>
