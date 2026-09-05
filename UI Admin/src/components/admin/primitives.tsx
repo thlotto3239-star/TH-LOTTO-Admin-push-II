@@ -91,7 +91,7 @@ export function StatCard({
   return (
     <Panel className="p-4 sm:p-5">
       <div className="flex items-start justify-between gap-2 sm:gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-xs text-neutral-500 sm:text-sm">{label}</p>
           <p className="mt-1 truncate text-lg font-bold tracking-tight text-neutral-900 sm:mt-1.5 sm:text-2xl">
             {value}
@@ -229,13 +229,22 @@ export function Pagination({
 }
 
 // ─── Empty state ─────────────────────────────────────────────────────────────
-export function EmptyState({ title = "ไม่พบข้อมูล" }: { title?: string }) {
+export function EmptyState({
+  title = "ไม่พบข้อมูล",
+  desc,
+}: {
+  title?: string;
+  desc?: string;
+}) {
   return (
     <div className="flex flex-col items-center gap-3 py-14 text-center">
       <div className="flex size-14 items-center justify-center rounded-full bg-neutral-100">
         <Inbox className="size-6 text-neutral-400" />
       </div>
-      <p className="text-sm text-neutral-500">{title}</p>
+      <div>
+        <p className="text-sm font-medium text-neutral-600">{title}</p>
+        {desc ? <p className="mt-1 text-xs text-neutral-400">{desc}</p> : null}
+      </div>
     </div>
   );
 }
@@ -247,19 +256,29 @@ export function ConfirmDialog({
   title,
   desc,
   confirmLabel = "ยืนยัน",
+  confirmText,
   danger,
   onConfirm,
+  onClose,
 }: {
   open: boolean;
-  onOpenChange: (o: boolean) => void;
+  onOpenChange?: (o: boolean) => void;
   title: string;
   desc?: string;
   confirmLabel?: string;
+  confirmText?: string;
   danger?: boolean;
   onConfirm: () => void;
+  onClose?: () => void;
 }) {
+  const handleOpenChange = (o: boolean) => {
+    if (onOpenChange) onOpenChange(o);
+    if (!o && onClose) onClose();
+  };
+  const finalConfirmLabel = confirmText || confirmLabel;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="rounded-3xl sm:max-w-md">
         <DialogHeader>
           <div className={cn("mb-1 flex size-11 items-center justify-center rounded-full", danger ? "bg-rose-50 text-rose-600" : "bg-brand-50 text-brand-600")}>
@@ -269,17 +288,17 @@ export function ConfirmDialog({
           <DialogDescription>{desc ?? "โปรดตรวจสอบและยืนยันการทำรายการ"}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0">
-          <Btn variant="outline" className="rounded-full" onClick={() => onOpenChange(false)}>
+          <Btn variant="outline" className="rounded-full" onClick={() => handleOpenChange(false)}>
             ยกเลิก
           </Btn>
           <Btn
             className={cn("rounded-full", danger ? "bg-rose-600 hover:bg-rose-700" : "")}
             onClick={() => {
               onConfirm();
-              onOpenChange(false);
+              handleOpenChange(false);
             }}
           >
-            {confirmLabel}
+            {finalConfirmLabel}
           </Btn>
         </DialogFooter>
       </DialogContent>

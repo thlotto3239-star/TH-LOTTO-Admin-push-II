@@ -291,6 +291,9 @@ export function MarketsPage() {
     toast({ title: "บันทึกข้อมูลตลาดแล้ว", description: `${updated.name} (${updated.code}) อัปเดตเรียบร้อย` });
 
     try {
+      const regularDays = updated.draw_days.filter((d) => d !== 16);
+      const dayOfMonth = updated.draw_days.includes(16) ? [16] : null;
+
       await fetch("/api/admin/data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -298,12 +301,20 @@ export function MarketsPage() {
           action: "update_market",
           payload: {
             id: updated.id,
+            code: updated.code,
             name: updated.name,
             logo_url: updated.logo_url,
             close_minutes_before: updated.close_minutes,
             stream_url: updated.youtube_url,
+            draw_days: regularDays,
+            draw_day_of_month: dayOfMonth,
+            draw_time: updated.draw_time.length === 5 ? `${updated.draw_time}:00` : updated.draw_time,
+            show_in_popular: updated.popular,
+            show_in_trending: updated.hot,
             is_open: updated.active,
             is_active: updated.active,
+            rates: updated.rates,
+            limits: updated.limits,
           },
         }),
       });
@@ -312,11 +323,13 @@ export function MarketsPage() {
     }
   };
 
+
   const filtered = rows
     .filter((m) => {
       if (tab === "GOV") return m.kind === "GOVERNMENT" || m.code === "TH_GOV";
       if (tab === "FOREIGN") return ["LAO", "HANOI_SPECIAL", "HANOI", "HANOI_VIP", "MALAY"].includes(m.code);
       if (tab === "STOCK") return m.code.startsWith("STOCK_") || m.code.includes("NIKKEI") || m.code.includes("CHINA") || m.code.includes("HANGSENG");
+      if (tab === "15MIN") return m.code === "THLOTTO_15M" || m.code.includes("15M");
       return true;
     })
     .filter((m) => !q.trim() || m.name.includes(q.trim()) || m.code.toLowerCase().includes(q.toLowerCase()));
@@ -326,13 +339,14 @@ export function MarketsPage() {
     GOV: rows.filter((r) => r.code === "TH_GOV").length,
     FOREIGN: rows.filter((r) => ["LAO", "HANOI_SPECIAL", "HANOI", "HANOI_VIP", "MALAY"].includes(r.code)).length,
     STOCK: rows.filter((r) => r.code.startsWith("STOCK_") || r.code.includes("NIKKEI") || r.code.includes("CHINA") || r.code.includes("HANGSENG")).length,
+    M15: rows.filter((r) => r.code === "THLOTTO_15M" || r.code.includes("15M")).length,
   };
 
   return (
     <div className="space-y-4">
       <PageHeader
         title="ตลาดหวย"
-        description={`ตารางตลาดหวยทั้งหมด 21 ตลาดจริงบนฐานข้อมูล · เปิดใช้งาน ${rows.filter((r) => r.active).length} ตลาด`}
+        description={`ตารางตลาดหวยทั้งหมด ${rows.length} ตลาดจริงบนฐานข้อมูล · เปิดใช้งาน ${rows.filter((r) => r.active).length} ตลาด`}
       />
 
       {/* Tabs & Search */}
@@ -343,6 +357,7 @@ export function MarketsPage() {
             { id: "GOV", label: `รัฐบาลไทย (${counts.GOV})` },
             { id: "FOREIGN", label: `ต่างประเทศ (${counts.FOREIGN})` },
             { id: "STOCK", label: `หวยหุ้น (${counts.STOCK})` },
+            { id: "15MIN", label: `ล็อตโต้ 15 นาที (${counts.M15})` },
           ].map((t) => (
             <button
               key={t.id}
@@ -375,11 +390,23 @@ export function MarketsPage() {
             onToggle={(v) => {
               setRows((p) => p.map((r) => (r.id === m.id ? { ...r, active: v } : r)));
               toast({ title: v ? "เปิดใช้งานตลาดแล้ว" : "ปิดตลาดแล้ว", description: m.name });
+              fetch("/api/admin/data", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "update_market",
+                  payload: {
+                    id: m.id,
+                    is_open: v,
+                    is_active: v,
+                  },
+                }),
+              }).catch((err) => console.error("Failed to toggle market:", err));
             }}
           />
         ))}
       </div>
-      {edit ? <EditMarketModal m={edit} onClose={() => setEdit(null)} onSave={(m) => setRows((p) => p.map((r) => (r.id === m.id ? m : r)))} /> : null}
+      {edit ? <EditMarketModal m={edit} onClose={() => setEdit(null)} onSave={handleSaveMarket} /> : null}
     </div>
   );
 }

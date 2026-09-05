@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { DRAW_SCHEDULES, RECENT_RESULTS, fmtTHB, mktShort, type DrawSchedule, type LotteryResult } from "@/data/admin-mock";
+import { DRAW_SCHEDULES, RECENT_RESULTS, MARKETS, fmtTHB, mktShort, type DrawSchedule, type LotteryResult } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
 // ─── Digit input (จำกัดตัวเลขตามความยาว) ─────────────────────────────────────
@@ -133,7 +133,7 @@ interface ResultFields {
   r3top: string;
   r2top: string;
   r3front: string | null;
-  r3bottom: string;
+  r3bottom: string | null;
   r2bottom: string;
 }
 
@@ -145,12 +145,14 @@ export function ResultsPage() {
 
   const loadData = React.useCallback(async () => {
     try {
-      const [resResults, resMarkets] = await Promise.all([
+      const [resResults, resSchedules, resBets] = await Promise.all([
         fetch("/api/admin/data?resource=results"),
-        fetch("/api/admin/data?resource=markets"),
+        fetch("/api/admin/data?resource=schedules"),
+        fetch("/api/admin/data?resource=bets&limit=200"),
       ]);
       const jsonResults = await resResults.json();
-      const jsonMarkets = await resMarkets.json();
+      const jsonSchedules = await resSchedules.json();
+      const jsonBets = await resBets.json();
 
       if (jsonResults.success && Array.isArray(jsonResults.data) && jsonResults.data.length > 0) {
         const mappedResults: LotteryResult[] = jsonResults.data.map((r: any) => ({
@@ -169,22 +171,31 @@ export function ResultsPage() {
         setResults(mappedResults);
       }
 
-      if (jsonMarkets.success && Array.isArray(jsonMarkets.data) && jsonMarkets.data.length > 0) {
-        const todayStr = new Date().toISOString().split("T")[0];
-        const mappedSchedules: DrawSchedule[] = jsonMarkets.data
-          .filter((m: any) => m.is_active)
-          .slice(0, 8)
-          .map((m: any) => ({
-            id: m.id,
-            market_name: m.name,
-            market_code: m.code,
-            market_color: m.color || "#059669",
-            kind: m.category === "GOV" ? "GOVERNMENT" : "STOCK",
-            draw_date: todayStr,
-            close_time: m.close_time ? m.close_time.slice(0, 5) : "15:20",
-            status: m.is_open ? "CLOSED" : "SETTLED",
-            total_bet: 28400,
-          }));
+      if (jsonSchedules.success && Array.isArray(jsonSchedules.data) && jsonSchedules.data.length > 0) {
+        const betsData = (jsonBets.success && Array.isArray(jsonBets.data)) ? jsonBets.data : [];
+        const mappedSchedules: DrawSchedule[] = jsonSchedules.data.slice(0, 12).map((s: any) => {
+          const m = s.lottery_markets || {};
+          const mkt = MARKETS.find((x) => x.id === s.market_id || x.code === m.code) || MARKETS[0];
+          const totalBet = betsData
+            .filter((b: any) => b.market_id === s.market_id || b.draw_schedule_id === s.id)
+            .reduce((sum: number, b: any) => sum + Number(b.amount || 0), 0);
+
+          const closeTimeStr = s.close_time
+            ? new Date(s.close_time).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })
+            : (m.draw_time ? m.draw_time.slice(0, 5) : "15:20");
+
+          return {
+            id: s.id,
+            market_name: m.name || mkt.name,
+            market_code: m.code || mkt.code,
+            market_color: mkt.color || "#059669",
+            kind: (m.category === "GOV" || m.code === "TH_GOV") ? "GOVERNMENT" : "STOCK",
+            draw_date: s.draw_date || new Date().toISOString().split("T")[0],
+            close_time: closeTimeStr,
+            status: s.status === "open" ? "CLOSED" : "SETTLED",
+            total_bet: totalBet,
+          };
+        });
         if (mappedSchedules.length > 0) {
           setSchedules(mappedSchedules);
         }

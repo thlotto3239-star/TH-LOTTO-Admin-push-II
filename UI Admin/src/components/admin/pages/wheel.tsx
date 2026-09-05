@@ -6,7 +6,7 @@ import { Panel, Btn, PageHeader, Field, inputCls, ColorPickerInput } from "../pr
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { WHEEL_CONFIG, WHEEL_SLOTS, WHEEL_SPIN_TODAY, fmtTHB, fmtNum, type WheelSlot } from "@/data/admin-mock";
+import { WHEEL_CONFIG, WHEEL_SLOTS, fmtTHB, fmtNum, type WheelSlot } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
 // ─── SVG wheel preview (8 ช่อง live ตาม config) ──────────────────────────────
@@ -118,23 +118,29 @@ export function WheelPage() {
   const [slots, setSlots] = React.useState<WheelSlot[]>(WHEEL_SLOTS);
   const [config, setConfig] = React.useState(WHEEL_CONFIG);
   const [selected, setSelected] = React.useState<string | null>(null);
+  const [spinStats, setSpinStats] = React.useState({ spins: 0, cost_collected: 0, prizes_paid: 0 });
 
   React.useEffect(() => {
     fetch("/api/admin/data?resource=content")
       .then((r) => r.json())
       .then((res) => {
-        if (res.success && res.data?.wheelPrizes?.length > 0) {
-          setSlots(
-            res.data.wheelPrizes.map((p: any) => ({
-              id: String(p.id),
-              name: p.name || "",
-              amount: Number(p.amount || 0),
-              probability: Number(p.probability || 0),
-              color: p.color || "#10b981",
-              hi_color: p.hi_color || "#34d399",
-              is_active: Boolean(p.is_active),
-            }))
-          );
+        if (res.success) {
+          if (res.data?.wheelPrizes?.length > 0) {
+            setSlots(
+              res.data.wheelPrizes.map((p: any) => ({
+                id: String(p.id),
+                name: p.name || "",
+                amount: Number(p.amount || 0),
+                probability: Number(p.probability || 0),
+                color: p.color || "#10b981",
+                hi_color: p.hi_color || "#34d399",
+                is_active: Boolean(p.is_active),
+              }))
+            );
+          }
+          if (res.data?.wheelSpinsStats) {
+            setSpinStats(res.data.wheelSpinsStats);
+          }
         }
       })
       .catch(() => {});
@@ -143,9 +149,51 @@ export function WheelPage() {
   const totalProb = slots.filter((s) => s.is_active).reduce((a, s) => a + s.probability, 0);
   const probOk = totalProb === 100;
 
+  const handleSaveSlot = async (s: WheelSlot) => {
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_wheel_prize",
+          payload: s,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: "บันทึกช่องรางวัลแล้ว", description: `${s.name} (${s.probability}%) บันทึกลงระบบแล้ว` });
+      } else {
+        toast({ title: "บันทึกล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "บันทึกล้มเหลว", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleSaveConfig = async () => {
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_wheel_config",
+          payload: config,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: "บันทึกตั้งค่าวงล้อแล้ว", description: `ราคา ${fmtTHB(config.cost)}/ครั้ง · จำกัด ${config.daily_limit} ครั้ง/วัน` });
+      } else {
+        toast({ title: "บันทึกล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "บันทึกล้มเหลว", description: err.message, variant: "destructive" });
+    }
+  };
+
   return (
     <div className="space-y-5">
-      <PageHeader title="วงล้อโชคดี" description={`ตั้งค่าวงล้อและรางวัล · วันนี้หมุนไป ${fmtNum(WHEEL_SPIN_TODAY.spins)} ครั้ง · รับเข้า ${fmtTHB(WHEEL_SPIN_TODAY.cost_collected)} · จ่ายออก ${fmtTHB(WHEEL_SPIN_TODAY.prizes_paid)}`} />
+      <PageHeader title="วงล้อโชคดี" description={`ตั้งค่าวงล้อและรางวัล · ประวัติหมุนรวม ${fmtNum(spinStats.spins)} ครั้ง · รับเข้า ${fmtTHB(spinStats.cost_collected)} · จ่ายออก ${fmtTHB(spinStats.prizes_paid)}`} />
 
       {/* Bento: preview + general settings */}
       <div className="grid gap-5 lg:grid-cols-3">
@@ -185,15 +233,15 @@ export function WheelPage() {
                 </label>
               </div>
             </Field>
-            <Btn className="mt-1 w-full rounded-full" onClick={() => toast({ title: "บันทึกตั้งค่าวงล้อแล้ว", description: `ราคา ${fmtTHB(config.cost)}/ครั้ง · จำกัด ${config.daily_limit} ครั้ง/วัน` })}>
+            <Btn className="mt-1 w-full rounded-full" onClick={handleSaveConfig}>
               บันทึกตั้งค่าทั่วไป
             </Btn>
             <div className="mt-2 rounded-2xl bg-neutral-50 p-3 text-center">
-              <p className="text-[11px] text-neutral-400">สถิติวันนี้</p>
+              <p className="text-[11px] text-neutral-400">สถิติรวม</p>
               <div className="mt-1 grid grid-cols-3 gap-1 text-center">
-                <div><p className="text-sm font-black text-neutral-900">{fmtNum(WHEEL_SPIN_TODAY.spins)}</p><p className="text-[10px] text-neutral-400">หมุน</p></div>
-                <div><p className="text-sm font-black text-brand-600">{fmtTHB(WHEEL_SPIN_TODAY.cost_collected)}</p><p className="text-[10px] text-neutral-400">รับเข้า</p></div>
-                <div><p className="text-sm font-black text-rose-600">{fmtTHB(WHEEL_SPIN_TODAY.prizes_paid)}</p><p className="text-[10px] text-neutral-400">จ่ายออก</p></div>
+                <div><p className="text-sm font-black text-neutral-900">{fmtNum(spinStats.spins)}</p><p className="text-[10px] text-neutral-400">หมุน</p></div>
+                <div><p className="text-sm font-black text-brand-600">{fmtTHB(spinStats.cost_collected)}</p><p className="text-[10px] text-neutral-400">รับเข้า</p></div>
+                <div><p className="text-sm font-black text-rose-600">{fmtTHB(spinStats.prizes_paid)}</p><p className="text-[10px] text-neutral-400">จ่ายออก</p></div>
               </div>
             </div>
           </div>
@@ -211,7 +259,7 @@ export function WheelPage() {
               selected={selected === s.id}
               onSelect={() => setSelected(s.id)}
               onChange={(ns) => setSlots((p) => p.map((x) => (x.id === ns.id ? ns : x)))}
-              onSave={(updated) => toast({ title: "บันทึกช่องรางวัลแล้ว", description: `RPC admin_update_wheel_prize (${updated.id}) · ${updated.name} ${updated.probability}%` })}
+              onSave={handleSaveSlot}
             />
           ))}
         </div>

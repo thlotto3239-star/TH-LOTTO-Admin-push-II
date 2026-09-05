@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { PROMOTIONS, type Promotion } from "@/data/admin-mock";
+import { type Promotion } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
 const EMPTY: Promotion = {
@@ -186,15 +186,15 @@ function PromoForm({ initial, onClose, onSave }: { initial: Promotion; onClose: 
 
 export function PromotionsPage() {
   const { toast } = useToast();
-  const [rows, setRows] = React.useState<Promotion[]>(PROMOTIONS);
+  const [rows, setRows] = React.useState<Promotion[]>([]);
   const [form, setForm] = React.useState<{ initial: Promotion } | null>(null);
   const [confirmDel, setConfirmDel] = React.useState<Promotion | null>(null);
 
-  React.useEffect(() => {
+  const loadPromos = React.useCallback(() => {
     fetch("/api/admin/data?resource=content")
       .then((r) => r.json())
       .then((res) => {
-        if (res.success && res.data?.promotions?.length > 0) {
+        if (res.success && Array.isArray(res.data?.promotions)) {
           setRows(
             res.data.promotions.map((p: any) => ({
               id: String(p.id),
@@ -226,6 +226,71 @@ export function PromotionsPage() {
       })
       .catch(() => {});
   }, []);
+
+  React.useEffect(() => {
+    loadPromos();
+  }, [loadPromos]);
+
+  const handleToggle = async (p: Promotion, active: boolean) => {
+    setRows((rws) => rws.map((x) => (x.id === p.id ? { ...x, is_active: active } : x)));
+    try {
+      await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "upsert_promotion",
+          payload: { ...p, is_active: active },
+        }),
+      });
+      toast({ title: active ? "เปิดใช้งานโปรโมชั่นแล้ว" : "ปิดใช้งานโปรโมชั่นแล้ว", description: p.title });
+    } catch {
+      toast({ title: "เกิดข้อผิดพลาด", description: "ไม่สามารถบันทึกสถานะได้", variant: "destructive" });
+    }
+  };
+
+  const handleSave = async (p: Promotion) => {
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "upsert_promotion",
+          payload: p,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: "บันทึกโปรโมชั่นสำเร็จ", description: `${p.title} (${p.promo_code})` });
+        loadPromos();
+      } else {
+        toast({ title: "บันทึกล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "บันทึกล้มเหลว", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (p: Promotion) => {
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete_promotion",
+          payload: { id: p.id },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: "ลบโปรโมชั่นแล้ว", description: p.title });
+        loadPromos();
+      } else {
+        toast({ title: "ลบล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "ลบล้มเหลว", description: err.message, variant: "destructive" });
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -278,10 +343,7 @@ export function PromotionsPage() {
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={p.is_active}
-                      onCheckedChange={(v) => {
-                        setRows((rws) => rws.map((x) => (x.id === p.id ? { ...x, is_active: v } : x)));
-                        toast({ title: v ? "เปิดใช้งานโปรโมชั่นแล้ว" : "ปิดใช้งานโปรโมชั่นแล้ว", description: p.title });
-                      }}
+                      onCheckedChange={(v) => handleToggle(p, v)}
                       aria-label="เปิด/ปิดโปรโมชั่น"
                     />
                     <span className="text-xs font-medium text-neutral-600">{p.is_active ? "เปิดอยู่" : "ปิดอยู่"}</span>
@@ -301,7 +363,7 @@ export function PromotionsPage() {
         </div>
       )}
 
-      {form ? <PromoForm initial={form.initial} onClose={() => setForm(null)} onSave={(p) => setRows((rws) => (rws.some((x) => x.id === p.id) ? rws.map((x) => (x.id === p.id ? p : x)) : [...rws, { ...p, id: `pm-${Date.now()}` }]))} /> : null}
+      {form ? <PromoForm initial={form.initial} onClose={() => setForm(null)} onSave={handleSave} /> : null}
 
       {confirmDel ? (
         <Dialog open onOpenChange={(o) => !o && setConfirmDel(null)}>
@@ -312,7 +374,7 @@ export function PromotionsPage() {
             </DialogHeader>
             <DialogFooter className="gap-2 sm:gap-0">
               <Btn variant="outline" className="rounded-full" onClick={() => setConfirmDel(null)}>ยกเลิก</Btn>
-              <Btn className="rounded-full bg-rose-600 hover:bg-rose-700" onClick={() => { setRows((rws) => rws.filter((x) => x.id !== confirmDel.id)); toast({ title: "ลบโปรโมชั่นแล้ว", description: confirmDel.title }); setConfirmDel(null); }}>ลบถาวร</Btn>
+              <Btn className="rounded-full bg-rose-600 hover:bg-rose-700" onClick={() => { handleDelete(confirmDel); setConfirmDel(null); }}>ลบถาวร</Btn>
             </DialogFooter>
           </DialogContent>
         </Dialog>

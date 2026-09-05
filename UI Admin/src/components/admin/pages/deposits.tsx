@@ -7,7 +7,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { DEPOSITS, PROMO_DETAILS, fmtTHB, fmtDT, type DepositReq } from "@/data/admin-mock";
+import { PROMO_DETAILS, fmtTHB, fmtDT, type DepositReq } from "@/data/admin-mock";
+import { useAdminCounts } from "../store";
 import { cn } from "@/lib/utils";
 
 // ─── Slip preview (image modal) ──────────────────────────────────────────────
@@ -140,7 +141,8 @@ function ActionModal({
 // ─── Page ────────────────────────────────────────────────────────────────────
 export function DepositsPage() {
   const { toast } = useToast();
-  const [rows, setRows] = React.useState<DepositReq[]>(DEPOSITS);
+  const { fetchCounts } = useAdminCounts();
+  const [rows, setRows] = React.useState<DepositReq[]>([]);
   const [tab, setTab] = React.useState("ALL");
   const [q, setQ] = React.useState("");
   const [slip, setSlip] = React.useState<DepositReq | null>(null);
@@ -150,7 +152,7 @@ export function DepositsPage() {
     try {
       const res = await fetch("/api/admin/data?resource=deposits");
       const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+      if (json.success && Array.isArray(json.data)) {
         const mapped: DepositReq[] = json.data.map((d: any) => ({
           id: d.id,
           created_at: d.created_at,
@@ -212,6 +214,7 @@ export function DepositsPage() {
       if (json.success) {
         toast({ title: status === "APPROVED" ? "อนุมัติรายการฝากแล้ว" : "ปฏิเสธรายการแล้ว", description: `อัปเดตสถานะ Supabase เรียบร้อย` });
         fetchDeposits();
+        fetchCounts();
       } else {
         toast({ title: "เกิดข้อผิดพลาด", description: json.error, variant: "destructive" });
       }

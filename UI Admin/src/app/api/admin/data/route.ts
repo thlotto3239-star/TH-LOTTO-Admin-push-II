@@ -16,7 +16,9 @@ export async function GET(req: NextRequest) {
           { count: depositPendingCount },
           { count: withdrawPendingCount },
           { data: allApprovedDeposits },
+          { data: allApprovedWithdrawals },
           { data: allBets },
+          { data: topBettorBets },
           { data: recentBets },
           { data: recentDeposits },
         ] = await Promise.all([
@@ -25,21 +27,93 @@ export async function GET(req: NextRequest) {
           supabaseAdmin.from("deposit_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
           supabaseAdmin.from("withdraw_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
           supabaseAdmin.from("deposit_requests").select("amount, created_at").eq("status", "APPROVED"),
+          supabaseAdmin.from("withdraw_requests").select("amount, created_at").eq("status", "APPROVED"),
           supabaseAdmin.from("bets").select("amount, actual_payout, status, created_at"),
+          supabaseAdmin.from("bets").select("amount, user_id, created_at, profiles!bets_profile_fkey (id, full_name, member_id, avatar_url)"),
           supabaseAdmin.from("bets").select(`
             *,
             profiles!bets_profile_fkey (full_name, member_id, avatar_url),
-            lottery_markets!bets_market_id_fkey (name, code, color)
-          `).order("created_at", { ascending: false }).limit(20),
+            lottery_markets!bets_market_id_fkey (name, code, category, logo_url)
+          `).order("created_at", { ascending: false }).limit(30),
           supabaseAdmin.from("deposit_requests").select(`
             *,
             profiles!deposit_requests_profile_fkey (full_name, member_id, avatar_url, bank_name, bank_account_number, bank_account_name)
-          `).order("created_at", { ascending: false }).limit(20),
+          `).order("created_at", { ascending: false }).limit(30),
         ]);
 
         const totalDeposit = (allApprovedDeposits || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
+        const totalWithdraw = (allApprovedWithdrawals || []).reduce((sum, w) => sum + Number(w.amount || 0), 0);
         const totalBet = (allBets || []).reduce((sum, b) => sum + Number(b.amount || 0), 0);
         const totalPayout = (allBets || []).filter((b) => b.status === "WON").reduce((sum, b) => sum + Number(b.actual_payout || 0), 0);
+
+        const now = new Date();
+        const todayYmd = now.toISOString().slice(0, 10);
+        const todayDeposit = (allApprovedDeposits || []).filter((d) => (d.created_at || "").startsWith(todayYmd)).reduce((s, d) => s + Number(d.amount || 0), 0);
+        const todayWithdraw = (allApprovedWithdrawals || []).filter((w) => (w.created_at || "").startsWith(todayYmd)).reduce((s, w) => s + Number(w.amount || 0), 0);
+        const todayBet = (allBets || []).filter((b) => (b.created_at || "").startsWith(todayYmd)).reduce((s, b) => s + Number(b.amount || 0), 0);
+        const todayPayout = (allBets || []).filter((b) => b.status === "WON" && (b.created_at || "").startsWith(todayYmd)).reduce((s, b) => s + Number(b.actual_payout || 0), 0);
+
+        // Calculate real Top 10 Bettors from Supabase bets & profiles by time period
+        function buildTopBettors(records: any[]) {
+          const userMap = new Map<string, { user_id: string; name: string; member_id: string; avatar_url: string | null; total_bet: number; bet_count: number }>();
+          records.forEach((b: any) => {
+            const uid = b.user_id || "unknown";
+            const current = userMap.get(uid) || {
+              user_id: uid,
+              name: b.profiles?.full_name || `สมาชิก #${uid.slice(0, 6)}`,
+              member_id: b.profiles?.member_id || uid.slice(0, 8).toUpperCase(),
+              avatar_url: b.profiles?.avatar_url || null,
+              total_bet: 0,
+              bet_count: 0,
+            };
+            current.total_bet += Number(b.amount || 0);
+            current.bet_count += 1;
+            userMap.set(uid, current);
+          });
+          return Array.from(userMap.values())
+            .sort((a, b) => b.total_bet - a.total_bet)
+            .slice(0, 10)
+            .map((t, index) => ({ rank: index + 1, ...t }));
+        }
+
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(now.getDate() - 7);
+        const sevenDaysIso = sevenDaysAgo.toISOString();
+
+        const topBettorsAll = buildTopBettors(topBettorBets || []);
+        const topBettors7d = buildTopBettors((topBettorBets || []).filter((b: any) => (b.created_at || "") >= sevenDaysIso));
+        const topBettorsToday = buildTopBettors((topBettorBets || []).filter((b: any) => (b.created_at || "").startsWith(todayYmd)));
+        const topBettors = topBettorsAll;
+
+        // Calculate real 7-Day Chart
+        const daysMap = new Map<string, { date: string; DEPOSIT: number; WITHDRAW: number; BET: number }>();
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(now.getDate() - i);
+          const ymd = d.toISOString().slice(0, 10);
+          const displayDate = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+          daysMap.set(ymd, { date: displayDate, DEPOSIT: 0, WITHDRAW: 0, BET: 0 });
+        }
+
+        (allApprovedDeposits || []).forEach((d: any) => {
+          const ymd = (d.created_at || "").slice(0, 10);
+          const entry = daysMap.get(ymd);
+          if (entry) entry.DEPOSIT += Number(d.amount || 0);
+        });
+
+        (allApprovedWithdrawals || []).forEach((w: any) => {
+          const ymd = (w.created_at || "").slice(0, 10);
+          const entry = daysMap.get(ymd);
+          if (entry) entry.WITHDRAW += Number(w.amount || 0);
+        });
+
+        (allBets || []).forEach((b: any) => {
+          const ymd = (b.created_at || "").slice(0, 10);
+          const entry = daysMap.get(ymd);
+          if (entry) entry.BET += Number(b.amount || 0);
+        });
+
+        const weeklyChart = Array.from(daysMap.values());
 
         return NextResponse.json({
           success: true,
@@ -49,8 +123,19 @@ export async function GET(req: NextRequest) {
             depositPendingCount: depositPendingCount || 0,
             withdrawPendingCount: withdrawPendingCount || 0,
             totalDeposit,
+            totalWithdraw,
             totalBet,
             totalPayout,
+            todayDeposit,
+            todayWithdraw,
+            todayBet,
+            topBettors,
+            topBettorsGrouped: {
+              today: topBettorsToday,
+              week: topBettors7d,
+              all: topBettorsAll,
+            },
+            weeklyChart,
             recentBets: recentBets || [],
             recentDeposits: recentDeposits || [],
           },
@@ -84,11 +169,99 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, data });
       }
 
+      case "counts": {
+        const [
+          { count: pendingDeposits },
+          { count: pendingWithdrawals },
+          { count: pendingKyc },
+          { count: pendingResults },
+          { count: unreadNotifs },
+          { data: rawNotifs },
+        ] = await Promise.all([
+          supabaseAdmin.from("deposit_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
+          supabaseAdmin.from("withdraw_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
+          supabaseAdmin.from("profiles").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
+          supabaseAdmin.from("draw_schedules").select("*", { count: "exact", head: true }).eq("status", "UPCOMING"),
+          supabaseAdmin.from("admin_notifications").select("*", { count: "exact", head: true }).eq("is_read", false),
+          supabaseAdmin.from("admin_notifications").select("*").order("created_at", { ascending: false }).limit(20),
+        ]);
+
+        const notifications = (rawNotifs || []).map((n) => {
+          let title = "การแจ้งเตือนระบบ";
+          let type: "info" | "warning" | "success" = "info";
+          let target_page: string | undefined = undefined;
+
+          if (n.type === "DEPOSIT") {
+            title = "รายการฝากเงิน";
+            type = "warning";
+            target_page = "deposits";
+          } else if (n.type === "WITHDRAW") {
+            title = "รายการถอนเงิน";
+            type = "warning";
+            target_page = "withdrawals";
+          } else if (n.type === "TURNOVER_COMPLETE") {
+            title = "สมาชิกทำเทิร์นครบ";
+            type = "success";
+            target_page = "members";
+          } else if (n.type === "LOTTERY_RESULT") {
+            title = "ผลรางวัลออกแล้ว";
+            type = "success";
+            target_page = "results";
+          }
+
+          if (n.link_url) {
+            target_page = n.link_url.replace(/^\//, "");
+          }
+
+          const dateObj = new Date(n.created_at);
+          const timeStr = dateObj.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+
+          return {
+            id: n.id,
+            title,
+            message: n.message || "",
+            type,
+            date: timeStr,
+            read: Boolean(n.is_read),
+            target_page,
+          };
+        });
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            dep: pendingDeposits || 0,
+            wth: pendingWithdrawals || 0,
+            kyc: pendingKyc || 0,
+            res: pendingResults || 0,
+            unread_notifications: unreadNotifs || 0,
+            notifications,
+          },
+        });
+      }
+
+      case "schedules": {
+        const { data, error } = await supabaseAdmin
+          .from("draw_schedules")
+          .select(`
+            *,
+            lottery_markets!draw_schedules_market_id_fkey (*)
+          `)
+          .order("draw_date", { ascending: false })
+          .limit(50);
+        if (error) throw error;
+        return NextResponse.json({ success: true, data });
+      }
+
       case "bets": {
         const limit = parseInt(searchParams.get("limit") || "50", 10);
         const { data, error } = await supabaseAdmin
           .from("bets")
-          .select("*")
+          .select(`
+            *,
+            profiles!bets_profile_fkey (id, full_name, username, phone, member_id, avatar_url),
+            lottery_markets!bets_market_id_fkey (id, name, code, category, logo_url)
+          `)
           .order("created_at", { ascending: false })
           .limit(limit);
         if (error) throw error;
@@ -200,8 +373,8 @@ export async function GET(req: NextRequest) {
               id,
               name,
               code,
-              color,
-              category
+              category,
+              logo_url
             )
           `)
           .order("draw_date", { ascending: false })
@@ -218,6 +391,7 @@ export async function GET(req: NextRequest) {
           { data: announcements },
           { data: banks },
           { data: wheelPrizes },
+          { data: wheelSpins },
           { data: settings },
         ] = await Promise.all([
           supabaseAdmin.from("sliders").select("*").order("display_order", { ascending: true }),
@@ -226,8 +400,13 @@ export async function GET(req: NextRequest) {
           supabaseAdmin.from("announcements").select("*").order("display_order", { ascending: true }),
           supabaseAdmin.from("banks").select("*").order("id", { ascending: true }),
           supabaseAdmin.from("lucky_wheel_prizes").select("*").order("slot_index", { ascending: true }),
+          supabaseAdmin.from("lucky_wheel_spins").select("cost, prize_amount, spun_at"),
           supabaseAdmin.from("settings").select("*"),
         ]);
+
+        const spinsCount = (wheelSpins || []).length;
+        const spinsCost = (wheelSpins || []).reduce((sum, s) => sum + Number(s.cost || 0), 0);
+        const spinsPrizes = (wheelSpins || []).reduce((sum, s) => sum + Number(s.prize_amount || 0), 0);
 
         return NextResponse.json({
           success: true,
@@ -238,6 +417,11 @@ export async function GET(req: NextRequest) {
             announcements: announcements || [],
             banks: banks || [],
             wheelPrizes: wheelPrizes || [],
+            wheelSpinsStats: {
+              spins: spinsCount,
+              cost_collected: spinsCost,
+              prizes_paid: spinsPrizes,
+            },
             settings: settings || [],
           },
         });
@@ -325,7 +509,7 @@ export async function GET(req: NextRequest) {
             .from("bets")
             .select(`
               *,
-              lottery_markets!bets_market_id_fkey (name, code, color)
+              lottery_markets!bets_market_id_fkey (name, code, category, logo_url)
             `)
             .eq("user_id", id)
             .order("created_at", { ascending: false })
@@ -388,6 +572,27 @@ export async function GET(req: NextRequest) {
         });
       }
 
+      case "export": {
+        const table = searchParams.get("table") || "profiles";
+        const allowed = ["profiles", "bets", "transactions", "lottery_results", "settings", "promotions", "deposit_requests", "withdraw_requests", "banks", "announcements"];
+        if (!allowed.includes(table)) {
+          return NextResponse.json({ success: false, error: "Table not allowed for export" }, { status: 400 });
+        }
+        const { data, error } = await supabaseAdmin.from(table).select("*").limit(5000);
+        if (error) throw error;
+        return NextResponse.json({ success: true, data });
+      }
+
+      case "broadcast-history": {
+        const { data, error } = await supabaseAdmin
+          .from("notifications")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(50);
+        if (error) throw error;
+        return NextResponse.json({ success: true, data: data || [] });
+      }
+
       default:
         return NextResponse.json({ success: false, error: "Invalid resource" }, { status: 400 });
     }
@@ -404,22 +609,65 @@ export async function POST(req: NextRequest) {
 
     switch (action) {
       case "update_market": {
-        const { id, name, close_minutes_before, stream_url, logo_url, is_open, is_active } = payload;
+        const {
+          id,
+          code,
+          name,
+          close_minutes_before,
+          stream_url,
+          logo_url,
+          draw_days,
+          draw_day_of_month,
+          draw_time,
+          show_in_popular,
+          show_in_trending,
+          is_open,
+          is_active,
+          rates,
+        } = payload;
+
         const updateData: any = {};
         if (name !== undefined) updateData.name = name;
         if (close_minutes_before !== undefined) updateData.close_minutes_before = close_minutes_before;
         if (stream_url !== undefined) updateData.stream_url = stream_url;
         if (logo_url !== undefined) updateData.logo_url = logo_url;
+        if (draw_days !== undefined) updateData.draw_days = draw_days;
+        if (draw_day_of_month !== undefined) updateData.draw_day_of_month = draw_day_of_month;
+        if (draw_time !== undefined) updateData.draw_time = draw_time;
+        if (show_in_popular !== undefined) updateData.show_in_popular = show_in_popular;
+        if (show_in_trending !== undefined) updateData.show_in_trending = show_in_trending;
         if (is_open !== undefined) updateData.is_open = is_open;
         if (is_active !== undefined) updateData.is_active = is_active;
+
         const { data, error } = await supabaseAdmin
           .from("lottery_markets")
           .update(updateData)
           .eq("id", id)
           .select();
         if (error) throw error;
+
+        // If payout rates provided, update payout_rates table
+        if (rates && typeof rates === "object") {
+          const mktCode = code || (data && data[0] ? data[0].code : null);
+          if (mktCode) {
+            const upsertRows = Object.entries(rates).map(([bt, rateVal]) => ({
+              market: mktCode,
+              bet_type: bt,
+              rate: Number(rateVal),
+            }));
+
+            for (const r of upsertRows) {
+              await supabaseAdmin
+                .from("payout_rates")
+                .upsert([r], { onConflict: "market,bet_type" })
+                .select();
+            }
+          }
+        }
+
         return NextResponse.json({ success: true, data });
       }
+
 
       case "update_instant_bet_type": {
         const { id, rate, is_active } = payload;
@@ -478,15 +726,19 @@ export async function POST(req: NextRequest) {
           if (w) {
             const newBal = Number(w.balance) + Number(dep.amount);
             await supabaseAdmin.from("wallets").update({ balance: newBal, updated_at: new Date().toISOString() }).eq("user_id", dep.user_id);
-            await supabaseAdmin.from("transactions").insert([{
-              user_id: dep.user_id,
-              type: "DEPOSIT",
-              amount: Number(dep.amount),
-              status: "COMPLETED",
-              reference_id: id,
-              note: admin_note || "ฝากเงินสำเร็จ (อนุมัติผ่านแผงควบคุม)",
-              balance_after: newBal,
-            }]).catch(() => {});
+            try {
+              await supabaseAdmin.from("transactions").insert([{
+                user_id: dep.user_id,
+                type: "DEPOSIT",
+                amount: Number(dep.amount),
+                status: "COMPLETED",
+                reference_id: id,
+                note: admin_note || "ฝากเงินสำเร็จ (อนุมัติผ่านแผงควบคุม)",
+                balance_after: newBal,
+              }]);
+            } catch (txErr) {
+              console.error("Failed to log deposit transaction:", txErr);
+            }
           }
         }
         return NextResponse.json({ success: true, data });
@@ -527,19 +779,36 @@ export async function POST(req: NextRequest) {
           .eq("user_id", user_id)
           .select();
         if (error) throw error;
-        await supabaseAdmin.from("transactions").insert([{
-          user_id,
-          type: delta > 0 ? "ADMIN_ADJUST_ADD" : "ADMIN_ADJUST_SUB",
-          amount: Math.abs(delta),
-          status: "COMPLETED",
-          note: note || (delta > 0 ? "เพิ่มยอดกระเป๋าโดยแอดมิน" : "ลดยอดกระเป๋าโดยแอดมิน"),
-          balance_after: newBal,
-        }]).catch(() => {});
+        try {
+          await supabaseAdmin.from("transactions").insert([{
+            user_id,
+            type: delta > 0 ? "ADMIN_ADJUST_ADD" : "ADMIN_ADJUST_SUB",
+            amount: Math.abs(delta),
+            status: "COMPLETED",
+            note: note || (delta > 0 ? "เพิ่มยอดกระเป๋าโดยแอดมิน" : "ลดยอดกระเป๋าโดยแอดมิน"),
+            balance_after: newBal,
+          }]);
+        } catch (txErr) {
+          console.error("Failed to log wallet adjustment transaction:", txErr);
+        }
         return NextResponse.json({ success: true, data, balance: newBal });
       }
 
       case "record_result": {
         const { market_id, draw_date, result_main, result_3top, result_2top, result_2bottom, result_3front, result_3bottom } = payload;
+        // Call existing database stored procedure to settle and pay out automatically
+        const { data: rpcData, error: rpcErr } = await supabaseAdmin.rpc("admin_set_result_and_settle", {
+          p_market_id: market_id,
+          p_draw_date: draw_date,
+          p_result_main: result_main || "",
+          p_3top: result_3top || "",
+          p_3bottom: result_3bottom || "",
+          p_3front: result_3front || "",
+          p_2top: result_2top || "",
+          p_2bottom: result_2bottom || "",
+        });
+
+        // Also ensure lottery_results has status 'ANNOUNCED' to fire trigger trg_on_result_announced
         const { data, error } = await supabaseAdmin
           .from("lottery_results")
           .upsert([{
@@ -551,12 +820,12 @@ export async function POST(req: NextRequest) {
             result_2bottom,
             result_3front,
             result_3bottom,
-            status: "SETTLED",
+            status: "ANNOUNCED",
             announced_at: new Date().toISOString(),
           }], { onConflict: "market_id,draw_date" })
           .select();
-        if (error) throw error;
-        return NextResponse.json({ success: true, data });
+        if (error && !rpcData) throw error;
+        return NextResponse.json({ success: true, data: data || rpcData });
       }
 
       case "update_withdrawal": {
@@ -585,15 +854,19 @@ export async function POST(req: NextRequest) {
           if (wal) {
             const newBal = Number(wal.balance) + Number(wReq.amount);
             await supabaseAdmin.from("wallets").update({ balance: newBal }).eq("user_id", wReq.user_id);
-            await supabaseAdmin.from("transactions").insert([{
-              user_id: wReq.user_id,
-              type: "REFUND_WITHDRAW",
-              amount: Number(wReq.amount),
-              status: "COMPLETED",
-              reference_id: id,
-              note: admin_note || "คืนเงินจากการปฏิเสธคำขอถอน",
-              balance_after: newBal,
-            }]).catch(() => {});
+            try {
+              await supabaseAdmin.from("transactions").insert([{
+                user_id: wReq.user_id,
+                type: "REFUND_WITHDRAW",
+                amount: Number(wReq.amount),
+                status: "COMPLETED",
+                reference_id: id,
+                note: admin_note || "คืนเงินจากการปฏิเสธคำขอถอน",
+                balance_after: newBal,
+              }]);
+            } catch (txErr) {
+              console.error("Failed to log refund transaction:", txErr);
+            }
           }
         }
         return NextResponse.json({ success: true, data });
@@ -653,6 +926,274 @@ export async function POST(req: NextRequest) {
           if (error) throw error;
         }
         return NextResponse.json({ success: true, count: upsertRows.length });
+      }
+
+      case "mark_notification_read": {
+        const { id } = payload;
+        const { data, error } = await supabaseAdmin
+          .from("admin_notifications")
+          .update({ is_read: true })
+          .eq("id", id)
+          .select();
+        if (error) throw error;
+        return NextResponse.json({ success: true, data });
+      }
+
+      case "mark_all_notifications_read": {
+        const { error } = await supabaseAdmin
+          .from("admin_notifications")
+          .update({ is_read: true })
+          .eq("is_read", false);
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+      }
+
+      case "upsert_slider": {
+        const { id, title, image_url, link_url, display_order, is_active } = payload;
+        const rowData: any = {
+          title: title || "",
+          image_url: image_url || "",
+          link_url: link_url || "",
+          link: link_url || "",
+          display_order: Number(display_order || 1),
+          is_active: Boolean(is_active),
+          updated_at: new Date().toISOString(),
+        };
+        let res;
+        if (id && !String(id).startsWith("sl-")) {
+          res = await supabaseAdmin.from("sliders").update(rowData).eq("id", id).select();
+        } else {
+          res = await supabaseAdmin.from("sliders").insert([rowData]).select();
+        }
+        if (res.error) throw res.error;
+        return NextResponse.json({ success: true, data: res.data });
+      }
+
+      case "delete_slider": {
+        const { id } = payload;
+        const { error } = await supabaseAdmin.from("sliders").delete().eq("id", id);
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+      }
+
+      case "reorder_sliders": {
+        const { items } = payload; // Array of { id, display_order }
+        if (Array.isArray(items)) {
+          for (const it of items) {
+            if (it.id && !String(it.id).startsWith("sl-")) {
+              await supabaseAdmin.from("sliders").update({ display_order: it.display_order }).eq("id", it.id);
+            }
+          }
+        }
+        return NextResponse.json({ success: true });
+      }
+
+      case "upsert_promotion": {
+        const {
+          id, title, description, image_url, bonus_rate, bonus_amount, min_deposit, max_withdrawal,
+          turnover_multiplier, promo_code, type, allowed_game, is_active, badge_text, background_color,
+          default_amount, target_view, line1, line2, max_uses_per_user, max_uses_total, max_uses_per_day
+        } = payload;
+        const rowData: any = {
+          title: title || "",
+          description: description || "",
+          image_url: image_url || "",
+          bonus_rate: Number(bonus_rate || 0),
+          bonus_amount: Number(bonus_amount || 0),
+          min_deposit: Number(min_deposit || 0),
+          max_withdrawal: Number(max_withdrawal || 0),
+          turnover_multiplier: Number(turnover_multiplier || 1),
+          promo_code: promo_code || "",
+          type: type || "percent",
+          allowed_game: allowed_game || "all",
+          is_active: Boolean(is_active),
+          badge_text: badge_text || "โปรโมชั่น",
+          background_color: background_color || "#10b981",
+          default_amount: Number(default_amount || 100),
+          target_view: target_view || "deposit",
+          line1: line1 || title || "",
+          line2: line2 || "",
+          max_uses_per_user: Number(max_uses_per_user || 1),
+          max_uses_total: Number(max_uses_total || 1000),
+          max_uses_per_day: Number(max_uses_per_day || 100),
+        };
+        let res;
+        if (id && !String(id).startsWith("pm-")) {
+          res = await supabaseAdmin.from("promotions").update(rowData).eq("id", id).select();
+        } else {
+          res = await supabaseAdmin.from("promotions").insert([rowData]).select();
+        }
+        if (res.error) throw res.error;
+        return NextResponse.json({ success: true, data: res.data });
+      }
+
+      case "delete_promotion": {
+        const { id } = payload;
+        const { error } = await supabaseAdmin.from("promotions").delete().eq("id", id);
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+      }
+
+      case "upsert_article": {
+        const { id, title, content, sub_content, category, image_url, is_published, display_order } = payload;
+        const rowData: any = {
+          title: title || "",
+          content: content || "",
+          sub_content: sub_content || "",
+          category: category || "general",
+          image_url: image_url || "",
+          is_published: Boolean(is_published),
+          display_order: Number(display_order || 1),
+          updated_at: new Date().toISOString(),
+        };
+        let res;
+        if (id && !String(id).startsWith("ar-")) {
+          res = await supabaseAdmin.from("articles").update(rowData).eq("id", id).select();
+        } else {
+          res = await supabaseAdmin.from("articles").insert([rowData]).select();
+        }
+        if (res.error) throw res.error;
+        return NextResponse.json({ success: true, data: res.data });
+      }
+
+      case "delete_article": {
+        const { id } = payload;
+        const { error } = await supabaseAdmin.from("articles").delete().eq("id", id);
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+      }
+
+      case "upsert_announcement": {
+        const { id, title, content, is_active, display_order } = payload;
+        const rowData: any = {
+          title: title || "ประกาศจากระบบ",
+          content: content || "",
+          is_active: Boolean(is_active),
+          display_order: Number(display_order || 1),
+        };
+        let res;
+        if (id && !String(id).startsWith("feed-")) {
+          res = await supabaseAdmin.from("announcements").update(rowData).eq("id", id).select();
+        } else {
+          res = await supabaseAdmin.from("announcements").insert([rowData]).select();
+        }
+        if (res.error) throw res.error;
+        return NextResponse.json({ success: true, data: res.data });
+      }
+
+      case "delete_announcement": {
+        const { id } = payload;
+        const { error } = await supabaseAdmin.from("announcements").delete().eq("id", id);
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+      }
+
+      case "upsert_bank": {
+        const { id, name, code, image_url, is_active } = payload;
+        const rowData: any = {
+          name: name || "",
+          code: (code || "").toUpperCase(),
+          image_url: image_url || "",
+          is_active: is_active !== undefined ? Boolean(is_active) : true,
+        };
+        let res;
+        if (id && !String(id).startsWith("bk-")) {
+          res = await supabaseAdmin.from("banks").update(rowData).eq("id", id).select();
+        } else {
+          res = await supabaseAdmin.from("banks").insert([rowData]).select();
+        }
+        if (res.error) throw res.error;
+        return NextResponse.json({ success: true, data: res.data });
+      }
+
+      case "delete_bank": {
+        const { id } = payload;
+        const { error } = await supabaseAdmin.from("banks").delete().eq("id", id);
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+      }
+
+      case "update_wheel_prize": {
+        const { id, name, amount, probability, color, hi_color, is_active } = payload;
+        const { data, error } = await supabaseAdmin
+          .from("lucky_wheel_prizes")
+          .update({
+            name,
+            amount: Number(amount || 0),
+            probability: Number(probability || 0),
+            color,
+            hi_color,
+            is_active: Boolean(is_active),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", id)
+          .select();
+        if (error) throw error;
+        return NextResponse.json({ success: true, data });
+      }
+
+      case "update_wheel_config": {
+        const { cost, daily_limit, banner_url } = payload;
+        const updates = [
+          { key: "lucky_wheel_cost", value: String(cost || 0), updated_at: new Date().toISOString() },
+          { key: "lucky_wheel_daily_limit", value: String(daily_limit || 1), updated_at: new Date().toISOString() },
+          { key: "lucky_wheel_banner_url", value: String(banner_url || ""), updated_at: new Date().toISOString() },
+        ];
+        const { error } = await supabaseAdmin.from("settings").upsert(updates, { onConflict: "key" });
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+      }
+
+      case "send_broadcast": {
+        const { title, body, type, audience, user_id } = payload;
+        if (audience === "individual" && user_id) {
+          const { data, error } = await supabaseAdmin.from("notifications").insert([{
+            user_id,
+            type: type || "info",
+            title: title || "ประกาศจากระบบ",
+            body: body || "",
+            is_read: false,
+          }]).select();
+          if (error) throw error;
+          return NextResponse.json({ success: true, data, count: 1 });
+        } else {
+          // Audience: all members
+          const { data: members, error: mErr } = await supabaseAdmin
+            .from("profiles")
+            .select("id")
+            .eq("is_admin", false);
+          if (mErr) throw mErr;
+
+          const rows = (members || []).map((m) => ({
+            user_id: m.id,
+            type: type || "info",
+            title: title || "ประกาศจากระบบ",
+            body: body || "",
+            is_read: false,
+          }));
+
+          if (rows.length > 0) {
+            const { error: insErr } = await supabaseAdmin.from("notifications").insert(rows);
+            if (insErr) throw insErr;
+          }
+          return NextResponse.json({ success: true, count: rows.length });
+        }
+      }
+
+      case "update_appearance": {
+        const { primary_color, font, dark_mode, logo_url, favicon_url } = payload;
+        const updates: { key: string; value: string; updated_at: string }[] = [];
+        if (primary_color) updates.push({ key: "theme_primary_color", value: primary_color, updated_at: new Date().toISOString() });
+        if (font) updates.push({ key: "theme_font", value: font, updated_at: new Date().toISOString() });
+        if (dark_mode !== undefined) updates.push({ key: "theme_dark_mode", value: String(dark_mode), updated_at: new Date().toISOString() });
+        if (logo_url) updates.push({ key: "site_logo_url", value: logo_url, updated_at: new Date().toISOString() });
+        if (favicon_url) updates.push({ key: "site_favicon_url", value: favicon_url, updated_at: new Date().toISOString() });
+
+        if (updates.length > 0) {
+          const { error } = await supabaseAdmin.from("settings").upsert(updates, { onConflict: "key" });
+          if (error) throw error;
+        }
+        return NextResponse.json({ success: true, count: updates.length });
       }
 
       default:

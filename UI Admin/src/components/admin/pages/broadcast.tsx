@@ -8,10 +8,19 @@ import { BROADCAST_HISTORY, MEMBERS, fmtNum, type BroadcastMsg } from "@/data/ad
 import { cn } from "@/lib/utils";
 import { Avatar } from "../primitives";
 
-const TYPE_UI: Record<BroadcastMsg["type"], { label: string; icon: React.ComponentType<{ className?: string }>; chip: string; dot: string }> = {
+const TYPE_UI: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; chip: string; dot: string }> = {
   info: { label: "ข่าวสารทั่วไป", icon: Info, chip: "bg-sky-50 text-sky-700 ring-sky-200", dot: "bg-sky-400" },
   warning: { label: "แจ้งเตือนระบบ", icon: AlertTriangle, chip: "bg-amber-50 text-amber-700 ring-amber-200", dot: "bg-amber-400" },
   success: { label: "กิจกรรม / โปรโมชั่น", icon: CheckCircle2, chip: "bg-brand-50 text-brand-700 ring-brand-200", dot: "bg-brand-400" },
+};
+
+export const getTypeUI = (t?: string) => {
+  if (!t) return TYPE_UI.info;
+  const key = String(t).toLowerCase();
+  if (TYPE_UI[key]) return TYPE_UI[key];
+  if (key.includes("warn") || key.includes("alert") || key.includes("urgent")) return TYPE_UI.warning;
+  if (key.includes("success") || key.includes("promo") || key.includes("win")) return TYPE_UI.success;
+  return TYPE_UI.info;
 };
 
 export function BroadcastPage() {
@@ -23,31 +32,93 @@ export function BroadcastPage() {
   const [body, setBody] = React.useState("");
   const [memberQ, setMemberQ] = React.useState("");
   const [picked, setPicked] = React.useState<{ id: string; name: string; phone: string } | null>(null);
+  const [realMembers, setRealMembers] = React.useState<{ id: string; full_name: string; phone: string }[]>([]);
   const [history, setHistory] = React.useState<BroadcastMsg[]>(BROADCAST_HISTORY);
   const [confirmSend, setConfirmSend] = React.useState(false);
   const [confirmDel, setConfirmDel] = React.useState<BroadcastMsg | null>(null);
 
+  const loadHistory = React.useCallback(() => {
+    fetch("/api/admin/data?resource=broadcast-history")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data?.length > 0) {
+          setHistory(
+            res.data.map((n: any) => {
+              const rawType = String(n.type || "info").toLowerCase();
+              const mappedType: BroadcastMsg["type"] =
+                rawType.includes("warn") || rawType.includes("alert") ? "warning" :
+                rawType.includes("success") || rawType.includes("promo") ? "success" : "info";
+              return {
+                id: n.id,
+                title: n.title || "ประกาศ",
+                body: n.body || "",
+                type: mappedType,
+                audience: "all",
+                recipient: "สมาชิกในระบบ",
+                sent_by: "เจ้าของเว็บ",
+                sent_at: n.created_at ? new Date(n.created_at).toLocaleDateString("th-TH") : "วันนี้",
+                reached: 1,
+              };
+            })
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  React.useEffect(() => {
+    loadHistory();
+    fetch("/api/admin/data?resource=members")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data?.length > 0) {
+          setRealMembers(
+            res.data.map((m: any) => ({
+              id: m.id,
+              full_name: m.full_name || "ไม่ระบุชื่อ",
+              phone: m.phone || "-",
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, [loadHistory]);
+
   const memberHits = memberQ.trim()
-    ? MEMBERS.filter((m) => m.full_name.includes(memberQ.trim()) || m.phone.includes(memberQ.trim())).slice(0, 5)
+    ? (realMembers.length > 0 ? realMembers : MEMBERS)
+        .filter((m) => m.full_name.includes(memberQ.trim()) || m.phone.includes(memberQ.trim()))
+        .slice(0, 5)
     : [];
 
   const canSend = title.trim().length > 0 && body.trim().length > 0 && (audience === "all" || picked !== null);
 
-  const send = () => {
+  const send = async () => {
     const channelLabel = channel === "inapp" ? "In-App กระดิ่ง" : channel === "popup" ? "Pop-up หน้าเว็บ" : "แบนเนอร์วิ่ง";
-    const msg: BroadcastMsg = {
-      id: `bc-${Date.now()}`,
-      title: title.trim(),
-      body: body.trim(),
-      type,
-      audience,
-      recipient: audience === "all" ? `สมาชิกทั้งหมด (${fmtNum(4892)} คน)` : `${picked!.name} (${picked!.phone})`,
-      sent_by: "เจ้าของเว็บ",
-      sent_at: "วันนี้",
-      reached: audience === "all" ? 4892 : 1,
-    };
-    setHistory((p) => [msg, ...p]);
-    toast({ title: "ส่งประกาศภายในระบบแล้ว", description: `${channelLabel} · ${TYPE_UI[type].label} · ${msg.recipient}` });
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "send_broadcast",
+          payload: {
+            title: title.trim(),
+            body: body.trim(),
+            type,
+            audience,
+            user_id: picked?.id,
+          },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: "ส่งประกาศภายในระบบสำเร็จ", description: `${channelLabel} · ${TYPE_UI[type].label} · ถึง ${json.count || 1} คน` });
+        loadHistory();
+      } else {
+        toast({ title: "ส่งประกาศล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "ส่งประกาศล้มเหลว", description: err.message, variant: "destructive" });
+    }
     setTitle("");
     setBody("");
     setPicked(null);
@@ -199,7 +270,7 @@ export function BroadcastPage() {
             <div className="rounded-2xl border border-neutral-100 bg-neutral-50/60 p-3">
               <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400">พรีวิวแจ้งเตือน</p>
               <div className="flex items-start gap-3 rounded-xl bg-white p-3 shadow-sm ring-1 ring-neutral-100">
-                <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", TYPE_UI[type].dot)} />
+                <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", getTypeUI(type).dot)} />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-neutral-800">{title || "หัวข้อการแจ้งเตือน"}</p>
                   <p className="mt-0.5 line-clamp-2 text-xs text-neutral-500">{body || "ข้อความจะแสดงที่นี่..."}</p>
@@ -238,7 +309,7 @@ export function BroadcastPage() {
               </thead>
               <tbody>
                 {history.map((h) => {
-                  const ui = TYPE_UI[h.type];
+                  const ui = getTypeUI(h.type);
                   return (
                     <tr key={h.id} className="transition-colors hover:bg-neutral-50/60">
                       <Td className="max-w-[220px]">
@@ -275,7 +346,7 @@ export function BroadcastPage() {
         <ConfirmDialog
           open
           title="ส่งประกาศภายในระบบ?"
-          desc={`${audience === "all" ? `ส่งประกาศถึงสมาชิกทั้งหมด 4,892 คนบนหน้าเว็บ` : `ส่งถึง ${picked?.name}`} · ประเภท ${TYPE_UI[type].label} — ข้อความจะปรากฏบนเว็บสมาชิกทันที`}
+          desc={`${audience === "all" ? `ส่งประกาศถึงสมาชิกทั้งหมด 4,892 คนบนหน้าเว็บ` : `ส่งถึง ${picked?.name}`} · ประเภท ${getTypeUI(type).label} — ข้อความจะปรากฏบนเว็บสมาชิกทันที`}
           confirmLabel="ส่งประกาศเลย"
           onOpenChange={setConfirmSend}
           onConfirm={send}

@@ -1,8 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { ArrowLeft, Phone, CalendarDays, Wallet, Dices, Trophy, Gem, Landmark, Copy, Check, Loader2 } from "lucide-react";
-import { Panel, Btn, StatusBadge, BankBadge, Avatar, TableWrap, Th, Td, EmptyState } from "../primitives";
+import { ArrowLeft, Phone, CalendarDays, Wallet, Dices, Trophy, Gem, Landmark, Copy, Check, Loader2, Plus, Minus } from "lucide-react";
+import { Panel, Btn, StatusBadge, BankBadge, Avatar, TableWrap, Th, Td, EmptyState, Field, inputCls } from "../primitives";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminNav } from "../store";
@@ -42,11 +44,48 @@ function Stat({ icon: Icon, label, value, tone }: { icon: React.ComponentType<{ 
   );
 }
 
+function WalletModal({ member, onClose, onAdjust }: { member: Member; onClose: () => void; onAdjust: (id: string, delta: number, note: string) => void }) {
+  const [amount, setAmount] = React.useState("");
+  const [note, setNote] = React.useState("");
+  const { toast } = useToast();
+  const n = Number(amount) || 0;
+
+  const doAdjust = (sign: 1 | -1) => {
+    if (n <= 0) { toast({ title: "กรุณาระบุจำนวนเงิน", variant: "destructive" }); return; }
+    onAdjust(member.id, sign * n, note.trim() || (sign > 0 ? "เพิ่มยอดกระเป๋าโดยแอดมิน" : "ลดยอดกระเป๋าโดยแอดมิน"));
+    onClose();
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="rounded-3xl sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>ปรับยอดกระเป๋า</DialogTitle>
+          <DialogDescription>ปรับยอดกระเป๋าเงินของ {member.full_name}</DialogDescription>
+        </DialogHeader>
+        <div className="rounded-2xl bg-brand-50 p-4 text-center ring-1 ring-inset ring-brand-100">
+          <p className="text-xs text-brand-700">ยอดปัจจุบัน</p>
+          <p className="text-3xl font-black tracking-tight text-brand-700">{fmtTHB(member.balance)}</p>
+        </div>
+        <Field label="จำนวนเงิน (บาท)">
+          <Input type="number" min={0} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className={inputCls} />
+        </Field>
+        <Field label="หมายเหตุ"><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="เหตุผลการปรับยอด" className={inputCls} /></Field>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Btn variant="outline" className="rounded-full border-rose-200 text-rose-600 hover:bg-rose-50" onClick={() => doAdjust(-1)}><Minus className="size-4" /> ลด</Btn>
+          <Btn className="rounded-full bg-brand-600 hover:bg-brand-700" onClick={() => doAdjust(1)}><Plus className="size-4" /> เพิ่ม</Btn>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function MemberDetailPage() {
   const { selectedMemberId, navigate } = useAdminNav();
   const { toast } = useToast();
   const [copied, setCopied] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
+  const [adjustWalletOpen, setAdjustWalletOpen] = React.useState(false);
   const [data, setData] = React.useState<{
     profile: any;
     wallet: any;
@@ -56,6 +95,31 @@ export function MemberDetailPage() {
     withdrawals: any[];
     logins: any[];
   } | null>(null);
+
+  const handleAdjustWallet = async (id: string, delta: number, note: string) => {
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "adjust_wallet",
+          payload: { user_id: id, delta, note },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({
+          title: delta > 0 ? "เพิ่มยอดกระเป๋าสำเร็จ" : "ลดยอดกระเป๋าสำเร็จ",
+          description: `${fmtTHB(Math.abs(delta))} · ${note}`,
+        });
+        fetchDetail(id);
+      } else {
+        toast({ title: "ปรับยอดล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "เชื่อมต่อล้มเหลว", description: e.message, variant: "destructive" });
+    }
+  };
 
   const fetchDetail = React.useCallback(async (id: string) => {
     setLoading(true);
@@ -166,6 +230,14 @@ export function MemberDetailPage() {
                 <span className="inline-flex items-center whitespace-nowrap rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-inset ring-amber-200">
                   {vipDisplay}
                 </span>
+                <Btn
+                  size="sm"
+                  variant="outline"
+                  className="h-7 rounded-full text-xs text-brand-700 border-brand-200 hover:bg-brand-50"
+                  onClick={() => setAdjustWalletOpen(true)}
+                >
+                  <Wallet className="size-3.5 mr-1" /> ปรับยอดกระเป๋า
+                </Btn>
               </div>
             </div>
           </div>
@@ -213,9 +285,14 @@ export function MemberDetailPage() {
             <Panel className="p-5">
               <h3 className="mb-3 text-sm font-bold text-neutral-900">ยอดกระเป๋าปัจจุบัน</h3>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl bg-brand-50 p-4 ring-1 ring-inset ring-brand-100">
-                  <p className="text-xs text-brand-700">ยอดเงินหลัก</p>
-                  <p className="mt-1 text-2xl font-black text-brand-700">{fmtTHB(member.balance)}</p>
+                <div className="rounded-2xl bg-brand-50 p-4 ring-1 ring-inset ring-brand-100 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-brand-700">ยอดเงินหลัก</p>
+                    <p className="mt-1 text-2xl font-black text-brand-700">{fmtTHB(member.balance)}</p>
+                  </div>
+                  <Btn size="sm" className="rounded-full bg-brand-600 hover:bg-brand-700 text-xs text-white" onClick={() => setAdjustWalletOpen(true)}>
+                    <Wallet className="size-3.5 mr-1" /> ปรับยอด
+                  </Btn>
                 </div>
                 <div className="rounded-2xl bg-violet-50 p-4 ring-1 ring-inset ring-violet-100">
                   <p className="text-xs text-violet-700">ค่าแนะนำ</p>
@@ -400,6 +477,14 @@ export function MemberDetailPage() {
           </Panel>
         </TabsContent>
       </Tabs>
+
+      {adjustWalletOpen ? (
+        <WalletModal
+          member={member}
+          onClose={() => setAdjustWalletOpen(false)}
+          onAdjust={handleAdjustWallet}
+        />
+      ) : null}
     </div>
   );
 }

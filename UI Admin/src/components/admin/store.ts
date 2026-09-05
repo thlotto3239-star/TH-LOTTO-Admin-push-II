@@ -80,6 +80,87 @@ export const useAdminNav = create<AdminNavState>((set) => ({
   setCurrentAdmin: (admin) => set({ currentAdmin: admin }),
 }));
 
+export interface AdminNotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  type: "info" | "warning" | "success";
+  date: string;
+  read: boolean;
+  target_page?: string;
+}
+
+export interface AdminCountsState {
+  dep: number;
+  wth: number;
+  kyc: number;
+  res: number;
+  unread_notifications: number;
+  notifications: AdminNotificationItem[];
+  loading: boolean;
+  fetchCounts: () => Promise<void>;
+  markNotificationRead: (id: string) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
+}
+
+export const useAdminCounts = create<AdminCountsState>((set) => ({
+  dep: 0,
+  wth: 0,
+  kyc: 0,
+  res: 0,
+  unread_notifications: 0,
+  notifications: [],
+  loading: false,
+  fetchCounts: async () => {
+    try {
+      const res = await fetch("/api/admin/data?resource=counts");
+      const json = await res.json();
+      if (json.success && json.data) {
+        set({
+          dep: json.data.dep || 0,
+          wth: json.data.wth || 0,
+          kyc: json.data.kyc || 0,
+          res: json.data.res || 0,
+          unread_notifications: json.data.unread_notifications || 0,
+          notifications: json.data.notifications || [],
+        });
+      }
+    } catch (e) {
+      console.error("Failed to fetch admin counts:", e);
+    }
+  },
+  markNotificationRead: async (id: string) => {
+    set((state) => ({
+      notifications: state.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)),
+      unread_notifications: Math.max(0, state.unread_notifications - 1),
+    }));
+    try {
+      await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "mark_notification_read", payload: { id } }),
+      });
+    } catch (e) {
+      console.error("Failed to mark notification read:", e);
+    }
+  },
+  markAllNotificationsRead: async () => {
+    set((state) => ({
+      notifications: state.notifications.map((n) => ({ ...n, read: true })),
+      unread_notifications: 0,
+    }));
+    try {
+      await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "mark_all_notifications_read", payload: {} }),
+      });
+    } catch (e) {
+      console.error("Failed to mark all notifications read:", e);
+    }
+  },
+}));
+
 export const PAGE_META: Record<PageId, { title: string; group: string }> = {
   dashboard: { title: "แผงควบคุม", group: "ภาพรวม" },
   deposits: { title: "รายการฝากเงิน", group: "การเงิน" },

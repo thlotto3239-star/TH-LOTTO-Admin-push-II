@@ -37,10 +37,60 @@ function ImageSlot({
 export function AppearancePage() {
   const { toast } = useToast();
   const [s, setS] = React.useState({ ...APPEARANCE_SETTINGS });
+  const [initial, setInitial] = React.useState({ ...APPEARANCE_SETTINGS });
   const set = <K extends keyof typeof APPEARANCE_SETTINGS>(k: K, v: (typeof APPEARANCE_SETTINGS)[K]) =>
     setS((p) => ({ ...p, [k]: v }));
 
-  const dirty = JSON.stringify(s) !== JSON.stringify(APPEARANCE_SETTINGS);
+  React.useEffect(() => {
+    fetch("/api/admin/data?resource=settings")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data) {
+          const dict = res.data;
+          const loaded = {
+            primary_color: dict.theme_primary_color || dict.site_primary_color || APPEARANCE_SETTINGS.primary_color,
+            font_family: dict.theme_font || dict.font_family || APPEARANCE_SETTINGS.font_family,
+            default_mode: dict.theme_dark_mode === "true" || dict.theme_dark_mode === "dark" ? "dark" : (dict.default_mode || APPEARANCE_SETTINGS.default_mode),
+            logo_url: dict.site_logo_url || dict.logo_url || APPEARANCE_SETTINGS.logo_url,
+            favicon_url: dict.site_favicon_url || dict.favicon_url || APPEARANCE_SETTINGS.favicon_url,
+            login_bg_url: dict.login_bg_url || APPEARANCE_SETTINGS.login_bg_url,
+          };
+          setS(loaded);
+          setInitial(loaded);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const dirty = JSON.stringify(s) !== JSON.stringify(initial);
+
+  const handleSave = async () => {
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_appearance",
+          payload: {
+            primary_color: s.primary_color,
+            font: s.font_family,
+            dark_mode: s.default_mode === "dark",
+            logo_url: s.logo_url,
+            favicon_url: s.favicon_url,
+          },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: "บันทึกรูปลักษณ์สำเร็จ", description: "บันทึกลงตารางการตั้งค่าระบบเรียบร้อย" });
+        setInitial({ ...s });
+      } else {
+        toast({ title: "บันทึกล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "บันทึกล้มเหลว", description: err.message, variant: "destructive" });
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -51,7 +101,7 @@ export function AppearancePage() {
         <Btn
           className="rounded-full"
           disabled={!dirty}
-          onClick={() => toast({ title: "บันทึกรูปลักษณ์แล้ว", description: "บันทึกลงตารางการตั้งค่าเรียบร้อย" })}
+          onClick={handleSave}
         >
           <Save className="size-4" /> บันทึกการเปลี่ยนแปลง
         </Btn>

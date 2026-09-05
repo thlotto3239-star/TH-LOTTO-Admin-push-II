@@ -7,7 +7,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { WITHDRAWALS, fmtTHB, fmtDT, bankOf, type WithdrawReq } from "@/data/admin-mock";
+import { WITHDRAWALS, fmtTHB, fmtDT, bankOf, type WithdrawReq, type Member } from "@/data/admin-mock";
+import { useAdminCounts } from "../store";
 import { cn } from "@/lib/utils";
 
 function CopyBtn({ text, label }: { text: string; label?: string }) {
@@ -42,6 +43,8 @@ function DetailModal({
   const [note, setNote] = React.useState("");
   const { toast } = useToast();
   React.useEffect(() => setNote(req?.admin_note ?? ""), [req]);
+
+  if (!req) return null;
 
   const handleAction = (status: "APPROVED" | "REJECTED") => {
     if (status === "REJECTED" && !note.trim()) {
@@ -112,6 +115,7 @@ function DetailModal({
 
 export function WithdrawalsPage() {
   const { toast } = useToast();
+  const { fetchCounts } = useAdminCounts();
   const [rows, setRows] = React.useState<WithdrawReq[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [tab, setTab] = React.useState("ALL");
@@ -181,6 +185,7 @@ export function WithdrawalsPage() {
       if (json.success) {
         toast({ title: status === "APPROVED" ? "ทำเครื่องหมายโอนแล้ว" : "ปฏิเสธรายการแล้ว", description: `อัปเดตสถานะ Supabase เรียบร้อย` });
         fetchWithdrawals();
+        fetchCounts();
       } else {
         toast({ title: "เกิดข้อผิดพลาด", description: json.error, variant: "destructive" });
       }

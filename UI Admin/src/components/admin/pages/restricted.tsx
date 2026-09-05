@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
-  RESTRICTED_NUMBERS,
   MARKETS,
   BET_TYPES,
   BET_TYPE_LABEL,
@@ -30,7 +29,7 @@ interface FormState {
 
 export function RestrictedNumbersPage() {
   const { toast } = useToast();
-  const [rows, setRows] = React.useState<RestrictedNumber[]>(RESTRICTED_NUMBERS);
+  const [rows, setRows] = React.useState<RestrictedNumber[]>([]);
   const [marketFilter, setMarketFilter] = React.useState("ALL");
   const [typeFilter, setTypeFilter] = React.useState<"ALL" | "BLOCKED" | "HALF">("ALL");
   const [q, setQ] = React.useState("");
@@ -67,7 +66,7 @@ export function RestrictedNumbersPage() {
     fetch("/api/admin/data?resource=restricted-numbers")
       .then((r) => r.json())
       .then((res) => {
-        if (res.success && res.data?.length) {
+        if (res.success && Array.isArray(res.data)) {
           const mapped = res.data.map((d: any) => {
             const mkt = MARKETS.find((m) => m.id === d.market_id) || MARKETS[0];
             return {
@@ -445,9 +444,9 @@ export function RestrictedNumbersPage() {
         open={confirmDel !== null}
         title="ยืนยันการยกเลิกเลขอั้น?"
         desc={`คุณต้องการยกเลิกการจำกัดเลข ${confirmDel?.number} ของตลาด ${confirmDel?.market_name} ใช่หรือไม่?`}
-        confirmText="ยืนยันการยกเลิก"
+        confirmLabel="ยืนยันการยกเลิก"
         danger
-        onClose={() => setConfirmDel(null)}
+        onOpenChange={(o) => !o && setConfirmDel(null)}
         onConfirm={() => confirmDel && handleDelete(confirmDel.id)}
       />
     </div>
