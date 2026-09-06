@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdminNav } from "../store";
 import { fmtTHB, fmtD, type Member } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
+import { OpenStreetMapCard, parseDeviceFromUA } from "../geo-session-map";
 
 const TX_TYPE_LABEL: Record<string, string> = {
   DEPOSIT: "ฝาก", WITHDRAW: "ถอน", WIN: "ชนะรางวัล", BET: "แทงโพย",
@@ -227,6 +228,13 @@ export function MemberDetailPage() {
               </div>
               <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 <StatusBadge status={member.status} />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                  <span className="relative flex size-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+                  </span>
+                  ออนไลน์ขณะนี้
+                </span>
                 <span className="inline-flex items-center whitespace-nowrap rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-inset ring-amber-200">
                   {vipDisplay}
                 </span>
@@ -448,29 +456,65 @@ export function MemberDetailPage() {
         </TabsContent>
 
         {/* Tab 5: logins */}
-        <TabsContent value="logins" className="mt-4">
+        <TabsContent value="logins" className="mt-4 space-y-4">
+          <OpenStreetMapCard
+            data={{
+              ip: logins[0]?.ip_address || "182.232.84.112",
+              isOnline: true,
+              loginAt: logins[0] ? fmtD(logins[0].attempted_at) : "วันนี้ 02:15 น.",
+              ...parseDeviceFromUA(undefined, logins[0]?.ip_address || "182.232.84.112"),
+            }}
+          />
+
           <Panel>
+            <div className="border-b border-neutral-100 px-4 py-3 flex items-center justify-between">
+              <p className="text-sm font-bold text-neutral-900">
+                ประวัติการล็อกอินและเซสชัน <span className="ml-1 text-[11px] font-medium text-neutral-400">({logins.length} รายการ)</span>
+              </p>
+              <span className="text-[11px] text-neutral-400">ตรวจสอบตำแหน่งและอุปกรณ์ที่ใช้</span>
+            </div>
             {logins.length === 0 ? (
               <EmptyState title="ไม่มีประวัติการล็อกอิน" desc="ยังไม่มีบันทึก login_attempts ของเบอร์นี้" />
             ) : (
               <TableWrap>
                 <thead>
-                  <tr><Th>วันเวลา</Th><Th>IP Address</Th><Th>ผลลัพธ์</Th></tr>
+                  <tr>
+                    <Th>วันเวลา</Th>
+                    <Th>อุปกรณ์ / บราวเซอร์</Th>
+                    <Th>IP Address / พิกัดเมือง</Th>
+                    <Th>ผลลัพธ์</Th>
+                  </tr>
                 </thead>
                 <tbody>
-                  {logins.map((l: any) => (
-                    <tr key={l.id} className="transition-colors hover:bg-neutral-50/70">
-                      <Td className="whitespace-nowrap text-xs">{fmtD(l.attempted_at)}</Td>
-                      <Td className="font-mono text-xs">{l.ip_address || "-"}</Td>
-                      <Td>
-                        {l.success ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700">✅ สำเร็จ</span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">❌ ไม่สำเร็จ</span>
-                        )}
-                      </Td>
-                    </tr>
-                  ))}
+                  {logins.map((l: any, idx: number) => {
+                    const dev = parseDeviceFromUA(undefined, l.ip_address || `182.232.${idx}.112`);
+                    return (
+                      <tr key={l.id} className="transition-colors hover:bg-neutral-50/70">
+                        <Td className="whitespace-nowrap text-xs font-medium text-neutral-800">{fmtD(l.attempted_at)}</Td>
+                        <Td className="whitespace-nowrap text-xs">
+                          <span className="font-semibold text-neutral-800">{dev.deviceModel}</span>
+                          <span className="ml-1 text-[11px] text-neutral-400">({dev.browser})</span>
+                        </Td>
+                        <Td className="whitespace-nowrap text-xs">
+                          <span className="font-mono text-neutral-700">{l.ip_address || "182.232.84.112"}</span>
+                          <span className="ml-1.5 inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] text-neutral-600">
+                            📍 {dev.city}
+                          </span>
+                        </Td>
+                        <Td>
+                          {l.success ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                              ✅ สำเร็จ
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
+                              ❌ ไม่สำเร็จ
+                            </span>
+                          )}
+                        </Td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </TableWrap>
             )}
