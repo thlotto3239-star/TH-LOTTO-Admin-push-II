@@ -238,12 +238,56 @@ export function DepositsPage() {
     toast({ title: "ส่งออก CSV แล้ว", description: `${filtered.length} รายการ` });
   };
 
+  const pendingAmount = rows.filter((r) => r.status === "PENDING").reduce((s, r) => s + r.amount, 0);
+  const approvedAmount = rows.filter((r) => r.status === "APPROVED").reduce((s, r) => s + r.amount, 0);
+  const todayYmd = new Date().toISOString().slice(0, 10);
+  const todayApproved = rows.filter((r) => r.status === "APPROVED" && (r.created_at || "").startsWith(todayYmd));
+  const todayAmount = todayApproved.reduce((s, r) => s + r.amount, 0);
+  const todayCount = todayApproved.length;
+  const approvalRate = rows.length > 0 ? Math.round((counts.APPROVED / rows.length) * 100) : 100;
+
   return (
     <div className="space-y-4">
       <PageHeader title="รายการฝากเงิน" description="ตารางคำขอฝากเงิน · เชื่อมต่อข้อมูลสดอัตโนมัติ">
         <RealtimeDot />
         <Btn variant="outline" className="rounded-full" onClick={exportCsv}><Download className="size-4" /> ส่งออกไฟล์</Btn>
       </PageHeader>
+
+      {/* PC Mini-Dashboard KPI Cards */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <Panel className="border-amber-200/60 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-white p-4 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-amber-700">รออนุมัติ</span>
+            <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-black text-amber-800">{counts.PENDING} รายการ</span>
+          </div>
+          <p className="mt-2 text-2xl font-black tracking-tight text-amber-900">{fmtTHB(pendingAmount)}</p>
+          <p className="mt-1 text-[11px] text-amber-700/80">ตรวจสลิปก่อนกดยืนยัน</p>
+        </Panel>
+        <Panel className="border-emerald-200/60 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-white p-4 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-emerald-700">อนุมัติแล้ววันนี้</span>
+            <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-black text-emerald-800">{todayCount} รายการ</span>
+          </div>
+          <p className="mt-2 text-2xl font-black tracking-tight text-emerald-900">{fmtTHB(todayAmount)}</p>
+          <p className="mt-1 text-[11px] text-emerald-700/80">เครดิตเข้ากระเป๋าสมาชิกแล้ว</p>
+        </Panel>
+        <Panel className="border-brand-200/60 bg-gradient-to-br from-brand-500/10 via-brand-500/5 to-white p-4 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-brand-700">ยอดฝากรวมสำเร็จ</span>
+            <span className="rounded-full bg-brand-500/20 px-2 py-0.5 text-[10px] font-black text-brand-800">{counts.APPROVED} รายการ</span>
+          </div>
+          <p className="mt-2 text-2xl font-black tracking-tight text-brand-950">{fmtTHB(approvedAmount)}</p>
+          <p className="mt-1 text-[11px] text-brand-700/80">ยอดเงินหมุนเวียนจริง</p>
+        </Panel>
+        <Panel className="border-sky-200/60 bg-gradient-to-br from-sky-500/10 via-sky-500/5 to-white p-4 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-sky-700">อัตราการอนุมัติ</span>
+            <span className="rounded-full bg-sky-500/20 px-2 py-0.5 text-[10px] font-black text-sky-800">{approvalRate}%</span>
+          </div>
+          <p className="mt-2 text-2xl font-black tracking-tight text-sky-900">{counts.APPROVED} / {rows.length}</p>
+          <p className="mt-1 text-[11px] text-sky-700/80">ปฏิเสธ {counts.REJECTED} รายการ</p>
+        </Panel>
+      </div>
 
       <Panel className="p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

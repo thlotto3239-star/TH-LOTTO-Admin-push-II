@@ -250,11 +250,51 @@ export function MembersPage() {
     </span>
   );
 
+  const totalBalance = rows.reduce((s, m) => s + m.balance, 0);
+  const totalBets = rows.reduce((s, m) => s + m.total_bets, 0);
+  const activeMembers = rows.filter((m) => m.status === "active").length;
+
   return (
     <div className="space-y-4">
       <PageHeader title="จัดการสมาชิก" description={`ข้อมูลสมาชิกและกระเป๋าเงินจริง · ทั้งหมด ${rows.length} คน · 20 คนต่อหน้า`}>
         <Btn variant="outline" className="rounded-full" onClick={exportCsv}><Download className="size-4" /> ส่งออก CSV</Btn>
       </PageHeader>
+
+      {/* PC Mini-Dashboard KPI Cards */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <Panel className="border-brand-200/60 bg-gradient-to-br from-brand-500/10 via-brand-500/5 to-white p-4 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-brand-700">สมาชิกทั้งหมด</span>
+            <span className="rounded-full bg-brand-500/20 px-2 py-0.5 text-[10px] font-black text-brand-800">{rows.length} บัญชี</span>
+          </div>
+          <p className="mt-2 text-2xl font-black tracking-tight text-brand-950">{rows.length} คน</p>
+          <p className="mt-1 text-[11px] text-brand-700/80">บัญชีจริงในฐานข้อมูล</p>
+        </Panel>
+        <Panel className="border-emerald-200/60 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-white p-4 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-emerald-700">สถานะใช้งานปกติ</span>
+            <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-black text-emerald-800">{activeMembers} คน</span>
+          </div>
+          <p className="mt-2 text-2xl font-black tracking-tight text-emerald-900">{Math.round((activeMembers / (rows.length || 1)) * 100)}%</p>
+          <p className="mt-1 text-[11px] text-emerald-700/80">พร้อมเข้าเล่นและทำรายการ</p>
+        </Panel>
+        <Panel className="border-sky-200/60 bg-gradient-to-br from-sky-500/10 via-sky-500/5 to-white p-4 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-sky-700">ยอดเครดิตสมาชิกรวม</span>
+            <span className="rounded-full bg-sky-500/20 px-2 py-0.5 text-[10px] font-black text-sky-800">กระเป๋าเงิน</span>
+          </div>
+          <p className="mt-2 text-2xl font-black tracking-tight text-sky-900">{fmtTHB(totalBalance)}</p>
+          <p className="mt-1 text-[11px] text-sky-700/80">ยอดคงเหลือในระบบทั้งหมด</p>
+        </Panel>
+        <Panel className="border-violet-200/60 bg-gradient-to-br from-violet-500/10 via-violet-500/5 to-white p-4 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-violet-700">ยอดแทงสะสมรวม</span>
+            <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-black text-violet-800">เดิมพัน</span>
+          </div>
+          <p className="mt-2 text-2xl font-black tracking-tight text-violet-950">{fmtTHB(totalBets)}</p>
+          <p className="mt-1 text-[11px] text-violet-700/80">ยอดเดิมพันจากสมาชิกทุกท่าน</p>
+        </Panel>
+      </div>
 
       <Panel className="p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
