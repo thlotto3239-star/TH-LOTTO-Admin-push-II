@@ -1,0 +1,889 @@
+########## LATIN TEXT PER PAGE ##########
+
+--- หน้า 01 (29 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x1 แผงควบคุม (Dashboard)
+   x1 สมาชิก Active 7 วัน
+   x1 โพยต่อสมาชิก active
+   x1 ข้อมูลจาก transactions: DEPOSIT · WITHDRAW · BET (บาท)
+   x1 เชื่อมต่อ Supabase Realtime
+   x2 KB
+   x1 GOV
+   x2 SC
+   x2 BB
+   x1 LAO
+   x1 KT
+   x2 GS
+   x1 NIK
+   x2 tt
+   x3 BA
+   x1 GER
+   x1 GH
+   x2 MAL
+   x1 IB
+   x1 HSG
+   x1 HAN
+   x1 IND
+   x1 Top 10 ผู้แทงสูงสุด
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 02 (18 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x1 deposit_requests · realtime subscribe: deposits-admin
+   x1 Realtime
+   x1 Export CSV
+   x1 KB
+   x2 NEW50
+   x1 BB
+   x2 DEP20
+   x1 SC
+   x1 HOT100
+   x1 KT
+   x1 tt
+   x1 GS
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 03 (13 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x1 withdraw_requests · realtime subscribe: withdrawals-admin
+   x1 Realtime
+   x1 Export CSV
+   x1 KT
+   x1 tt
+   x1 GS
+   x1 BA
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 04 (18 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x1 profiles JOIN wallets · ทั้งหมด 24 คน · 20 ต่อหน้า
+   x1 Member ID
+   x21 VIP
+   x2 KB
+   x2 BB
+   x2 SC
+   x2 KT
+   x2 tt
+   x2 GS
+   x4 BA
+   x2 GH
+   x2 IB
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 05 (27 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x1 lottery_markets · ทั้งหมด 9 ตลาด · เปิดใช้งาน 8 ตลาด
+   x1 GOV
+   x1 TH_GOV
+   x5 Popular
+   x3 Hot
+   x3 YouTube Live
+   x1 HAN
+   x1 HANOI
+   x2 LAO
+   x1 MAL
+   x1 MALAY
+   x1 NIK
+   x1 NIKKEI_MORNING
+   x1 HSG
+   x1 HANGSENG_AFTERNOON
+   x1 IND
+   x1 STOCK_INDIA
+   x1 GER
+   x1 STOCK_GERMANY
+   x1 DOW
+   x1 STOCK_DOWJONES
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 06 (14 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x1 draw_schedules + lottery_results · กรอกผลแล้วระบบตัดยอดอัตโนมัติ (admin_set_result_and_settle)
+   x1 HSG
+   x1 HANGSENG_AFTERNOON
+   x1 IND
+   x1 STOCK_INDIA
+   x1 GOV
+   x1 TH_GOV
+   x2 LAO
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 07 (15 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x1 admin_get_instant_stats · admin_get_instant_draws · admin_get_instant_bets
+   x1 Auto-refresh 30 วินาที
+   x1 Draw วันนี้
+   x1 ผู้เล่น Active
+   x1 กำไร/ขาดทุน (Net)
+   x1 ยอดแทง vs ยอดจ่ายรางวัล รายชั่วโมง
+   x1 admin_get_instant_draws
+   x1 Draw ID
+   x1 admin_get_instant_bets
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 08 (15 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x1 admin_get_wheel_config · admin_update_wheel_prize · วันนี้หมุนไป 462 ครั้ง · รับเข้า ฿13,860 · จ่ายออก ฿8,240
+   x1 พรีวิววงล้อ (แบบ Real-time ตาม config)
+   x1 SPIN
+   x1 ราคาหมุน (บาทต่อครั้ง) — lucky_wheel_cost
+   x1 จำนวนหมุนต่อวัน (ครั้ง/วัน) — lucky_wheel_daily_limit
+   x1 ภาพปก Banner (URL หรืออัพโหลด) — lucky_wheel_banner_url
+   x8 สีหลัก (color)
+   x8 สีรอง (hi_color)
+   x8 บันทึก Slot
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 09 (11 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x1 Table: sliders · ทั้งหมด 4 สไลด์ · เปิดใช้งาน 3 สไลด์ · ลากเรียงลำดับได้
+   x1 /promotions/welcome
+   x1 /lottery/TH_GOV
+   x1 /wheel
+   x1 /promotions/referral
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 10 (17 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x1 promotions · ทั้งหมด 4 โปร · เปิดใช้งาน 3 โปร
+   x1 NEW50
+   x3 Active
+   x1 deposit
+   x4 turnover
+   x1 REF100
+   x1 referral
+   x1 BIRTHDAY
+   x2 special
+   x1 MISS10
+   x1 Inactive
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 11 (9 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x1 Table: articles · ทั้งหมด 6 บทความ · เผยแพร่แล้ว 4 · ฉบับร่าง 2
+   x3 ทีมงาน TH-LOTTO
+   x1 เซียนหวย AC
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 12 (10 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x1 Table: feeds · ทั้งหมด 5 รายการ · แสดงบนเว็บ 4 รายการ
+   x1 /promotions
+   x1 /lottery/HANOI
+   x1 /results
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 13 (14 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x1 settings (key-value) · เลือกหมวดที่ต้องการตั้งค่า — ทั้งหมด 8 หมวด
+   x1 Social
+   x1 Line / Facebook / เบอร์ติดต่อ / Telegram
+   x1 ข้อความวิ่ง (Marquee) ด้านบนเว็บ — CRUD
+   x1 ชื่อเว็บ โลโก้ คำอธิบาย API key
+   x1 เปิด/ปิดเว็บทั้งหมด + ข้อความปิดปรับปรุง (Owner)
+   x1 Cleanup
+   x1 ล้างข้อมูลเก่าใน storage พร้อมพรีวิวจำนวน
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 14 (41 รายการ) ---
+   x2 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x1 Table: settings (appearance) · RPC: admin_upsert_setting(p_key, p_value) · ปรับสีหลัก โลโก้ ฟอนต์ และโหมดแสดงผล
+   x1 Primary Color — สีหลักของเว็บ
+   x1 Logo Green
+   x1 Blue
+   x1 Violet
+   x1 Rose
+   x1 Amber
+   x1 Sky
+   x1 custom_hex — วางโค้ดสีหรือเลือกจากตัวเลือก
+   x1 โลโก้ / Favicon
+   x1 site_logo_url — โลโก้เว็บ
+   x1 PNG/SVG พื้นหลังโปร่งใส แนะนำ 512×512px
+   x1 favicon_url — Favicon
+   x1 ICO/PNG 32×32px แสดงบนแท็บเบราว์เซอร์
+   x1 login_bg_url — ภาพพื้นหลังหน้าล็อกอิน
+   x1 แนะนำขนาด 1920×1080px
+   x1 font_family — ฟอนต์หลักเว็บ
+   x2 IBM Plex Sans Thai
+   x1 Prompt
+   x1 Kanit
+   x1 Sarabun
+   x1 Noto Sans Thai
+   x1 default_mode — โหมดเริ่มต้นของเว็บสมาชิก
+   x1 Light
+   x1 Dark
+   x1 System
+   x1 show_lucky_wheel_banner — แสดงแบนเนอร์วงล้อหน้าแรก
+   x1 compact_mode — โหมดตารางกระชับ
+   x1 ลด padding ของตารางให้แสดงได้มากขึ้น
+   x1 พรีวิวสด (Live Preview)
+   x1 TL
+   x1 The quick brown fox jumps over the lazy dog 0123456789
+   x1 Light Mode ☀️
+   x1 การเปลี่ยนแปลงจะบันทึกลง settings (key: appearance) เมื่อกดปุ่มบันทึก
+   x1 และมีผลกับเว็บสมาชิกทันที (cache สูงสุด 60 วินาที)
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 15 (19 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x1 Table: banks · ธนาคารที่รองรับ 7/10 · บัญชีรับ-โอนเงิน 5 บัญชี
+   x1 RPC: admin_toggle_bank / admin_reorder
+   x3 KBA
+   x2 SCB
+   x2 BBL
+   x1 KTB
+   x2 BAY
+   x1 ttb
+   x1 GSB
+   x1 BAA
+   x1 GHB
+   x1 IB
+   x2 สำนักงานบัญชีกลาง TL
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 16 (16 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x3 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x4 เจ้าของเว็บ (Owner)
+   x1 Table: notifications · RPC: admin_broadcast_notification(p_title, p_body, p_type) · ส่งแล้วทั้งหมด 5 ครั้ง
+   x1 p_type — ประเภทการแจ้งเตือน
+   x1 info
+   x1 warning
+   x1 success
+   x1 p_title — หัวข้อ
+   x1 p_body — ข้อความ
+   x1 รายการ · RPC: admin_delete_notification(p_notification_id)
+   x1 ครบ 1 ปีของเว็บ รับโค้ดโบนัส TLBDAY ในหน้าโปรโมชั่น
+   x1 รายการถอน ฿8,000 เข้าบัญชี KBank ท้าย 4321 เรียบร้อย
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 17 (41 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x3 Backup & ข้อมูล
+   x3 เจ้าของเว็บ (Owner)
+   x1 จัดการสำรองฐานข้อมูล ส่งออกข้อมูล และตรวจสอบสถิติตาราง · RPC: fn_log_csv_backup / admin_cleanup_storage
+   x1 Backup ทันที
+   x13 MB
+   x1 Backup ล่าสุด (cron 04:00)
+   x1 ส่งออกข้อมูล (Export)
+   x1 ดาวน์โหลด CSV / JSON รายกลุ่มข้อมูล
+   x2 profiles
+   x6 CSV
+   x4 JSON
+   x2 transactions
+   x2 bets
+   x2 lottery_results
+   x1 settings
+   x1 จำนวนแถวและขนาดของแต่ละตารางใน Supabase
+   x1 draw_schedules
+   x1 restricted_numbers
+   x1 deposit_requests
+   x1 withdraw_requests
+   x1 wallets
+   x1 instant_draws
+   x1 notifications
+   x1 login_attempts
+   x1 ระบบสำรองอัตโนมัติทุกวันเวลา 04:00 น. (Supabase cron) · บันทึกด้วย fn_log_csv_backup
+   x2 DATABASE
+   x2 Supabase full backup
+   x1 842.3 MB
+   x2 ระบบ (cron)
+   x1 bets (สำรองก่อน cleanup)
+   x1 196.4 MB
+   x1 fn_log_csv_backup
+   x1 transactions สิงหาคม 2569
+   x1 38.2 MB
+   x1 settings + appearance
+   x1 0.2 MB
+   x1 828.9 MB
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 18 (11 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x2 เจ้าของเว็บ (Owner)
+   x1 profiles (is_admin=true) · ทั้งหมด 4 คน · Super Admin จัดการสิทธิ์ได้ทุกข้อ
+   x1 เบอร์ / Login
+   x1 Permission
+   x1 Super Admin
+   x3 Admin
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+--- หน้า 19 (15 รายการ) ---
+   x1 TH-LOTTO
+   x1 Admin Panel v1.4.0
+   x1 แจ้งเตือน Broadcast
+   x1 Backup & ข้อมูล
+   x1 เจ้าของเว็บ (Owner)
+   x2 VIP
+   x1 KB
+   x1 Member ID
+   x1 VIP Level
+   x1 ยอดกระเป๋าปัจจุบัน (wallets)
+   x1 ยอดเงินหลัก (balance)
+   x1 ค่าแนะนำ (commission)
+   x1 แทงรวม (total_bets)
+   x1 ชนะรวม (total_won)
+   x1 TH-LOTTO Admin Panel v1.4.0 — React + Supabase · UI Mockup สำหรับทีมแอดมิน (ครบ 19 หน้าตามเช็คลิสต์)
+
+
+########## OVERFLOW PER PAGE ##########
+
+--- หน้า 01 (40 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> rounded-full px-3 py-1.5 text-xs font-semibold transition-co | ทั้งหมด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> rounded-full px-3 py-1.5 text-xs font-semibold transition-co | ฝาก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> rounded-full px-3 py-1.5 text-xs font-semibold transition-co | ถอน | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> rounded-full px-3 py-1.5 text-xs font-semibold transition-co | โพย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> rounded-full px-3 py-1.5 text-xs font-semibold transition-co | แจ้งเตือน | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | ท | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | ส | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> flex size-4 items-center justify-center rounded-full text-[7 | GOV | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | ป | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | น | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | จ | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> flex size-4 items-center justify-center rounded-full text-[7 | LAO | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | ธ | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | อ | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | ว | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> flex size-4 items-center justify-center rounded-full text-[7 | NIK | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | ก | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | ณ | sw-sh:None cw-ch:None
+
+--- หน้า 02 (28 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> inline-flex items-center rounded-full px-2.5 py-1 text-xs fo | รอดำเนินการ | sw-sh:None cw-ch:None
+
+--- หน้า 03 (30 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> inline-flex items-center justify-center whitespace-nowrap fo | คัดลอก | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> inline-flex items-center rounded-full px-2.5 py-1 text-xs fo | รอดำเนินการ | sw-sh:None cw-ch:None
+
+--- หน้า 04 (40 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | ส | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> inline-flex items-center rounded-full px-2 py-0.5 text-[11px | VIP 1 | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> inline-flex items-center rounded-full px-2.5 py-1 text-xs fo | ใช้งาน | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | น | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | ป | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> inline-flex items-center rounded-full px-2 py-0.5 text-[11px | VIP 2 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | จ | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> inline-flex items-center rounded-full px-2 py-0.5 text-[11px | VIP 0 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | ธ | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | อ | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> inline-flex items-center rounded-full px-2.5 py-1 text-xs fo | ไม่ใช้งาน | sw-sh:None cw-ch:None
+
+--- หน้า 05 (22 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+
+--- หน้า 06 (26 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> flex size-8 items-center justify-center rounded-full text-[9 | HSG | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> flex size-8 items-center justify-center rounded-full text-[9 | IND | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> flex size-8 items-center justify-center rounded-full text-[9 | GOV | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> flex size-8 items-center justify-center rounded-full text-[9 | LAO | sw-sh:None cw-ch:None
+
+--- หน้า 07 (22 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+
+--- หน้า 08 (23 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> inline-flex items-center justify-center gap-2 whitespace-now | บันทึกตั้งค่าทั่วไป | sw-sh:None cw-ch:None
+
+--- หน้า 09 (23 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> inline-flex items-center justify-center gap-2 whitespace-now | เพิ่มสไลด์ | sw-sh:None cw-ch:None
+
+--- หน้า 10 (23 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> inline-flex items-center justify-center gap-2 whitespace-now | เพิ่มโปรโมชั่น | sw-sh:None cw-ch:None
+
+--- หน้า 11 (28 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> inline-flex items-center justify-center gap-2 whitespace-now | เขียนบทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium tran | ทั้งหมด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium tran | คู่มือ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium tran | เทคนิค | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium tran | ประกาศ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium tran | ข่าวสาร | sw-sh:None cw-ch:None
+
+--- หน้า 12 (28 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> inline-flex items-center justify-center gap-2 whitespace-now | เพิ่มฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> flex size-10 shrink-0 items-center justify-center rounded-fu | #1 | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> flex size-10 shrink-0 items-center justify-center rounded-fu | #2 | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> flex size-10 shrink-0 items-center justify-center rounded-fu | #3 | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> flex size-10 shrink-0 items-center justify-center rounded-fu | #4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> flex size-10 shrink-0 items-center justify-center rounded-fu | #5 | sw-sh:None cw-ch:None
+
+--- หน้า 13 (22 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+
+--- หน้า 14 (38 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> inline-flex items-center justify-center gap-2 whitespace-now | บันทึกการเปลี่ยนแปลง | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr | Logo Green | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr | Blue | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr | Violet | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr | Rose | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr | Amber | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr | Sky | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> rounded-full px-3 py-1.5 text-xs font-medium transition-colo | IBM Plex Sans Thai | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> rounded-full px-3 py-1.5 text-xs font-medium transition-colo | Prompt | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> rounded-full px-3 py-1.5 text-xs font-medium transition-colo | Kanit | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> rounded-full px-3 py-1.5 text-xs font-medium transition-colo | Sarabun | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> rounded-full px-3 py-1.5 text-xs font-medium transition-colo | Noto Sans Thai | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-8 items-center justify-center rounded-full text-xs | TL | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> rounded-full px-4 py-2 text-xs font-bold text-white | ปุ่มหลัก | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> rounded-full border px-4 py-2 text-xs font-bold | ปุ่มขอบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> rounded-full bg-neutral-100 px-4 py-2 text-xs font-bold text | ปุ่มรอง | sw-sh:None cw-ch:None
+
+--- หน้า 15 (23 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> inline-flex items-center justify-center gap-2 whitespace-now | เพิ่มบัญชีธนาคาร | sw-sh:None cw-ch:None
+
+--- หน้า 16 (23 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> inline-flex items-center justify-center gap-2 whitespace-now | ส่งการแจ้งเตือน | sw-sh:None cw-ch:None
+
+--- หน้า 17 (23 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> inline-flex items-center justify-center gap-2 whitespace-now | Backup ทันที | sw-sh:None cw-ch:None
+
+--- หน้า 18 (29 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> inline-flex items-center justify-center gap-2 whitespace-now | เพิ่มแอดมิน | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | เ | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> inline-flex items-center rounded-full px-2.5 py-1 text-xs fo | Super Admin | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full text- | แ | sw-sh:None cw-ch:None
+   [wrapped-pill] <SPAN> inline-flex items-center rounded-full px-2.5 py-1 text-xs fo | ไม่ใช้งาน | sw-sh:None cw-ch:None
+
+--- หน้า 19 (23 จุด) ---
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แผงควบคุม | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการฝากเงิน6 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รายการถอนเงิน4 | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการสมาชิก | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตลาดหวย | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ออกผลรางวัล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ภาพรวมหนึ่งนาที | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | วงล้อโชคดี | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | สไลเดอร์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | โปรโมชั่น | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | บทความ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | จัดการฟีด | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ตั้งค่าระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | รูปลักษณ์ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ธนาคาร | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | แจ้งเตือน Broadcast | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | Backup & ข้อมูล | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2.5 text | ผู้ดูแลระบบ | sw-sh:None cw-ch:None
+   [wrapped-pill] <BUTTON> flex w-full items-center gap-3 rounded-full px-3 py-2 text-l | อจเจ้าของเว็บ (Owner)062-230-6037 | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex size-9 items-center justify-center rounded-full bg-neut | อจ | sw-sh:None cw-ch:None
+   [wrapped-pill] <DIV> flex shrink-0 items-center justify-center rounded-full font- | ส | sw-sh:None cw-ch:None
