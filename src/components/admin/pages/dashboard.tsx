@@ -285,26 +285,105 @@ export function DashboardPage() {
         <StatCard icon={Send} label="อัตราถอน" value={`${fmtNum(s.withdrawal_rate, 1)}%`} sub="ยอดถอน ÷ ยอดฝาก" tone="rose" />
       </div>
 
-      {/* Chart */}
-      <Panel className="p-5 sm:p-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      {/* Coinest-Style Cashflow & Volume Chart */}
+      <Panel className="p-5 sm:p-6 rounded-3xl border-neutral-200 shadow-xs">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 pb-4">
           <div>
-            <h2 className="text-base font-bold text-neutral-900">ภาพรวม 7 วันย้อนหลัง</h2>
-            <p className="mt-0.5 text-xs text-neutral-500">ข้อมูลจากธุรกรรมจริง: ฝาก · ถอน · แทง (บาท)</p>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-neutral-900">กระแสเงินสด & ยอดแทง 7 วันย้อนหลัง (Cashflow Analytics)</h2>
+              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-black text-emerald-700 border border-emerald-200/60">
+                Live Data
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs text-neutral-500">วิเคราะห์เปรียบเทียบกระแสเงินเข้า-ออก (ฝาก/ถอน) และมูลค่าการแทงหวยจริง</p>
           </div>
-          <RealtimeDot label="เชื่อมต่อข้อมูลสด Supabase" />
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-4 text-xs font-semibold">
+              <span className="flex items-center gap-1.5 text-neutral-600">
+                <span className="size-2.5 rounded-full bg-[#287e0b]" /> ฝากเงิน
+              </span>
+              <span className="flex items-center gap-1.5 text-neutral-600">
+                <span className="size-2.5 rounded-full bg-[#f43f5e]" /> ถอนเงิน
+              </span>
+              <span className="flex items-center gap-1.5 text-neutral-600">
+                <span className="size-2.5 rounded-full bg-[#f59e0b]" /> ยอดแทง
+              </span>
+            </div>
+            <RealtimeDot label="Supabase Sync" />
+          </div>
         </div>
+
+        {/* Cashflow Summary Chips (Coinest SaaS DNA) */}
+        <div className="mb-5 grid grid-cols-3 gap-3 rounded-2xl bg-neutral-50/70 p-3 border border-neutral-100">
+          <div>
+            <p className="text-[11px] font-semibold text-neutral-400">ฝากรวม 7 วัน</p>
+            <p className="text-base font-black text-emerald-700">
+              ฿{fmtNum(weeklyChartData.reduce((acc: number, cur: any) => acc + (cur.DEPOSIT || 0), 0))}
+            </p>
+          </div>
+          <div>
+            <p className="text-[11px] font-semibold text-neutral-400">ถอนรวม 7 วัน</p>
+            <p className="text-base font-black text-rose-600">
+              ฿{fmtNum(weeklyChartData.reduce((acc: number, cur: any) => acc + (cur.WITHDRAW || 0), 0))}
+            </p>
+          </div>
+          <div>
+            <p className="text-[11px] font-semibold text-neutral-400">กระแสเงินสุทธิ (Net)</p>
+            <p className={cn(
+              "text-base font-black",
+              (weeklyChartData.reduce((acc: number, cur: any) => acc + (cur.DEPOSIT || 0), 0) -
+               weeklyChartData.reduce((acc: number, cur: any) => acc + (cur.WITHDRAW || 0), 0)) >= 0
+                ? "text-brand-600"
+                : "text-rose-600"
+            )}>
+              ฿{fmtNum(
+                weeklyChartData.reduce((acc: number, cur: any) => acc + (cur.DEPOSIT || 0), 0) -
+                weeklyChartData.reduce((acc: number, cur: any) => acc + (cur.WITHDRAW || 0), 0)
+              )}
+            </p>
+          </div>
+        </div>
+
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={weeklyChartData} margin={{ top: 12, right: 12, left: 0, bottom: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#737373" }} dy={4} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "#a3a3a3" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${Math.round(v / 1000)}k`} />
-              <Tooltip formatter={(v) => fmtTHB(Number(v))} contentStyle={{ borderRadius: 16, border: "1px solid #e5e5e5", fontSize: 12 }} />
-              <Legend wrapperStyle={{ fontSize: 12, paddingTop: 6 }} />
-              <Bar dataKey="DEPOSIT" name="ฝาก" fill="#287e0b" radius={[6, 6, 0, 0]} maxBarSize={26} />
-              <Bar dataKey="WITHDRAW" name="ถอน" fill="#f43f5e" radius={[6, 6, 0, 0]} maxBarSize={26} />
-              <Bar dataKey="BET" name="แทง" fill="#f59e0b" radius={[6, 6, 0, 0]} maxBarSize={26} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#64748b" }} dy={4} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${Math.round(v / 1000)}k`} />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (!active || !payload || !payload.length) return null;
+                  const dep = payload.find((p) => p.dataKey === "DEPOSIT")?.value || 0;
+                  const wit = payload.find((p) => p.dataKey === "WITHDRAW")?.value || 0;
+                  const bet = payload.find((p) => p.dataKey === "BET")?.value || 0;
+                  return (
+                    <div className="rounded-2xl border border-neutral-200 bg-white p-3 shadow-xl text-xs space-y-1.5 min-w-[160px]">
+                      <p className="font-bold text-neutral-900 border-b border-neutral-100 pb-1">วันที่ {label}</p>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="flex items-center gap-1.5 text-neutral-500">
+                          <span className="size-2 rounded-full bg-[#287e0b]" /> ฝาก:
+                        </span>
+                        <span className="font-bold text-emerald-700">{fmtTHB(Number(dep))}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="flex items-center gap-1.5 text-neutral-500">
+                          <span className="size-2 rounded-full bg-[#f43f5e]" /> ถอน:
+                        </span>
+                        <span className="font-bold text-rose-600">{fmtTHB(Number(wit))}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="flex items-center gap-1.5 text-neutral-500">
+                          <span className="size-2 rounded-full bg-[#f59e0b]" /> แทง:
+                        </span>
+                        <span className="font-bold text-amber-600">{fmtTHB(Number(bet))}</span>
+                      </div>
+                    </div>
+                  );
+                }}
+              />
+              <Bar dataKey="DEPOSIT" name="ฝาก" fill="#287e0b" radius={[8, 8, 0, 0]} maxBarSize={28} />
+              <Bar dataKey="WITHDRAW" name="ถอน" fill="#f43f5e" radius={[8, 8, 0, 0]} maxBarSize={28} />
+              <Bar dataKey="BET" name="แทง" fill="#f59e0b" radius={[8, 8, 0, 0]} maxBarSize={28} />
             </BarChart>
           </ResponsiveContainer>
         </div>

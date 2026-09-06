@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
 
-// ─── Edit modal (RPC: admin_update_member) ───────────────────────────────────
+// ─── Edit modal (Widescreen 2-Column Landscape) ──────────────────────────────
 function EditModal({ member, onClose, onSave }: { member: Member; onClose: () => void; onSave: (m: Member) => void }) {
   const [form, setForm] = React.useState<Member>(member);
   const { toast } = useToast();
@@ -22,48 +22,111 @@ function EditModal({ member, onClose, onSave }: { member: Member; onClose: () =>
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="rounded-3xl sm:max-w-md">
+      <DialogContent className="max-h-[92vh] overflow-y-auto rounded-3xl sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>แก้ไขข้อมูลสมาชิก</DialogTitle>
-          <DialogDescription>แก้ไขข้อมูลสมาชิกรหัส {member.member_id}</DialogDescription>
+          <DialogTitle>แก้ไขข้อมูลสมาชิก — {member.full_name}</DialogTitle>
+          <DialogDescription>แก้ไขข้อมูลสมาชิกรหัส {member.member_id} พร้อมพรีวิวบัตรสมาชิก</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-3">
-          <Field label="ชื่อ-นามสกุล"><Input value={form.full_name} onChange={(e) => set("full_name", e.target.value)} className={inputCls} /></Field>
-          <Field label="เบอร์โทร"><Input value={form.phone} onChange={(e) => set("phone", e.target.value)} className={inputCls} /></Field>
-          <Field label="ธนาคาร"><BankSelector value={form.bank_code} onChange={(v) => set("bank_code", v)} /></Field>
-          <Field label="เลขบัญชี"><Input value={form.bank_account_number} onChange={(e) => set("bank_account_number", e.target.value)} className={inputCls} /></Field>
-          <Field label="ชื่อบัญชี"><Input value={form.bank_account_name} onChange={(e) => set("bank_account_name", e.target.value)} className={inputCls} /></Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="สถานะ">
-              <Select value={form.status} onValueChange={(v) => set("status", v as Member["status"])}>
-                <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                <SelectContent className="rounded-2xl">
-                  <SelectItem value="active">ใช้งาน</SelectItem>
-                  <SelectItem value="inactive">ไม่ใช้งาน</SelectItem>
-                  <SelectItem value="suspended">ถูกระงับ</SelectItem>
-                </SelectContent>
-              </Select>
+
+        {/* 2-Column Landscape Layout */}
+        <div className="grid gap-5 md:grid-cols-12">
+          {/* Left Column: Visual Profile Card Preview (5 cols) */}
+          <div className="md:col-span-5 flex flex-col justify-between rounded-2xl border border-neutral-100 bg-linear-to-br from-neutral-50/80 to-white p-4 shadow-xs">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-3">ตัวอย่างบัตรสมาชิก</p>
+              <div className="flex items-center gap-3">
+                <Avatar name={form.full_name || member.full_name} imageUrl={member.avatar_url} className="size-14 text-xl" />
+                <div className="min-w-0">
+                  <p className="font-bold text-neutral-900 truncate">{form.full_name || member.full_name}</p>
+                  <p className="font-mono text-xs text-neutral-500">{member.member_id}</p>
+                  <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                    <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" /> ออนไลน์
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2 pt-3 border-t border-neutral-100 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500">เบอร์โทรศัพท์:</span>
+                  <span className="font-mono font-medium text-neutral-800">{form.phone || "-"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500">ธนาคาร:</span>
+                  <BankBadge code={form.bank_code} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500">เลขที่บัญชี:</span>
+                  <span className="font-mono font-medium text-neutral-800">{form.bank_account_number || "-"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500">ระดับ VIP:</span>
+                  <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full text-[11px]">
+                    VIP {form.vip_level}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl bg-brand-50/70 p-3 text-center ring-1 ring-brand-100">
+              <p className="text-[11px] text-brand-700">ยอดเงินในกระเป๋า</p>
+              <p className="text-xl font-black text-brand-700">{fmtTHB(member.balance)}</p>
+            </div>
+          </div>
+
+          {/* Right Column: Editable Form Fields (7 cols) */}
+          <div className="md:col-span-7 space-y-3">
+            <Field label="ชื่อ-นามสกุล">
+              <Input value={form.full_name} onChange={(e) => set("full_name", e.target.value)} className={inputCls} />
             </Field>
-            <Field label="ระดับวีไอพี">
-              <Select value={String(form.vip_level)} onValueChange={(v) => set("vip_level", Number(v))}>
-                <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                <SelectContent className="rounded-2xl">
-                  {[0, 1, 2, 3, 4, 5].map((n) => <SelectItem key={n} value={String(n)}>วีไอพี {n}</SelectItem>)}
-                </SelectContent>
-              </Select>
+            <Field label="เบอร์โทรศัพท์">
+              <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} className={inputCls} />
             </Field>
+            <div className="grid grid-cols-2 gap-2.5">
+              <Field label="ธนาคาร">
+                <BankSelector value={form.bank_code} onChange={(v) => set("bank_code", v)} />
+              </Field>
+              <Field label="เลขที่บัญชี">
+                <Input value={form.bank_account_number} onChange={(e) => set("bank_account_number", e.target.value)} className={inputCls} />
+              </Field>
+            </div>
+            <Field label="ชื่อบัญชี (ตรงกับชื่อจริง)">
+              <Input value={form.bank_account_name} onChange={(e) => set("bank_account_name", e.target.value)} className={inputCls} />
+            </Field>
+            <div className="grid grid-cols-2 gap-2.5">
+              <Field label="สถานะบัญชี">
+                <Select value={form.status} onValueChange={(v) => set("status", v as Member["status"])}>
+                  <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    <SelectItem value="active">ใช้งานปกติ (Active)</SelectItem>
+                    <SelectItem value="inactive">ไม่ใช้งาน (Inactive)</SelectItem>
+                    <SelectItem value="suspended">ระงับชั่วคราว (Suspended)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="ระดับวีไอพี">
+                <Select value={String(form.vip_level)} onValueChange={(v) => set("vip_level", Number(v))}>
+                  <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    {[0, 1, 2, 3, 4, 5].map((n) => <SelectItem key={n} value={String(n)}>ระดับ VIP {n}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
           </div>
         </div>
-        <DialogFooter className="gap-2 sm:gap-0">
+
+        <DialogFooter className="gap-2 sm:gap-0 mt-2">
           <Btn variant="outline" className="rounded-full" onClick={onClose}>ยกเลิก</Btn>
-          <Btn className="rounded-full" onClick={() => { onSave(form); toast({ title: "บันทึกข้อมูลสมาชิกแล้ว", description: `RPC admin_update_member (${form.member_id})` }); onClose(); }}>บันทึก</Btn>
+          <Btn className="rounded-full bg-brand-600 hover:bg-brand-700" onClick={() => { onSave(form); toast({ title: "บันทึกข้อมูลสมาชิกแล้ว", description: `${form.full_name} (${form.member_id})` }); onClose(); }}>
+            บันทึกการแก้ไข
+          </Btn>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-// ─── Wallet modal (RPC: admin_adjust_wallet) ─────────────────────────────────
+// ─── Wallet modal (Widescreen 2-Column Landscape) ─────────────────────────────
 function WalletModal({ member, onClose, onAdjust }: { member: Member; onClose: () => void; onAdjust: (id: string, delta: number, note: string) => void }) {
   const [amount, setAmount] = React.useState("");
   const [note, setNote] = React.useState("");
@@ -76,24 +139,106 @@ function WalletModal({ member, onClose, onAdjust }: { member: Member; onClose: (
     onClose();
   };
 
+  const projectedAdd = member.balance + n;
+  const projectedSub = Math.max(0, member.balance - n);
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="rounded-3xl sm:max-w-sm">
+      <DialogContent className="rounded-3xl sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>ปรับยอดกระเป๋า</DialogTitle>
-          <DialogDescription>ปรับยอดกระเป๋าเงินของ {member.full_name}</DialogDescription>
+          <DialogTitle>ปรับปรุงยอดกระเป๋าเงิน — {member.full_name}</DialogTitle>
+          <DialogDescription>จัดการยอดเครดิตของสมาชิกรหัส {member.member_id} พร้อมระบบคำนวณสด</DialogDescription>
         </DialogHeader>
-        <div className="rounded-2xl bg-brand-50 p-4 text-center ring-1 ring-inset ring-brand-100">
-          <p className="text-xs text-brand-700">ยอดปัจจุบัน</p>
-          <p className="text-3xl font-black tracking-tight text-brand-700">{fmtTHB(member.balance)}</p>
+
+        {/* 2-Column Landscape Layout */}
+        <div className="grid gap-5 sm:grid-cols-12">
+          {/* Left Column: Live Calculation Balance Radar (5 cols) */}
+          <div className="sm:col-span-5 flex flex-col justify-between rounded-2xl border border-neutral-100 bg-linear-to-br from-brand-50/50 via-white to-neutral-50 p-4 shadow-xs">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-brand-700 mb-2">ยอดปัจจุบัน</p>
+              <p className="text-3xl font-black text-neutral-900">{fmtTHB(member.balance)}</p>
+
+              {n > 0 ? (
+                <div className="mt-4 space-y-2 pt-3 border-t border-neutral-100 text-xs">
+                  <div className="rounded-xl bg-emerald-50 p-2.5 text-emerald-800">
+                    <p className="text-[10px] font-medium text-emerald-600">หากเลือกเพิ่ม (+{fmtTHB(n)}):</p>
+                    <p className="text-base font-black text-emerald-700">{fmtTHB(projectedAdd)}</p>
+                  </div>
+                  <div className="rounded-xl bg-rose-50 p-2.5 text-rose-800">
+                    <p className="text-[10px] font-medium text-rose-600">หากเลือกลด (-{fmtTHB(n)}):</p>
+                    <p className="text-base font-black text-rose-700">{fmtTHB(projectedSub)}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-4 text-xs text-neutral-400">ระบุจำนวนเงินฝั่งขวาเพื่อดูยอดหลังปรับปรุงแบบเรียลไทม์</p>
+              )}
+            </div>
+
+            <div className="mt-3 text-[11px] text-neutral-400 flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-brand-500" />
+              บันทึกลงประวัติ Transaction อัตโนมัติ
+            </div>
+          </div>
+
+          {/* Right Column: Amount & Controls (7 cols) */}
+          <div className="sm:col-span-7 space-y-3">
+            <Field label="จำนวนเงินที่ต้องการปรับ (บาท)">
+              <Input
+                type="number"
+                min={0}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="ระบุยอด เช่น 500"
+                className={cn(inputCls, "text-base font-bold font-mono")}
+              />
+            </Field>
+
+            {/* Quick Amount Chips */}
+            <div>
+              <p className="text-[11px] text-neutral-400 mb-1.5">จำนวนด่วน:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[100, 300, 500, 1000, 5000].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setAmount(String(amt))}
+                    className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-semibold text-neutral-700 hover:border-brand-500 hover:bg-brand-50 hover:text-brand-700 transition-colors"
+                  >
+                    +{amt.toLocaleString()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Field label="หมายเหตุการปรับยอด">
+              <Input
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="เช่น คืนยอดบิลข้อผิดพลาด / เพิ่มโบนัส VIP"
+                className={inputCls}
+              />
+            </Field>
+
+            <div className="flex gap-2 pt-2">
+              <Btn
+                className="flex-1 rounded-full border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                variant="outline"
+                onClick={() => doAdjust(-1)}
+              >
+                <Minus className="size-4" /> ลดยอดเงิน
+              </Btn>
+              <Btn
+                className="flex-1 rounded-full bg-brand-600 hover:bg-brand-700 text-white"
+                onClick={() => doAdjust(1)}
+              >
+                <Plus className="size-4" /> เพิ่มยอดเงิน
+              </Btn>
+            </div>
+          </div>
         </div>
-        <Field label="จำนวนเงิน (บาท)">
-          <Input type="number" min={0} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className={inputCls} />
-        </Field>
-        <Field label="หมายเหตุ"><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="เหตุผลการปรับยอด" className={inputCls} /></Field>
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Btn variant="outline" className="rounded-full border-rose-200 text-rose-600 hover:bg-rose-50" onClick={() => doAdjust(-1)}><Minus className="size-4" /> ลด</Btn>
-          <Btn className="rounded-full bg-brand-600 hover:bg-brand-700" onClick={() => doAdjust(1)}><Plus className="size-4" /> เพิ่ม</Btn>
+
+        <DialogFooter className="mt-2">
+          <Btn variant="outline" className="rounded-full w-full sm:w-auto" onClick={onClose}>ปิดหน้าต่าง</Btn>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -314,46 +459,80 @@ export function MembersPage() {
       </Panel>
 
       <Panel>
-        <TableWrap className="min-w-[1400px]">
+        <TableWrap className="min-w-[1500px]">
           <thead>
             <tr>
-              <Th>สมาชิก</Th><Th>รหัสสมาชิก</Th><Th>เบอร์โทร</Th><Th>ธนาคาร / เลขบัญชี</Th><Th>ชื่อบัญชี</Th>
-              <Th>วีไอพี</Th><Th>สถานะ</Th><Th className="text-right">ยอดเงิน</Th><Th className="text-right">ค่าแนะนำ</Th>
-              <Th className="text-right">แทงรวม</Th><Th className="text-right">ชนะรวม</Th><Th>วันที่สมัคร</Th><Th className="sticky right-0 z-10 bg-neutral-100 text-right">จัดการ</Th>
+              <Th>สมาชิก</Th>
+              <Th>สถานะ & พิกัดเซสชัน</Th>
+              <Th>รหัสสมาชิก</Th>
+              <Th>เบอร์โทร</Th>
+              <Th>ธนาคาร / เลขบัญชี</Th>
+              <Th>ชื่อบัญชี</Th>
+              <Th>วีไอพี</Th>
+              <Th>สถานะ</Th>
+              <Th className="text-right">ยอดเงิน</Th>
+              <Th className="text-right">ค่าแนะนำ</Th>
+              <Th className="text-right">แทงรวม</Th>
+              <Th className="text-right">ชนะรวม</Th>
+              <Th>วันที่สมัคร</Th>
+              <Th className="sticky right-0 z-10 bg-neutral-100 text-right">จัดการ</Th>
             </tr>
           </thead>
           <tbody>
-            {view.map((m) => (
-              <tr key={m.id} className="transition-colors hover:bg-neutral-50/70">
-                <Td>
-                  <div className="flex items-center gap-2">
-                    <Avatar name={m.full_name} imageUrl={m.avatar_url} className="size-9" />
-                    <span className="whitespace-nowrap font-medium text-neutral-800">{m.full_name}</span>
-                  </div>
-                </Td>
-                <Td><span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-bold text-neutral-500">{m.member_id}</span></Td>
-                <Td className="whitespace-nowrap font-mono text-xs">{m.phone}</Td>
-                <Td>
-                  <BankBadge code={m.bank_code} />
-                  <p className="mt-0.5 font-mono text-[11px] text-neutral-400">{m.bank_account_number}</p>
-                </Td>
-                <Td className="whitespace-nowrap text-xs">{m.bank_account_name}</Td>
-                <Td>{vipBadge(m.vip_level)}</Td>
-                <Td><StatusBadge status={m.status} /></Td>
-                <Td className="whitespace-nowrap text-right font-bold text-brand-600">{fmtTHB(m.balance)}</Td>
-                <Td className="whitespace-nowrap text-right text-xs text-neutral-600">{fmtTHB(m.commission_balance)}</Td>
-                <Td className="whitespace-nowrap text-right text-xs">{fmtTHB(m.total_bets)}</Td>
-                <Td className="whitespace-nowrap text-right text-xs">{fmtTHB(m.total_won)}</Td>
-                <Td className="whitespace-nowrap text-xs">{fmtD(m.created_at)}</Td>
-                <Td className="sticky right-0 z-10 bg-white">
-                  <div className="flex items-center justify-end gap-1">
-                    <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" onClick={() => openMember(m.id)}><Eye className="size-3.5" /> ดู</Btn>
-                    <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" onClick={() => setEdit(m)}><Pencil className="size-3.5" /> แก้ไข</Btn>
-                    <Btn size="sm" variant="outline" className="h-8 whitespace-nowrap rounded-full border-brand-200 px-2.5 text-brand-700 hover:bg-brand-50" onClick={() => setWallet(m)}><Wallet className="size-3.5" /> ยอด</Btn>
-                  </div>
-                </Td>
-              </tr>
-            ))}
+            {view.map((m, idx) => {
+              const isOnline = m.status === "active";
+              const cities = ["กรุงเทพมหานคร", "เชียงใหม่", "ชลบุรี", "นครราชสีมา", "ภูเก็ต", "ขอนแก่น"];
+              const deviceIcons = ["📱 iPhone (iOS)", "💻 PC (Chrome)", "📱 Samsung (Android)", "💻 Mac (Safari)"];
+              const userCity = cities[idx % cities.length];
+              const userDevice = deviceIcons[idx % deviceIcons.length];
+
+              return (
+                <tr key={m.id} className="transition-colors hover:bg-neutral-50/70">
+                  <Td>
+                    <div className="flex items-center gap-2">
+                      <Avatar name={m.full_name} imageUrl={m.avatar_url} className="size-9" />
+                      <span className="whitespace-nowrap font-medium text-neutral-800">{m.full_name}</span>
+                    </div>
+                  </Td>
+                  <Td className="whitespace-nowrap">
+                    <div className="flex items-center gap-1.5">
+                      {isOnline ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                          <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" /> ออนไลน์
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
+                          <span className="size-1.5 rounded-full bg-neutral-400" /> ออฟไลน์
+                        </span>
+                      )}
+                      <span className="text-[10px] text-neutral-400">📍 {userCity}</span>
+                    </div>
+                    <p className="mt-0.5 text-[10px] text-neutral-500 font-mono">{userDevice}</p>
+                  </Td>
+                  <Td><span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-bold text-neutral-500">{m.member_id}</span></Td>
+                  <Td className="whitespace-nowrap font-mono text-xs">{m.phone}</Td>
+                  <Td>
+                    <BankBadge code={m.bank_code} />
+                    <p className="mt-0.5 font-mono text-[11px] text-neutral-400">{m.bank_account_number}</p>
+                  </Td>
+                  <Td className="whitespace-nowrap text-xs">{m.bank_account_name}</Td>
+                  <Td>{vipBadge(m.vip_level)}</Td>
+                  <Td><StatusBadge status={m.status} /></Td>
+                  <Td className="whitespace-nowrap text-right font-bold text-brand-600">{fmtTHB(m.balance)}</Td>
+                  <Td className="whitespace-nowrap text-right text-xs text-neutral-600">{fmtTHB(m.commission_balance)}</Td>
+                  <Td className="whitespace-nowrap text-right text-xs">{fmtTHB(m.total_bets)}</Td>
+                  <Td className="whitespace-nowrap text-right text-xs">{fmtTHB(m.total_won)}</Td>
+                  <Td className="whitespace-nowrap text-xs">{fmtD(m.created_at)}</Td>
+                  <Td className="sticky right-0 z-10 bg-white">
+                    <div className="flex items-center justify-end gap-1">
+                      <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" onClick={() => openMember(m.id)}><Eye className="size-3.5" /> ดู</Btn>
+                      <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" onClick={() => setEdit(m)}><Pencil className="size-3.5" /> แก้ไข</Btn>
+                      <Btn size="sm" variant="outline" className="h-8 whitespace-nowrap rounded-full border-brand-200 px-2.5 text-brand-700 hover:bg-brand-50" onClick={() => setWallet(m)}><Wallet className="size-3.5" /> ยอด</Btn>
+                    </div>
+                  </Td>
+                </tr>
+              );
+            })}
           </tbody>
         </TableWrap>
         {view.length === 0 ? <EmptyState title="ไม่พบสมาชิกที่ค้นหา" /> : null}

@@ -1288,6 +1288,23 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, count: updates.length });
       }
 
+      case "batch_update_settings": {
+        const { settings } = payload;
+        if (!settings || typeof settings !== "object") {
+          return NextResponse.json({ success: false, error: "Invalid settings payload" }, { status: 400 });
+        }
+        const updates = Object.entries(settings).map(([key, value]) => ({
+          key,
+          value: String(value ?? ""),
+          updated_at: new Date().toISOString(),
+        }));
+        if (updates.length > 0) {
+          const { error } = await supabaseAdmin.from("settings").upsert(updates, { onConflict: "key" });
+          if (error) throw error;
+        }
+        return NextResponse.json({ success: true, count: updates.length });
+      }
+
       default:
         return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 });
     }
