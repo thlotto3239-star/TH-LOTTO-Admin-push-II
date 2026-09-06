@@ -389,6 +389,68 @@ export function Avatar({
   );
 }
 
+// ─── MarketLogo (โลโก้ตลาดหวยจริง พร้อม fallback ตัวย่อสี) ─────────────────
+export function MarketLogo({
+  logoUrl,
+  imageUrl,
+  name,
+  code,
+  color,
+  className,
+  size = "md",
+}: {
+  logoUrl?: string | null;
+  imageUrl?: string | null;
+  name?: string;
+  code?: string;
+  color?: string;
+  className?: string;
+  size?: "sm" | "md" | "lg" | "xl";
+}) {
+  const [failed, setFailed] = React.useState(false);
+  const src = !failed ? (logoUrl || imageUrl) : null;
+
+  const dim =
+    size === "sm"
+      ? "size-7 rounded-lg text-[9px]"
+      : size === "lg"
+      ? "size-11 rounded-2xl text-xs"
+      : size === "xl"
+      ? "size-14 rounded-2xl text-base"
+      : "size-9 rounded-xl text-[10px]";
+
+  const shortName = code ? code.slice(0, 3) : name ? name.slice(0, 2) : "หวย";
+
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name || code || "ตลาดหวย"}
+        onError={() => setFailed(true)}
+        className={cn(
+          "shrink-0 object-cover bg-white ring-1 ring-neutral-200/80 shadow-sm p-0.5",
+          dim,
+          className
+        )}
+      />
+    );
+  }
+
+  return (
+    <span
+      className={cn(
+        "flex shrink-0 items-center justify-center font-black text-white shadow-sm ring-1 ring-black/5",
+        dim,
+        className
+      )}
+      style={{ backgroundColor: color || "#1b5e20" }}
+      aria-hidden
+    >
+      {shortName}
+    </span>
+  );
+}
+
 // ─── BankBadge (โลโก้ + ชื่อธนาคาร) ──────────────────────────────────────────
 import { bankOf, BANKS as BANKS_LIST } from "@/data/admin-mock";
 export function BankBadge({ code, className }: { code: string; className?: string }) {

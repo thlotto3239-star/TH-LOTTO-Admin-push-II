@@ -132,6 +132,20 @@ export function SettingsPage() {
           ]);
         }
       }
+
+      // Fetch real announcements and banks from Supabase content
+      const resContent = await fetch("/api/admin/data?resource=content");
+      const jsonContent = await resContent.json();
+      if (jsonContent.success && Array.isArray(jsonContent.data?.announcements)) {
+        setAnns(
+          jsonContent.data.announcements.map((a: any) => ({
+            id: String(a.id),
+            text: a.content || a.title || "",
+            is_active: Boolean(a.is_active),
+            display_order: Number(a.display_order || 1),
+          }))
+        );
+      }
     } catch (e) {
       console.error("Failed to load settings from Supabase:", e);
     }

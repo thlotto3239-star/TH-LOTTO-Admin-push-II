@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { WITHDRAWALS, fmtTHB, fmtDT, bankOf, type WithdrawReq, type Member } from "@/data/admin-mock";
+import { fmtTHB, fmtDT, bankOf, type WithdrawReq, type Member } from "@/data/admin-mock";
 import { useAdminCounts } from "../store";
 import { cn } from "@/lib/utils";
 

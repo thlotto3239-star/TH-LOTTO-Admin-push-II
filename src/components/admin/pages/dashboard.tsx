@@ -8,12 +8,13 @@ import {
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from "recharts";
-import { Panel, StatCard, StatusBadge, Avatar, BankBadge, RealtimeDot, EmptyState } from "../primitives";
+import { Panel, StatCard, StatusBadge, Avatar, BankBadge, RealtimeDot, EmptyState, MarketLogo } from "../primitives";
 import {
   MARKETS, fmtTHB, fmtNum, fmtDT, mktShort,
   type FeedItem,
 } from "@/data/admin-mock";
 import { formatBetTypeThai } from "./bets";
+import { LottoBall } from "./instant";
 import { cn } from "@/lib/utils";
 
 function AlertBadge({ kind }: { kind: NonNullable<FeedItem["alert"]> }) {
@@ -71,31 +72,26 @@ function FeedRow({ item }: { item: FeedItem }) {
             <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] font-bold text-neutral-500">{item.member?.member_id}</span>
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-neutral-500">
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={item.market}
-                className="size-4 rounded-full object-cover ring-1 ring-neutral-200"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            ) : (
-              <span
-                className="flex size-4 items-center justify-center rounded-full text-[7px] font-black text-white"
-                style={{ backgroundColor: item.market_color || "#059669" }}
-              >
-                {mktShort(item.market_code ?? "")}
-              </span>
-            )}
+            <MarketLogo
+              logoUrl={logoUrl}
+              name={item.market}
+              code={item.market_code}
+              color={item.market_color}
+              size="sm"
+              className="size-5"
+            />
             <span className="font-medium text-neutral-700">{item.market}</span>
             <span className="text-neutral-300">·</span>
             <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] font-medium text-neutral-600">
               {betTypeThai}
             </span>
-            <span className="inline-flex items-center rounded-md bg-emerald-600 px-1.5 py-0.5 font-mono text-[11px] font-bold text-white shadow-xs">
-              {item.numbers}
-            </span>
+            <div className="flex items-center gap-0.5">
+              {String(item.numbers ?? "")
+                .split("")
+                .map((digit, idx) => (
+                  <LottoBall key={idx} digit={digit} size="sm" />
+                ))}
+            </div>
           </div>
         </div>
         <div className="shrink-0 text-right">

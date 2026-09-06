@@ -355,7 +355,22 @@ export function AdminApp({ onLogout }: { onLogout?: () => void } = {}) {
   React.useEffect(() => {
     fetchCounts();
     const timer = setInterval(fetchCounts, 15000);
-    return () => clearInterval(timer);
+
+    // Auto-sync real results from ThaiLottoAPI & schedule settlements
+    const syncResults = async () => {
+      try {
+        await fetch("/api/admin/sync-results", { method: "POST" });
+      } catch {
+        // silent background sync
+      }
+    };
+    syncResults();
+    const syncTimer = setInterval(syncResults, 60000);
+
+    return () => {
+      clearInterval(timer);
+      clearInterval(syncTimer);
+    };
   }, [fetchCounts]);
 
   const renderPage = () => {

@@ -4,25 +4,37 @@ import * as React from "react";
 import { DatabaseBackup, Download, FileJson, FileSpreadsheet, RefreshCw, HardDrive, Clock, ShieldCheck } from "lucide-react";
 import { Panel, Btn, PageHeader, ConfirmDialog, TableWrap, Th, Td } from "../primitives";
 import { useToast } from "@/hooks/use-toast";
-import { DB_TABLE_STATS, BACKUP_LOGS, fmtNum, type BackupLog } from "@/data/admin-mock";
+import { fmtNum, type BackupLog } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
-
-const EXPORT_SETS: { name: string; table: string; rows: number; formats: ("csv" | "json")[] }[] = [
-  { name: "สมาชิกทั้งหมด", table: "profiles", rows: 4892, formats: ["csv", "json"] },
-  { name: "ธุรกรรมการเงิน", table: "transactions", rows: 89210, formats: ["csv"] },
-  { name: "โพยทั้งหมด", table: "bets", rows: 128450, formats: ["csv"] },
-  { name: "ผลรางวัลย้อนหลัง", table: "lottery_results", rows: 3410, formats: ["csv", "json"] },
-  { name: "ตั้งค่าระบบ", table: "settings", rows: 86, formats: ["json"] },
-];
 
 function toCsv(headers: string[]): string {
   return headers.join(",");
 }
 
+function getTableGroup(table: string): string {
+  if (["bets", "lottery_results", "draw_schedules", "restricted_numbers", "lottery_markets", "payout_rates"].includes(table)) return "หวย";
+  if (["transactions", "deposit_requests", "withdraw_requests", "banks"].includes(table)) return "การเงิน";
+  if (["profiles", "wallets", "login_attempts"].includes(table)) return "สมาชิก";
+  if (["instant_draws", "instant_bets", "instant_bet_types"].includes(table)) return "หวยหนึ่งนาที";
+  if (["lucky_wheel_spins", "lucky_wheel_prizes"].includes(table)) return "เกม";
+  if (["sliders", "promotions", "articles", "announcements", "notifications", "admin_notifications"].includes(table)) return "คอนเทนต์";
+  return "ระบบ";
+}
+
+interface TableStatRow {
+  name: string;
+  table: string;
+  rows: number;
+  size_mb: number;
+  group: string;
+  last_updated: string;
+}
+
 export function DataManagementPage() {
   const { toast } = useToast();
-  const [tables, setTables] = React.useState(DB_TABLE_STATS);
-  const [backups, setBackups] = React.useState<BackupLog[]>(BACKUP_LOGS);
+  const [tables, setTables] = React.useState<TableStatRow[]>([]);
+  const [backups, setBackups] = React.useState<BackupLog[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [confirmBackup, setConfirmBackup] = React.useState(false);
 
@@ -31,25 +43,40 @@ export function DataManagementPage() {
     fetch("/api/admin/data?resource=table-stats")
       .then((r) => r.json())
       .then((res) => {
-        if (res.success && res.data?.length > 0) {
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
           setTables(
             res.data.map((t: any) => ({
               name: t.name,
               table: t.table,
               rows: Number(t.rows || 0),
               size_mb: Number(((t.rows || 0) * 0.001 + 0.1).toFixed(1)),
-              last_updated: "วันนี้",
+              group: getTableGroup(t.table),
+              last_updated: "สดจาก Supabase",
             }))
           );
         }
       })
-      .catch(() => {})
-      .finally(() => setRefreshing(false));
+      .catch((e) => console.error("Could not load live table stats:", e))
+      .finally(() => {
+        setRefreshing(false);
+        setLoading(false);
+      });
   }, []);
 
   React.useEffect(() => {
     fetchLiveStats();
   }, [fetchLiveStats]);
+
+  const exportSets = React.useMemo(() => {
+    const getCount = (tbl: string) => tables.find((t) => t.table === tbl)?.rows ?? 0;
+    return [
+      { name: "สมาชิกทั้งหมด", table: "profiles", rows: getCount("profiles"), formats: ["csv", "json"] as ("csv" | "json")[] },
+      { name: "ธุรกรรมการเงิน", table: "transactions", rows: getCount("transactions"), formats: ["csv"] as ("csv" | "json")[] },
+      { name: "โพยทั้งหมด", table: "bets", rows: getCount("bets"), formats: ["csv"] as ("csv" | "json")[] },
+      { name: "ผลรางวัลย้อนหลัง", table: "lottery_results", rows: getCount("lottery_results"), formats: ["csv", "json"] as ("csv" | "json")[] },
+      { name: "ตั้งค่าระบบ", table: "settings", rows: getCount("settings"), formats: ["json"] as ("csv" | "json")[] },
+    ];
+  }, [tables]);
 
   const totalRows = tables.reduce((a, t) => a + t.rows, 0);
   const totalMb = tables.reduce((a, t) => a + t.size_mb, 0);
@@ -229,9 +256,8 @@ export function DataManagementPage() {
             <p className="mt-0.5 text-xs text-neutral-400">ดาวน์โหลดไฟล์รายกลุ่มข้อมูล</p>
           </div>
           <div className="divide-y divide-neutral-100">
-            {EXPORT_SETS.map((e) => {
-              const liveStat = tables.find((t) => t.table === e.table);
-              const displayRows = liveStat ? liveStat.rows : e.rows;
+            {exportSets.map((e) => {
+              const displayRows = e.rows;
               return (
                 <div key={e.table} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-5 py-3.5">
                   <div className="min-w-0 flex-1">

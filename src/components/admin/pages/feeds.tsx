@@ -19,7 +19,7 @@ import {
   RefreshCw,
   Sparkles,
 } from "lucide-react";
-import { Panel, Btn, PageHeader, Field, inputCls, EmptyState, ConfirmDialog } from "../primitives";
+import { Panel, Btn, PageHeader, Field, inputCls, EmptyState, ConfirmDialog, MarketLogo } from "../primitives";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -570,16 +570,14 @@ export function FeedsPage() {
                           className="flex items-center justify-between rounded-xl border border-neutral-100 bg-neutral-50/60 p-2.5 transition-all hover:border-violet-200 hover:bg-violet-50/30"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            {logo ? (
-                              <img src={logo} alt={m.name} className="size-9 rounded-xl object-cover bg-white ring-1 ring-neutral-200/80 p-0.5 shrink-0" />
-                            ) : (
-                              <span
-                                className="flex size-9 items-center justify-center rounded-xl text-[10px] font-bold text-white shrink-0"
-                                style={{ backgroundColor: m.color || "#166534" }}
-                              >
-                                {mktShort(m.code)}
-                              </span>
-                            )}
+                            <MarketLogo
+                              logoUrl={m.logo_url}
+                              imageUrl={m.image_url}
+                              name={m.name}
+                              code={m.code}
+                              color={m.color}
+                              size="md"
+                            />
                             <div className="min-w-0">
                               <p className="truncate text-xs font-bold text-neutral-900">{m.name}</p>
                               <p className="text-[10px] font-semibold text-neutral-400">{m.code}</p>
@@ -632,16 +630,14 @@ export function FeedsPage() {
                           className="flex items-center justify-between rounded-xl border border-neutral-100 bg-neutral-50/60 p-3 transition-all hover:border-rose-200 hover:bg-rose-50/30"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            {logo ? (
-                              <img src={logo} alt={m.name} className="size-11 rounded-2xl object-cover bg-white ring-1 ring-neutral-200/80 p-0.5 shrink-0" />
-                            ) : (
-                              <span
-                                className="flex size-11 items-center justify-center rounded-2xl text-xs font-bold text-white shrink-0"
-                                style={{ backgroundColor: m.color || "#e11d48" }}
-                              >
-                                {mktShort(m.code)}
-                              </span>
-                            )}
+                            <MarketLogo
+                              logoUrl={m.logo_url}
+                              imageUrl={m.image_url}
+                              name={m.name}
+                              code={m.code}
+                              color={m.color}
+                              size="lg"
+                            />
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
                                 <p className="truncate text-xs font-bold text-neutral-900">{m.name}</p>
@@ -722,16 +718,14 @@ export function FeedsPage() {
                   <div>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3">
-                        {logo ? (
-                          <img src={logo} alt={m.name} className="size-11 rounded-2xl object-cover bg-white ring-1 ring-neutral-200/80 p-0.5 shrink-0" />
-                        ) : (
-                          <span
-                            className="flex size-11 items-center justify-center rounded-2xl text-xs font-bold text-white shrink-0"
-                            style={{ backgroundColor: m.color || "#166534" }}
-                          >
-                            {mktShort(m.code)}
-                          </span>
-                        )}
+                        <MarketLogo
+                          logoUrl={m.logo_url}
+                          imageUrl={m.image_url}
+                          name={m.name}
+                          code={m.code}
+                          color={m.color}
+                          size="lg"
+                        />
                         <div>
                           <p className="font-bold text-sm text-neutral-900">{m.name}</p>
                           <div className="mt-0.5 flex items-center gap-1.5">
@@ -779,16 +773,14 @@ export function FeedsPage() {
                   <div>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3">
-                        {logo ? (
-                          <img src={logo} alt={m.name} className="size-11 rounded-2xl object-cover bg-white ring-1 ring-neutral-200/80 p-0.5 shrink-0" />
-                        ) : (
-                          <span
-                            className="flex size-11 items-center justify-center rounded-2xl text-xs font-bold text-white shrink-0"
-                            style={{ backgroundColor: m.color || "#e11d48" }}
-                          >
-                            {mktShort(m.code)}
-                          </span>
-                        )}
+                        <MarketLogo
+                          logoUrl={m.logo_url}
+                          imageUrl={m.image_url}
+                          name={m.name}
+                          code={m.code}
+                          color={m.color}
+                          size="lg"
+                        />
                         <div>
                           <div className="flex items-center gap-1.5">
                             <p className="font-bold text-sm text-neutral-900">{m.name}</p>

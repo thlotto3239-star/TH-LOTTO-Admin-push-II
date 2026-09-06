@@ -138,6 +138,18 @@ export function WheelPage() {
               }))
             );
           }
+          if (res.data?.settings && Array.isArray(res.data.settings)) {
+            const sMap: Record<string, string> = {};
+            res.data.settings.forEach((item: any) => {
+              if (item.key) sMap[item.key] = item.value;
+            });
+            setConfig((prev) => ({
+              ...prev,
+              cost: sMap.lucky_wheel_cost ? Number(sMap.lucky_wheel_cost) : prev.cost,
+              daily_limit: sMap.lucky_wheel_daily_limit ? Number(sMap.lucky_wheel_daily_limit) : prev.daily_limit,
+              banner_url: sMap.lucky_wheel_banner_url || prev.banner_url,
+            }));
+          }
           if (res.data?.wheelSpinsStats) {
             setSpinStats(res.data.wheelSpinsStats);
           }
