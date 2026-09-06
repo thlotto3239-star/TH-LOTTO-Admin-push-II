@@ -292,11 +292,56 @@ export function PromotionsPage() {
     }
   };
 
+  const activeCount = rows.filter((r) => r.is_active).length;
+  const maxBonus = rows.length > 0 ? Math.max(...rows.map((r) => r.bonus_rate || 0)) : 0;
+  const avgTurnover = rows.length > 0 ? Math.round((rows.reduce((acc, r) => acc + (r.turnover_multiplier || 1), 0) / rows.length) * 10) / 10 : 1;
+
   return (
     <div className="space-y-4">
-      <PageHeader title="โปรโมชั่น" description={`ตารางโปรโมชั่น · ทั้งหมด ${rows.length} โปร · เปิดใช้งาน ${rows.filter((r) => r.is_active).length} โปร`}>
+      <PageHeader title="โปรโมชั่น" description={`ตารางโปรโมชั่น · ทั้งหมด ${rows.length} โปร · เปิดใช้งาน ${activeCount} โปร`}>
         <Btn className="rounded-full" onClick={() => setForm({ initial: EMPTY })}><Plus className="size-4" /> เพิ่มโปรโมชั่น</Btn>
       </PageHeader>
+
+      {/* KPI Mini-Dashboard (PC Ergonomic Header) */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Panel className="p-4 bg-linear-to-br from-white to-neutral-50/50">
+          <p className="text-[11px] font-medium text-neutral-400">แคมเปญทั้งหมด</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-neutral-900">{rows.length}</p>
+            <span className="text-xs font-semibold text-neutral-500">โปรโมชั่น</span>
+          </div>
+          <p className="mt-1 text-[11px] text-neutral-400">สร้างไว้ในระบบ</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-emerald-50/30 border-emerald-100">
+          <p className="text-[11px] font-medium text-emerald-700">เปิดใช้งานให้สมาชิก</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-emerald-600">{activeCount}</p>
+            <span className="text-xs font-bold text-emerald-600">
+              {rows.length > 0 ? Math.round((activeCount / rows.length) * 100) : 0}%
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] text-emerald-600/80">สมาชิกสามารถกดรับได้</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-amber-50/30 border-amber-100">
+          <p className="text-[11px] font-medium text-amber-700">โบนัสสูงสุดในระบบ</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-amber-600">+{maxBonus}%</p>
+            <span className="text-xs font-semibold text-amber-600">อัตราแจก</span>
+          </div>
+          <p className="mt-1 text-[11px] text-amber-600/80">สูงสุดต่อบิลการฝาก</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-purple-50/30 border-purple-100">
+          <p className="text-[11px] font-medium text-purple-700">เทิร์นโอเวอร์เฉลี่ย</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-purple-600">{avgTurnover}x</p>
+            <span className="text-xs font-semibold text-purple-600">เท่าของยอด</span>
+          </div>
+          <p className="mt-1 text-[11px] text-purple-600/80">เงื่อนไขการถอนเฉลี่ย</p>
+        </Panel>
+      </div>
 
       {rows.length === 0 ? <Panel><EmptyState title="ยังไม่มีโปรโมชั่น" /></Panel> : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

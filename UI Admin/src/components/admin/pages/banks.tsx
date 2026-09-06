@@ -202,16 +202,64 @@ export function BanksPage() {
     setForm(null);
   };
 
+  const activeBanks = displays.filter((d) => d.is_active).length;
+  const depositAccounts = accounts.filter((a) => a.account_type === "deposit").length;
+  const withdrawAccounts = accounts.filter((a) => a.account_type === "withdraw").length;
+  const defaultAcc = accounts.find((a) => a.is_default) || accounts[0];
+
   return (
     <div className="space-y-4">
       <PageHeader
         title="ธนาคาร"
-        description={`ตารางธนาคาร · ธนาคารที่รองรับ ${displays.filter((d) => d.is_active).length}/${displays.length} · บัญชีรับ-โอนเงิน ${accounts.length} บัญชี`}
+        description={`ตารางธนาคาร · ธนาคารที่รองรับ ${activeBanks}/${displays.length} · บัญชีรับ-โอนเงิน ${accounts.length} บัญชี`}
       >
         <Btn className="rounded-full" onClick={() => setForm({ initial: EMPTY_ACC })}>
           <Plus className="size-4" /> เพิ่มบัญชีธนาคาร
         </Btn>
       </PageHeader>
+
+      {/* KPI Mini-Dashboard (PC Ergonomic Header) */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Panel className="p-4 bg-linear-to-br from-white to-neutral-50/50">
+          <p className="text-[11px] font-medium text-neutral-400">ธนาคารในเกตเวย์</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-neutral-900">{displays.length}</p>
+            <span className="text-xs font-semibold text-neutral-500">สถาบันการเงิน</span>
+          </div>
+          <p className="mt-1 text-[11px] text-neutral-400">ระบบเกตเวย์ทั้งหมด</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-emerald-50/30 border-emerald-100">
+          <p className="text-[11px] font-medium text-emerald-700">เปิดใช้งานรองรับ</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-emerald-600">{activeBanks}</p>
+            <span className="text-xs font-bold text-emerald-600">
+              {displays.length > 0 ? Math.round((activeBanks / displays.length) * 100) : 0}%
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] text-emerald-600/80">พร้อมรับฝากและโอนออก</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-blue-50/30 border-blue-100">
+          <p className="text-[11px] font-medium text-blue-700">บัญชีรับฝากเงิน</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-blue-600">{depositAccounts || accounts.length}</p>
+            <span className="text-xs font-semibold text-blue-600">บัญชี</span>
+          </div>
+          <p className="mt-1 text-[11px] truncate text-blue-600/80">
+            {defaultAcc ? `${bankOf(defaultAcc.bank_code).name} (${defaultAcc.account_no.slice(-4)})` : "ยังไม่ตั้งค่า"}
+          </p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-amber-50/30 border-amber-100">
+          <p className="text-[11px] font-medium text-amber-700">บัญชีโอนเงินออก (ถอน)</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-amber-600">{withdrawAccounts || 1}</p>
+            <span className="text-xs font-semibold text-amber-600">บัญชี</span>
+          </div>
+          <p className="mt-1 text-[11px] text-amber-600/80">ระบบโอนเงินอัตโนมัติ/แอดมิน</p>
+        </Panel>
+      </div>
 
       <Panel className="p-5">
         <div className="mb-4 flex items-center justify-between">

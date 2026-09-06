@@ -203,9 +203,51 @@ export function WheelPage() {
     }
   };
 
+  const netProfit = spinStats.cost_collected - spinStats.prizes_paid;
+  const marginRate = spinStats.cost_collected > 0 ? Math.round((netProfit / spinStats.cost_collected) * 100) : 0;
+
   return (
     <div className="space-y-5">
       <PageHeader title="วงล้อโชคดี" description={`ตั้งค่าวงล้อและรางวัล · ประวัติหมุนรวม ${fmtNum(spinStats.spins)} ครั้ง · รับเข้า ${fmtTHB(spinStats.cost_collected)} · จ่ายออก ${fmtTHB(spinStats.prizes_paid)}`} />
+
+      {/* KPI Mini-Dashboard (PC Ergonomic Header) */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Panel className="p-4 bg-linear-to-br from-white to-neutral-50/50">
+          <p className="text-[11px] font-medium text-neutral-400">รอบหมุนสะสมรวม</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-neutral-900">{fmtNum(spinStats.spins)}</p>
+            <span className="text-xs font-semibold text-neutral-500">ครั้ง</span>
+          </div>
+          <p className="mt-1 text-[11px] text-neutral-400">สถิติการเล่นของสมาชิกทั้งหมด</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-emerald-50/30 border-emerald-100">
+          <p className="text-[11px] font-medium text-emerald-700">รายรับค่าหมุนรวม</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-emerald-600">{fmtTHB(spinStats.cost_collected)}</p>
+            <span className="text-xs font-bold text-emerald-600">฿{config.cost}/หมุน</span>
+          </div>
+          <p className="mt-1 text-[11px] text-emerald-600/80">เหรียญ/เครดิตที่หักจากผู้เล่น</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-rose-50/30 border-rose-100">
+          <p className="text-[11px] font-medium text-rose-700">ยอดแจกรางวัลรวม</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-rose-600">{fmtTHB(spinStats.prizes_paid)}</p>
+            <span className="text-xs font-semibold text-rose-600">เครดิตโบนัส</span>
+          </div>
+          <p className="mt-1 text-[11px] text-rose-600/80">รางวัลที่ผู้เล่นได้รับจริง</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-amber-50/30 border-amber-100">
+          <p className="text-[11px] font-medium text-amber-700">ผลกำไรสุทธิวงล้อ</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-amber-600">{fmtTHB(netProfit)}</p>
+            <span className="text-xs font-bold text-amber-600">{marginRate}%</span>
+          </div>
+          <p className="mt-1 text-[11px] text-amber-600/80">อัตรากำไรขั้นต้นของระบบ</p>
+        </Panel>
+      </div>
 
       {/* Bento: preview + general settings */}
       <div className="grid gap-5 lg:grid-cols-3">
