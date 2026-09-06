@@ -42,12 +42,12 @@ for (const item of items) {
 }
 
 // Git commit & push
-console.log("📦 Staging, committing and pushing to TH-LOTTO-Admin-push...");
+console.log("📦 Staging, committing and pushing to TH-LOTTO-Admin-push-II...");
 execSync(`git add -A`, { cwd: DEPLOY_DIR, stdio: "inherit" });
 try {
   execSync(`git commit -m "${commitMsg}"`, { cwd: DEPLOY_DIR, stdio: "inherit" });
-  execSync(`git push origin master`, { cwd: DEPLOY_DIR, stdio: "inherit" });
-  console.log("✅ Successfully deployed to GitHub TH-LOTTO-Admin-push!");
+  execSync(`git push origin main && git push origin main:master`, { cwd: DEPLOY_DIR, stdio: "inherit" });
+  console.log("✅ Successfully deployed to GitHub TH-LOTTO-Admin-push-II!");
 } catch (e) {
   console.log("Nothing to commit or already up to date.");
 }
