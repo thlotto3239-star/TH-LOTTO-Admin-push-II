@@ -238,6 +238,47 @@ export function AdminsPage() {
         ) : null}
       </PageHeader>
 
+      {/* KPI Mini-Dashboard (PC Ergonomic Header) */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Panel className="p-4 bg-linear-to-br from-white to-neutral-50/50">
+          <p className="text-[11px] font-medium text-neutral-400">ผู้ดูแลระบบทั้งหมด</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-neutral-900">{rows.length}</p>
+            <span className="text-xs font-semibold text-neutral-500">บัญชี</span>
+          </div>
+          <p className="mt-1 text-[11px] text-neutral-400">บัญชีแอดมินในฐานข้อมูล</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-amber-50/30 border-amber-100">
+          <p className="text-[11px] font-medium text-amber-700">ซูเปอร์แอดมิน</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-amber-600">{rows.filter((r) => r.role === "super").length}</p>
+            <span className="text-xs font-bold text-amber-600">สิทธิ์สูงสุด</span>
+          </div>
+          <p className="mt-1 text-[11px] text-amber-600/80">สามารถจัดการบทบาทได้</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-emerald-50/30 border-emerald-100">
+          <p className="text-[11px] font-medium text-emerald-700">สถานะพร้อมใช้งาน</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-emerald-600">{rows.filter((r) => r.status === "active").length}</p>
+            <span className="text-xs font-bold text-emerald-600">
+              {rows.length > 0 ? Math.round((rows.filter((r) => r.status === "active").length / rows.length) * 100) : 0}%
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] text-emerald-600/80">เข้าใช้งานระบบได้ปกติ</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-rose-50/30 border-rose-100">
+          <p className="text-[11px] font-medium text-rose-700">ระงับการใช้งาน</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-rose-600">{rows.filter((r) => r.status !== "active").length}</p>
+            <span className="text-xs font-semibold text-rose-600">บัญชี</span>
+          </div>
+          <p className="mt-1 text-[11px] text-rose-600/80">ถูกล็อกหรือระงับสิทธิ์</p>
+        </Panel>
+      </div>
+
       <Panel>
         {loading ? (
           <div className="flex min-h-[250px] items-center justify-center gap-2">

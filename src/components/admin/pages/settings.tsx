@@ -177,9 +177,51 @@ export function SettingsPage() {
     setModal(null);
   };
 
+  const defaultBank = banks.find((b) => b.is_default) || banks[0];
+
   return (
     <div className="space-y-4">
       <PageHeader title="ตั้งค่าระบบ" description="การตั้งค่าระบบจริงจากฐานข้อมูล Supabase · ทั้งหมด 8 หมวด" />
+
+      {/* KPI Mini-Dashboard (PC Ergonomic Header) */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Panel className={cn("p-4 border", site.site_enabled ? "bg-linear-to-br from-white to-emerald-50/30 border-emerald-100" : "bg-linear-to-br from-white to-rose-50/30 border-rose-100")}>
+          <p className="text-[11px] font-medium text-neutral-400">สถานะระบบหน้าเว็บ</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className={cn("text-xl font-black tracking-tight", site.site_enabled ? "text-emerald-600" : "text-rose-600")}>
+              {site.site_enabled ? "เปิดออนไลน์" : "ปิดปรับปรุง"}
+            </p>
+            <span className={cn("size-2.5 rounded-full animate-pulse", site.site_enabled ? "bg-emerald-500" : "bg-rose-500")} />
+          </div>
+          <p className="mt-1 text-[11px] text-neutral-400">{site.site_enabled ? "สมาชิกเข้าใช้งานได้ปกติ" : "แสดงหน้าปิดปรับปรุง"}</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-blue-50/30 border-blue-100">
+          <p className="text-[11px] font-medium text-blue-700">บัญชีรับเงินของระบบ</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-sm font-black tracking-tight truncate text-blue-900">
+              {defaultBank ? `${defaultBank.bank_code.toUpperCase()} · ${defaultBank.account_no}` : "ยังไม่ระบุ"}
+            </p>
+          </div>
+          <p className="mt-1 text-[11px] truncate text-blue-600/80">{defaultBank?.account_name || "บัญชีกลาง"}</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-neutral-50/50">
+          <p className="text-[11px] font-medium text-neutral-400">เกณฑ์การฝากเงิน</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-base font-black tracking-tight text-neutral-900">฿{fmtNum(fin.min_deposit)} - ฿{fmtNum(fin.max_deposit)}</p>
+          </div>
+          <p className="mt-1 text-[11px] text-neutral-400">ขั้นต่ำ - สูงสุดต่อครั้ง</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-neutral-50/50">
+          <p className="text-[11px] font-medium text-neutral-400">เกณฑ์การถอนเงิน</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-base font-black tracking-tight text-neutral-900">฿{fmtNum(fin.min_withdraw)} - ฿{fmtNum(fin.max_withdraw)}</p>
+          </div>
+          <p className="mt-1 text-[11px] text-neutral-400">ขั้นต่ำ - สูงสุดต่อครั้ง</p>
+        </Panel>
+      </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {HUB.map((h) => (

@@ -239,16 +239,61 @@ export function ArticlesPage() {
   const pages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const shown = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
+  const publishedCount = rows.filter((r) => r.is_published).length;
+  const draftCount = rows.length - publishedCount;
+  const totalViews = rows.reduce((acc, r) => acc + (r.views || 0), 0);
+
   return (
     <div className="space-y-4">
       <PageHeader
         title="บทความ"
-        description={`ตารางบทความ · ทั้งหมด ${rows.length} บทความ · เผยแพร่แล้ว ${rows.filter((r) => r.is_published).length} · ฉบับร่าง ${rows.filter((r) => !r.is_published).length}`}
+        description={`ตารางบทความ · ทั้งหมด ${rows.length} บทความ · เผยแพร่แล้ว ${publishedCount} · ฉบับร่าง ${draftCount}`}
       >
         <Btn className="rounded-full" onClick={() => setForm({ initial: EMPTY_ARTICLE })}>
           <Plus className="size-4" /> เขียนบทความ
         </Btn>
       </PageHeader>
+
+      {/* KPI Mini-Dashboard (PC Ergonomic Header) */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Panel className="p-4 bg-linear-to-br from-white to-neutral-50/50">
+          <p className="text-[11px] font-medium text-neutral-400">บทความทั้งหมด</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-neutral-900">{rows.length}</p>
+            <span className="text-xs font-semibold text-neutral-500">บทความ</span>
+          </div>
+          <p className="mt-1 text-[11px] text-neutral-400">คลังความรู้และสาระน่ารู้</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-emerald-50/30 border-emerald-100">
+          <p className="text-[11px] font-medium text-emerald-700">เผยแพร่บนหน้าเว็บแล้ว</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-emerald-600">{publishedCount}</p>
+            <span className="text-xs font-bold text-emerald-600">
+              {rows.length > 0 ? Math.round((publishedCount / rows.length) * 100) : 0}%
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] text-emerald-600/80">สมาชิกและบุคคลทั่วไปเปิดอ่านได้</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-neutral-50/50">
+          <p className="text-[11px] font-medium text-neutral-500">ฉบับร่าง (Drafts)</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-neutral-600">{draftCount}</p>
+            <span className="text-xs font-semibold text-neutral-500">ฉบับ</span>
+          </div>
+          <p className="mt-1 text-[11px] text-neutral-400">กำลังเขียน/รอการอนุมัติ</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-sky-50/30 border-sky-100">
+          <p className="text-[11px] font-medium text-sky-700">ยอดเปิดอ่านสะสม</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-sky-600">{fmtNum(totalViews)}</p>
+            <span className="text-xs font-semibold text-sky-600">ครั้ง</span>
+          </div>
+          <p className="mt-1 text-[11px] text-sky-600/80">สถิติความสนใจของผู้อ่าน</p>
+        </Panel>
+      </div>
 
       <Panel className="p-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
