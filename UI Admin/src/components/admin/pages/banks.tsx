@@ -86,7 +86,7 @@ function AccountForm({ initial, onClose, onSave }: { initial: BankAccountBook; o
 
 export function BanksPage() {
   const { toast } = useToast();
-  const [displays, setDisplays] = React.useState(BANK_DISPLAYS);
+  const [displays, setDisplays] = React.useState<{ code: string; is_active: boolean; display_order: number }[]>([]);
   const [accounts, setAccounts] = React.useState<BankAccountBook[]>([]);
   const [form, setForm] = React.useState<{ initial: BankAccountBook } | null>(null);
   const [confirmDel, setConfirmDel] = React.useState<BankAccountBook | null>(null);

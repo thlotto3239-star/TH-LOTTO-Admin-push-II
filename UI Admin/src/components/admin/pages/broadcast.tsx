@@ -33,7 +33,7 @@ export function BroadcastPage() {
   const [memberQ, setMemberQ] = React.useState("");
   const [picked, setPicked] = React.useState<{ id: string; name: string; phone: string } | null>(null);
   const [realMembers, setRealMembers] = React.useState<{ id: string; full_name: string; phone: string }[]>([]);
-  const [history, setHistory] = React.useState<BroadcastMsg[]>(BROADCAST_HISTORY);
+  const [history, setHistory] = React.useState<BroadcastMsg[]>([]);
   const [confirmSend, setConfirmSend] = React.useState(false);
   const [confirmDel, setConfirmDel] = React.useState<BroadcastMsg | null>(null);
 
@@ -41,7 +41,7 @@ export function BroadcastPage() {
     fetch("/api/admin/data?resource=broadcast-history")
       .then((r) => r.json())
       .then((res) => {
-        if (res.success && res.data?.length > 0) {
+        if (res.success && Array.isArray(res.data)) {
           setHistory(
             res.data.map((n: any) => {
               const rawType = String(n.type || "info").toLowerCase();

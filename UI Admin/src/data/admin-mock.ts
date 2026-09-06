@@ -442,6 +442,7 @@ export interface RestrictedNumber {
   market_code: string;
   market_name: string;
   market_color: string;
+  market_logo?: string | null;
   bet_type: BetType;
   number: string;
   max_amount: number;
@@ -451,10 +452,10 @@ export interface RestrictedNumber {
 }
 
 export const RESTRICTED_NUMBERS: RestrictedNumber[] = [
-  { id: "rn-1", market_id: "mkt-01", market_code: "TH_GOV", market_name: "หวยรัฐบาลไทย", market_color: "#0d9488", bet_type: "3TOP", number: "915", max_amount: 0, payout_rate: 0, draw_date: "16/09/2569", created_at: "04/09/2569 09:30" },
-  { id: "rn-2", market_id: "mkt-01", market_code: "TH_GOV", market_name: "หวยรัฐบาลไทย", market_color: "#0d9488", bet_type: "2BOTTOM", number: "59", max_amount: 50000, payout_rate: 46, draw_date: "16/09/2569", created_at: "04/09/2569 09:35" },
-  { id: "rn-3", market_id: "mkt-02", market_code: "LAO", market_name: "ลาวพัฒนา", market_color: "#be123c", bet_type: "3TOP", number: "888", max_amount: 20000, payout_rate: 360, draw_date: "04/09/2569", created_at: "04/09/2569 10:15" },
-  { id: "rn-4", market_id: "mkt-04", market_code: "HANOI", market_name: "ฮานอยปกติ", market_color: "#dc2626", bet_type: "2TOP", number: "99", max_amount: 0, payout_rate: 0, draw_date: "04/09/2569", created_at: "04/09/2569 11:00" },
+  { id: "rn-1", market_id: "mkt-01", market_code: "TH_GOV", market_name: "หวยรัฐบาลไทย", market_color: "#0d9488", market_logo: "https://play-lh.googleusercontent.com/Wv6rE0OB0UYl487yMvp6b9GY2Jd4yvKt-PuDAHZvoS850ok1UufrW_fY4wXIfk8AvTu9Idsd4-Og5ABkrNmZ", bet_type: "3TOP", number: "915", max_amount: 0, payout_rate: 0, draw_date: "16/09/2569", created_at: "04/09/2569 09:30" },
+  { id: "rn-2", market_id: "mkt-01", market_code: "TH_GOV", market_name: "หวยรัฐบาลไทย", market_color: "#0d9488", market_logo: "https://play-lh.googleusercontent.com/Wv6rE0OB0UYl487yMvp6b9GY2Jd4yvKt-PuDAHZvoS850ok1UufrW_fY4wXIfk8AvTu9Idsd4-Og5ABkrNmZ", bet_type: "2BOTTOM", number: "59", max_amount: 50000, payout_rate: 46, draw_date: "16/09/2569", created_at: "04/09/2569 09:35" },
+  { id: "rn-3", market_id: "mkt-02", market_code: "LAO", market_name: "ลาวพัฒนา", market_color: "#be123c", market_logo: "https://thailottoapi.com/icons/lak-sq.png", bet_type: "3TOP", number: "888", max_amount: 20000, payout_rate: 360, draw_date: "04/09/2569", created_at: "04/09/2569 10:15" },
+  { id: "rn-4", market_id: "mkt-04", market_code: "HANOI", market_name: "ฮานอยปกติ", market_color: "#dc2626", market_logo: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/markets/1781454321881.jpg", bet_type: "2TOP", number: "99", max_amount: 0, payout_rate: 0, draw_date: "04/09/2569", created_at: "04/09/2569 11:00" },
 ];
 
 // ── Instant 1-Min Bet Types (public.instant_bet_types — ข้อ 3.2 ในคู่มือ) ────

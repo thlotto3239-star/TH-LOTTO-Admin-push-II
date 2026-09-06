@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
           supabaseAdmin.from("withdraw_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
           supabaseAdmin.from("deposit_requests").select("amount, created_at").eq("status", "APPROVED"),
           supabaseAdmin.from("withdraw_requests").select("amount, created_at").eq("status", "APPROVED"),
-          supabaseAdmin.from("bets").select("amount, actual_payout, status, created_at"),
+          supabaseAdmin.from("bets").select("amount, payout_amount, status, created_at"),
           supabaseAdmin.from("bets").select("amount, user_id, created_at, profiles!bets_profile_fkey (id, full_name, member_id, avatar_url)"),
           supabaseAdmin.from("bets").select(`
             *,
@@ -44,14 +44,14 @@ export async function GET(req: NextRequest) {
         const totalDeposit = (allApprovedDeposits || []).reduce((sum, d) => sum + Number(d.amount || 0), 0);
         const totalWithdraw = (allApprovedWithdrawals || []).reduce((sum, w) => sum + Number(w.amount || 0), 0);
         const totalBet = (allBets || []).reduce((sum, b) => sum + Number(b.amount || 0), 0);
-        const totalPayout = (allBets || []).filter((b) => b.status === "WON").reduce((sum, b) => sum + Number(b.actual_payout || 0), 0);
+        const totalPayout = (allBets || []).filter((b) => b.status === "WON").reduce((sum, b) => sum + Number(b.payout_amount || 0), 0);
 
         const now = new Date();
         const todayYmd = now.toISOString().slice(0, 10);
         const todayDeposit = (allApprovedDeposits || []).filter((d) => (d.created_at || "").startsWith(todayYmd)).reduce((s, d) => s + Number(d.amount || 0), 0);
         const todayWithdraw = (allApprovedWithdrawals || []).filter((w) => (w.created_at || "").startsWith(todayYmd)).reduce((s, w) => s + Number(w.amount || 0), 0);
         const todayBet = (allBets || []).filter((b) => (b.created_at || "").startsWith(todayYmd)).reduce((s, b) => s + Number(b.amount || 0), 0);
-        const todayPayout = (allBets || []).filter((b) => b.status === "WON" && (b.created_at || "").startsWith(todayYmd)).reduce((s, b) => s + Number(b.actual_payout || 0), 0);
+        const todayPayout = (allBets || []).filter((b) => b.status === "WON" && (b.created_at || "").startsWith(todayYmd)).reduce((s, b) => s + Number(b.payout_amount || 0), 0);
 
         // Calculate real Top 10 Bettors from Supabase bets & profiles by time period
         function buildTopBettors(records: any[]) {
@@ -160,10 +160,93 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, data });
       }
 
+      case "instant-stats": {
+        const [
+          { data: statsData },
+          { count: totalDrawsToday },
+          { data: betsToday },
+        ] = await Promise.all([
+          supabaseAdmin.rpc("admin_get_instant_stats"),
+          supabaseAdmin.from("instant_draws").select("*", { count: "exact", head: true }),
+          supabaseAdmin.from("instant_bets").select("amount, payout_amount, status, created_at"),
+        ]);
+
+        const rpcStats = (statsData && statsData[0]) || {};
+        const todayBets = betsToday || [];
+        const totalBetToday = todayBets.reduce((sum, b) => sum + Number(b.amount || 0), 0);
+        const totalPayoutToday = todayBets.filter((b) => b.status === "WON").reduce((sum, b) => sum + Number(b.payout_amount || 0), 0);
+
+        // Hourly chart (last 8 hours)
+        const now = new Date();
+        const hourlyMap = new Map<string, { hour: string; BET: number; PAYOUT: number }>();
+        for (let i = 7; i >= 0; i--) {
+          const h = new Date(now.getTime() - i * 3600 * 1000);
+          const hourLabel = `${String(h.getHours()).padStart(2, "0")}:00`;
+          hourlyMap.set(hourLabel, { hour: hourLabel, BET: 0, PAYOUT: 0 });
+        }
+        todayBets.forEach((b: any) => {
+          const d = new Date(b.created_at);
+          const hLabel = `${String(d.getHours()).padStart(2, "0")}:00`;
+          const entry = hourlyMap.get(hLabel);
+          if (entry) {
+            entry.BET += Number(b.amount || 0);
+            if (b.status === "WON") entry.PAYOUT += Number(b.payout_amount || 0);
+          }
+        });
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            total_draws_today: totalDrawsToday || Number(rpcStats.total_draws || 0),
+            total_bets_today: todayBets.length || Number(rpcStats.total_bets || 0),
+            total_bet_amount_today: totalBetToday || Number(rpcStats.total_wagers || 0),
+            total_payout_today: totalPayoutToday || Number(rpcStats.total_payouts || 0),
+            active_players_today: Number(rpcStats.active_bet_types || 9),
+            hourly: Array.from(hourlyMap.values()),
+            stats: rpcStats,
+          },
+        });
+      }
+
+      case "instant-draws": {
+        const limit = parseInt(searchParams.get("limit") || "50", 10);
+        const { data: rpcDraws, error: rpcErr } = await supabaseAdmin.rpc("admin_get_instant_draws", { p_limit: limit });
+        if (!rpcErr && rpcDraws && rpcDraws.length > 0) {
+          return NextResponse.json({ success: true, data: rpcDraws });
+        }
+        const { data, error } = await supabaseAdmin
+          .from("instant_draws")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(limit);
+        if (error) throw error;
+        return NextResponse.json({ success: true, data });
+      }
+
+      case "instant-bets": {
+        const limit = parseInt(searchParams.get("limit") || "50", 10);
+        const { data, error } = await supabaseAdmin
+          .from("instant_bets")
+          .select(`
+            *,
+            profiles (id, full_name, username, phone, member_id, avatar_url)
+          `)
+          .order("created_at", { ascending: false })
+          .limit(limit);
+        if (error) {
+          const { data: rpcBets } = await supabaseAdmin.rpc("admin_get_instant_bets", { p_draw_id: null, p_limit: limit, p_offset: 0 });
+          return NextResponse.json({ success: true, data: rpcBets || [] });
+        }
+        return NextResponse.json({ success: true, data: data || [] });
+      }
+
       case "restricted-numbers": {
         const { data, error } = await supabaseAdmin
           .from("restricted_numbers")
-          .select("*")
+          .select(`
+            *,
+            lottery_markets!restricted_numbers_market_id_fkey (id, name, code, category, logo_url, image_url)
+          `)
           .order("created_at", { ascending: false });
         if (error) throw error;
         return NextResponse.json({ success: true, data });
@@ -238,6 +321,20 @@ export async function GET(req: NextRequest) {
             notifications,
           },
         });
+      }
+
+      case "results": {
+        const { data, error } = await supabaseAdmin
+          .from("lottery_results")
+          .select(`
+            *,
+            lottery_markets!lottery_results_market_id_fkey (*)
+          `)
+          .order("announced_at", { ascending: false, nullsFirst: false })
+          .order("created_at", { ascending: false })
+          .limit(100);
+        if (error) throw error;
+        return NextResponse.json({ success: true, data });
       }
 
       case "schedules": {
@@ -327,60 +424,55 @@ export async function GET(req: NextRequest) {
       }
 
       case "members": {
-        const { data, error } = await supabaseAdmin
-          .from("profiles")
-          .select(`
-            id,
-            member_id,
-            full_name,
-            phone,
-            vip_level,
-            bank_name,
-            bank_account_number,
-            bank_account_name,
-            avatar_url,
-            is_admin,
-            admin_role,
-            status,
-            created_at,
-            wallets (
-              balance,
-              commission_balance
-            )
-          `)
-          .eq("is_admin", false)
-          .order("created_at", { ascending: false });
-        if (error) throw error;
-        return NextResponse.json({ success: true, data });
-      }
-
-      case "results": {
-        const { data, error } = await supabaseAdmin
-          .from("lottery_results")
-          .select(`
-            id,
-            market_id,
-            draw_date,
-            result_main,
-            result_3top,
-            result_2top,
-            result_2bottom,
-            result_3front,
-            result_3bottom,
-            status,
-            announced_at,
-            lottery_markets (
+        const [{ data, error }, { data: betsData }] = await Promise.all([
+          supabaseAdmin
+            .from("profiles")
+            .select(`
               id,
-              name,
-              code,
-              category,
-              logo_url
-            )
-          `)
-          .order("draw_date", { ascending: false })
-          .limit(100);
+              member_id,
+              full_name,
+              phone,
+              vip_level,
+              bank_name,
+              bank_account_number,
+              bank_account_name,
+              avatar_url,
+              is_admin,
+              admin_role,
+              status,
+              created_at,
+              wallets (
+                balance,
+                commission_balance
+              )
+            `)
+            .eq("is_admin", false)
+            .order("created_at", { ascending: false }),
+          supabaseAdmin.from("bets").select("user_id, amount, status, payout_amount"),
+        ]);
         if (error) throw error;
-        return NextResponse.json({ success: true, data });
+
+        const betAgg = new Map<string, { total_bets: number; total_won: number }>();
+        (betsData || []).forEach((b: any) => {
+          if (!b.user_id) return;
+          const curr = betAgg.get(b.user_id) || { total_bets: 0, total_won: 0 };
+          curr.total_bets += Number(b.amount || 0);
+          if (b.status === "WON") {
+            curr.total_won += Number(b.payout_amount || 0);
+          }
+          betAgg.set(b.user_id, curr);
+        });
+
+        const enriched = (data || []).map((p: any) => {
+          const stats = betAgg.get(p.id) || { total_bets: 0, total_won: 0 };
+          return {
+            ...p,
+            total_bets: stats.total_bets,
+            total_won: stats.total_won,
+          };
+        });
+
+        return NextResponse.json({ success: true, data: enriched });
       }
 
       case "content": {

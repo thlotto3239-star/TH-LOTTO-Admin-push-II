@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Pencil, Flame, Star, Youtube, Clock, Timer } from "lucide-react";
-import { Panel, Btn, PageHeader, Field, inputCls, ColorPickerInput } from "../primitives";
+import { Panel, Btn, PageHeader, Field, inputCls, ColorPickerInput, MarketLogo } from "../primitives";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,28 +13,18 @@ import { MARKETS, BET_TYPES, BET_TYPE_LABEL, DAY_LABELS, fmtTHB, mktShort, type 
 import { cn } from "@/lib/utils";
 
 function MarketCard({ m, onEdit, onToggle }: { m: Market; onEdit: () => void; onToggle: (v: boolean) => void }) {
-  const [imgErr, setImgErr] = React.useState(false);
-  const logo = !imgErr && (m.logo_url || m.image_url);
-
   return (
     <Panel className="flex flex-col p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          {logo ? (
-            <img
-              src={logo}
-              alt={m.name}
-              onError={() => setImgErr(true)}
-              className="size-11 rounded-2xl object-cover bg-white ring-1 ring-neutral-200/80 shrink-0 shadow-xs p-0.5"
-            />
-          ) : (
-            <span
-              className="flex size-11 items-center justify-center rounded-2xl text-[11px] font-black text-white shrink-0"
-              style={{ backgroundColor: m.color }}
-            >
-              {mktShort(m.code)}
-            </span>
-          )}
+          <MarketLogo
+            logoUrl={m.logo_url}
+            imageUrl={m.image_url}
+            name={m.name}
+            code={m.code}
+            color={m.color}
+            size="lg"
+          />
           <div>
             <p className="font-bold text-neutral-900">{m.name}</p>
             <div className="mt-1 flex flex-wrap items-center gap-1">
@@ -163,16 +153,31 @@ function EditMarketModal({ m, onClose, onSave }: { m: Market; onClose: () => voi
                 <div className="flex items-center gap-2">
                   <ColorPickerInput value={form.color} onChange={(v) => set("color", v)} ariaLabel="เลือกสีตลาด" />
                   <Input value={form.color} onChange={(e) => set("color", e.target.value)} className={inputCls} />
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl text-xs font-black text-white shadow-xs" style={{ backgroundColor: form.color }}>
-                    {mktShort(form.code)}
-                  </span>
+                  <MarketLogo
+                    logoUrl={form.logo_url}
+                    imageUrl={form.image_url}
+                    name={form.name}
+                    code={form.code}
+                    color={form.color}
+                    size="md"
+                  />
                 </div>
               </Field>
               <Field label="ลิงก์ถ่ายทอดสด (YouTube Live)">
                 <Input value={form.youtube_url ?? ""} onChange={(e) => set("youtube_url", e.target.value || null)} placeholder="https://youtube.com/live/..." className={inputCls} />
               </Field>
               <Field label="ลิงก์โลโก้ตลาด (Logo URL)">
-                <Input value={form.logo_url ?? ""} onChange={(e) => set("logo_url", e.target.value || null)} placeholder="https://..." className={inputCls} />
+                <div className="flex items-center gap-2">
+                  <Input value={form.logo_url ?? ""} onChange={(e) => set("logo_url", e.target.value || null)} placeholder="https://..." className={inputCls} />
+                  <MarketLogo
+                    logoUrl={form.logo_url}
+                    imageUrl={form.image_url}
+                    name={form.name}
+                    code={form.code}
+                    color={form.color}
+                    size="md"
+                  />
+                </div>
               </Field>
               <Field label="วันออกผลรางวัล (เลือกวัน อา–ส)">
                 <div className="flex flex-wrap gap-1.5 pt-1">
@@ -253,36 +258,76 @@ function EditMarketModal({ m, onClose, onSave }: { m: Market; onClose: () => voi
 
 export function MarketsPage() {
   const { toast } = useToast();
-  const [rows, setRows] = React.useState<Market[]>(MARKETS);
+  const [rows, setRows] = React.useState<Market[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [edit, setEdit] = React.useState<Market | null>(null);
-  const [tab, setTab] = React.useState<"ALL" | "GOV" | "FOREIGN" | "STOCK">("ALL");
+  const [tab, setTab] = React.useState<"ALL" | "GOV" | "FOREIGN" | "MAEKHONG" | "STOCK" | "15MIN">("ALL");
   const [q, setQ] = React.useState("");
 
-  // Live Supabase Sync
+  // Live Supabase Sync — Load all 37 markets directly from DB
   React.useEffect(() => {
     fetch("/api/admin/data?resource=markets")
       .then((res) => res.json())
       .then((res) => {
-        if (res.success && res.data?.length) {
-          setRows((prev) =>
-            prev.map((m) => {
-              const live = res.data.find((d: any) => d.code === m.code);
-              if (!live) return m;
-              return {
-                ...m,
-                id: live.id,
-                name: live.name || m.name,
-                logo_url: live.logo_url ?? live.image_url ?? m.logo_url,
-                image_url: live.image_url ?? m.image_url,
-                close_minutes: live.close_minutes_before ?? m.close_minutes,
-                youtube_url: live.stream_url ?? m.youtube_url,
-                active: live.is_active ?? m.active,
-              };
-            })
-          );
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const liveMarkets: Market[] = res.data.map((live: any) => {
+            const existingMock = MARKETS.find((m) => m.code === live.code || m.id === live.id);
+
+            const defaultRates: Record<BetType, number> = existingMock?.rates || {
+              "3TOP": 900,
+              "3TODE": 150,
+              "2TOP": 95,
+              "2BOTTOM": 95,
+              "RUN_UP": 3.2,
+              "RUN_DOWN": 4.2,
+              "3FRONT": 450,
+              "3BOTTOM": 450,
+              "4TOP": 6000,
+            };
+
+            const defaultLimits = existingMock?.limits || {
+              min_bet: 1,
+              max_bet: 20000,
+              max_per_number: 50000,
+            };
+
+            const isMaekhong = live.category === "MAEKHONG" || live.code.startsWith("MK_");
+            const isGov = live.category === "GOV" || ["TH_GOV", "GSB", "BAAC"].includes(live.code);
+            const isStock = live.category === "STOCK" || live.code.startsWith("STOCK_") || live.code.includes("NIKKEI") || live.code.includes("CHINA") || live.code.includes("HANGSENG");
+            const isSpeed = live.category === "SPEED" || live.code === "THLOTTO_15M" || live.code.includes("15M");
+
+            let mColor = existingMock?.color || "#6366f1";
+            if (isMaekhong) mColor = "#8b5cf6";
+            else if (isGov) mColor = "#eab308";
+            else if (isStock) mColor = "#0284c7";
+            else if (isSpeed) mColor = "#10b981";
+
+            return {
+              id: live.id,
+              name: live.name,
+              code: live.code,
+              category: live.category,
+              color: mColor,
+              active: live.is_active ?? true,
+              popular: live.show_in_popular ?? false,
+              hot: live.show_in_trending ?? false,
+              close_minutes: live.close_minutes_before ?? 5,
+              draw_time: live.draw_time ? live.draw_time.slice(0, 5) : "18:00",
+              draw_days: live.draw_days || [1, 2, 3, 4, 5, 6, 7],
+              youtube_url: live.stream_url || "",
+              logo_url: live.logo_url || live.image_url,
+              image_url: live.image_url || live.logo_url,
+              rates: defaultRates,
+              limits: defaultLimits,
+              kind: isGov ? "GOVERNMENT" : "CUSTOM",
+            } as Market;
+          });
+
+          setRows(liveMarkets);
         }
       })
-      .catch((err) => console.error("Could not load live markets:", err));
+      .catch((err) => console.error("Could not load live markets:", err))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleSaveMarket = async (updated: Market) => {
@@ -323,23 +368,24 @@ export function MarketsPage() {
     }
   };
 
-
   const filtered = rows
     .filter((m) => {
-      if (tab === "GOV") return m.kind === "GOVERNMENT" || m.code === "TH_GOV";
-      if (tab === "FOREIGN") return ["LAO", "HANOI_SPECIAL", "HANOI", "HANOI_VIP", "MALAY"].includes(m.code);
-      if (tab === "STOCK") return m.code.startsWith("STOCK_") || m.code.includes("NIKKEI") || m.code.includes("CHINA") || m.code.includes("HANGSENG");
-      if (tab === "15MIN") return m.code === "THLOTTO_15M" || m.code.includes("15M");
+      if (tab === "GOV") return m.category === "GOV" || ["TH_GOV", "GSB", "BAAC"].includes(m.code);
+      if (tab === "FOREIGN") return m.category === "FOREIGN" || ["LAO", "HANOI_SPECIAL", "HANOI", "HANOI_VIP", "MALAY", "LAO_SPECIAL"].includes(m.code);
+      if (tab === "MAEKHONG") return m.category === "MAEKHONG" || m.code.startsWith("MK_");
+      if (tab === "STOCK") return m.category === "STOCK" || m.code.startsWith("STOCK_") || m.code.includes("NIKKEI") || m.code.includes("CHINA") || m.code.includes("HANGSENG");
+      if (tab === "15MIN") return m.category === "SPEED" || m.code === "THLOTTO_15M" || m.code.includes("15M");
       return true;
     })
     .filter((m) => !q.trim() || m.name.includes(q.trim()) || m.code.toLowerCase().includes(q.toLowerCase()));
 
   const counts = {
     ALL: rows.length,
-    GOV: rows.filter((r) => r.code === "TH_GOV").length,
-    FOREIGN: rows.filter((r) => ["LAO", "HANOI_SPECIAL", "HANOI", "HANOI_VIP", "MALAY"].includes(r.code)).length,
-    STOCK: rows.filter((r) => r.code.startsWith("STOCK_") || r.code.includes("NIKKEI") || r.code.includes("CHINA") || r.code.includes("HANGSENG")).length,
-    M15: rows.filter((r) => r.code === "THLOTTO_15M" || r.code.includes("15M")).length,
+    GOV: rows.filter((r) => r.category === "GOV" || ["TH_GOV", "GSB", "BAAC"].includes(r.code)).length,
+    FOREIGN: rows.filter((r) => (r.category === "FOREIGN" || ["LAO", "HANOI_SPECIAL", "HANOI", "HANOI_VIP", "MALAY", "LAO_SPECIAL"].includes(r.code)) && !r.code.startsWith("MK_")).length,
+    MAEKHONG: rows.filter((r) => r.category === "MAEKHONG" || r.code.startsWith("MK_")).length,
+    STOCK: rows.filter((r) => r.category === "STOCK" || r.code.startsWith("STOCK_") || r.code.includes("NIKKEI") || r.code.includes("CHINA") || r.code.includes("HANGSENG")).length,
+    M15: rows.filter((r) => r.category === "SPEED" || r.code === "THLOTTO_15M" || r.code.includes("15M")).length,
   };
 
   return (
@@ -356,6 +402,7 @@ export function MarketsPage() {
             { id: "ALL", label: `ทั้งหมด (${counts.ALL})` },
             { id: "GOV", label: `รัฐบาลไทย (${counts.GOV})` },
             { id: "FOREIGN", label: `ต่างประเทศ (${counts.FOREIGN})` },
+            { id: "MAEKHONG", label: `หวยแม่โขง (${counts.MAEKHONG})` },
             { id: "STOCK", label: `หวยหุ้น (${counts.STOCK})` },
             { id: "15MIN", label: `ล็อตโต้ 15 นาที (${counts.M15})` },
           ].map((t) => (
@@ -381,10 +428,15 @@ export function MarketsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((m) => (
-          <MarketCard
-            key={m.id}
+      {loading && rows.length === 0 ? (
+        <div className="flex h-64 items-center justify-center rounded-2xl border border-neutral-100 bg-white">
+          <p className="text-sm font-medium text-neutral-400">กำลังโหลดข้อมูลตลาดหวยทั้งหมด...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((m) => (
+            <MarketCard
+              key={m.id}
             m={m}
             onEdit={() => setEdit(m)}
             onToggle={(v) => {
@@ -406,6 +458,7 @@ export function MarketsPage() {
           />
         ))}
       </div>
+      )}
       {edit ? <EditMarketModal m={edit} onClose={() => setEdit(null)} onSave={handleSaveMarket} /> : null}
     </div>
   );

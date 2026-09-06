@@ -143,8 +143,8 @@ export function MembersPage() {
             status: (p.status as Member["status"]) || "active",
             balance: Number(w?.balance || 0),
             commission_balance: Number(w?.commission_balance || 0),
-            total_bets: 0,
-            total_won: 0,
+            total_bets: Number(p.total_bets || 0),
+            total_won: Number(p.total_won || 0),
             created_at: p.created_at || new Date().toISOString(),
           };
         });

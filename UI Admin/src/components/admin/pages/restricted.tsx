@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { Plus, ShieldAlert, Trash2, Ban, Percent, Search, Filter } from "lucide-react";
-import { Panel, Btn, PageHeader, TableWrap, Th, Td, Field, inputCls, EmptyState, ConfirmDialog } from "../primitives";
+import { Panel, Btn, PageHeader, TableWrap, Th, Td, Field, inputCls, EmptyState, ConfirmDialog, MarketLogo } from "../primitives";
+import { LottoBall } from "./instant";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,6 +31,7 @@ interface FormState {
 export function RestrictedNumbersPage() {
   const { toast } = useToast();
   const [rows, setRows] = React.useState<RestrictedNumber[]>([]);
+  const [marketList, setMarketList] = React.useState<any[]>([]);
   const [marketFilter, setMarketFilter] = React.useState("ALL");
   const [typeFilter, setTypeFilter] = React.useState<"ALL" | "BLOCKED" | "HALF">("ALL");
   const [q, setQ] = React.useState("");
@@ -37,7 +39,7 @@ export function RestrictedNumbersPage() {
   const [confirmDel, setConfirmDel] = React.useState<RestrictedNumber | null>(null);
 
   const [form, setForm] = React.useState<FormState>({
-    market_id: MARKETS[0].id,
+    market_id: "",
     bet_type: "3TOP",
     number: "",
     mode: "blocked",
@@ -61,20 +63,31 @@ export function RestrictedNumbersPage() {
         BET_TYPE_LABEL[r.bet_type]?.includes(q.trim())
     );
 
-  // Live Supabase Sync
+  // Load Markets and Restricted Numbers
   React.useEffect(() => {
+    fetch("/api/admin/data?resource=markets")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          setMarketList(res.data);
+          setForm((prev) => ({ ...prev, market_id: prev.market_id || res.data[0].id }));
+        }
+      })
+      .catch((e) => console.error("Could not fetch markets for restricted numbers:", e));
+
     fetch("/api/admin/data?resource=restricted-numbers")
       .then((r) => r.json())
       .then((res) => {
         if (res.success && Array.isArray(res.data)) {
           const mapped = res.data.map((d: any) => {
-            const mkt = MARKETS.find((m) => m.id === d.market_id) || MARKETS[0];
+            const mkt = d.lottery_markets || (marketList.find((m: any) => m.id === d.market_id));
             return {
               id: d.id,
               market_id: d.market_id,
-              market_name: mkt.name,
-              market_code: mkt.code,
-              market_color: mkt.color,
+              market_name: mkt?.name || "หวย",
+              market_code: mkt?.code || "MKT",
+              market_color: mkt?.color || "#059669",
+              market_logo: d.lottery_markets?.logo_url || d.lottery_markets?.image_url || mkt?.logo_url || mkt?.image_url || null,
               bet_type: d.bet_type as BetType,
               number: d.number,
               max_amount: parseFloat(d.max_amount) || 0,
@@ -93,13 +106,14 @@ export function RestrictedNumbersPage() {
     e.preventDefault();
     if (!form.number.trim()) return;
 
-    const targetMkt = MARKETS.find((m) => m.id === form.market_id) || MARKETS[0];
+    const targetMkt = marketList.find((m) => m.id === form.market_id) || MARKETS[0];
     const newRecord: RestrictedNumber = {
       id: "rn_" + Date.now(),
-      market_id: form.market_id,
-      market_name: targetMkt.name,
+      market_id: form.market_id || (marketList[0]?.id ?? ""),
+      market_name: targetMkt?.name || "หวย",
       market_code: targetMkt.code,
       market_color: targetMkt.color,
+      market_logo: targetMkt.logo_url || targetMkt.image_url || null,
       bet_type: form.bet_type,
       number: form.number.trim(),
       max_amount: Number(form.max_amount) || 0,
@@ -187,8 +201,8 @@ export function RestrictedNumbersPage() {
                 <SelectValue placeholder="เลือกตลาดหวย" />
               </SelectTrigger>
               <SelectContent className="max-h-72 rounded-2xl">
-                <SelectItem value="ALL">ทุกล่าสุด (21 ตลาด)</SelectItem>
-                {MARKETS.map((m) => (
+                <SelectItem value="ALL">ทุกล่าสุด ({marketList.length || 37} ตลาด)</SelectItem>
+                {(marketList.length > 0 ? marketList : MARKETS).map((m: any) => (
                   <SelectItem key={m.id} value={m.id}>
                     {m.name} ({m.code})
                   </SelectItem>
@@ -246,10 +260,13 @@ export function RestrictedNumbersPage() {
             {filtered.map((r) => (
               <tr key={r.id} className="transition-colors hover:bg-neutral-50/70">
                 <Td>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="size-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: r.market_color }}
+                  <div className="flex items-center gap-2.5">
+                    <MarketLogo
+                      logoUrl={r.market_logo}
+                      name={r.market_name}
+                      code={r.market_code}
+                      color={r.market_color}
+                      size="sm"
                     />
                     <span className="font-semibold text-neutral-900">{r.market_name}</span>
                   </div>
@@ -260,9 +277,13 @@ export function RestrictedNumbersPage() {
                   </span>
                 </Td>
                 <Td>
-                  <span className="rounded-md bg-neutral-900 px-2.5 py-1 font-mono text-sm font-black tracking-widest text-white shadow-xs">
-                    {r.number}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    {String(r.number ?? "")
+                      .split("")
+                      .map((digit, idx) => (
+                        <LottoBall key={idx} digit={digit} size="md" />
+                      ))}
+                  </div>
                 </Td>
                 <Td>
                   {r.payout_rate === 0 ? (
@@ -319,9 +340,9 @@ export function RestrictedNumbersPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 rounded-2xl">
-                    {MARKETS.map((m) => (
+                    {(marketList.length > 0 ? marketList : MARKETS).map((m: any) => (
                       <SelectItem key={m.id} value={m.id}>
-                        {m.name}
+                        {m.name} ({m.code})
                       </SelectItem>
                     ))}
                   </SelectContent>

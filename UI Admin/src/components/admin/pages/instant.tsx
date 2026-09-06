@@ -3,12 +3,203 @@
 import * as React from "react";
 import { Zap, Dices, Banknote, Trophy, Users, TrendingUp, RefreshCw, Settings2, Sliders, CheckCircle2, X, Save, Sparkles } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-import { Panel, StatCard, StatusBadge, PageHeader, RealtimeDot, TableWrap, Th, Td, Btn, Field, inputCls } from "../primitives";
+import { Panel, StatCard, StatusBadge, Avatar, PageHeader, RealtimeDot, TableWrap, Th, Td, Btn, Field, inputCls } from "../primitives";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { INSTANT_STATS, INSTANT_DRAWS, INSTANT_BETS, INSTANT_HOURLY, INSTANT_BET_TYPES, InstantBetTypeConfig, fmtTHB, fmtNum } from "@/data/admin-mock";
+import { INSTANT_BET_TYPES, InstantBetTypeConfig, fmtTHB, fmtNum } from "@/data/admin-mock";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+
+// ─── ลูกบอลหวยสไตล์แบรนด์ทางการ (วงกลมสีเขียวเข้มขอบนอก + วงกลมสีขาวด้านใน + ตัวเลขสีดำเข้ม) ────
+export function LottoBall({
+  num,
+  digit,
+  size = "md",
+  variant = "brand",
+}: {
+  num?: string | number;
+  digit?: string | number;
+  size?: "sm" | "md" | "lg";
+  variant?: "brand" | "amber" | "rose" | "purple";
+}) {
+  const displayVal = num ?? digit ?? "";
+  const dim = size === "sm" ? "size-6" : size === "lg" ? "size-9" : "size-7.5";
+  const innerDim =
+    size === "sm" ? "size-4.5 text-[11px]" : size === "lg" ? "size-7 text-sm" : "size-5.5 text-xs";
+
+  const outerBg =
+    variant === "amber"
+      ? "bg-gradient-to-br from-amber-500 to-amber-700 ring-1 ring-amber-400/50 shadow-amber-900/20"
+      : variant === "rose"
+      ? "bg-gradient-to-br from-rose-500 to-rose-700 ring-1 ring-rose-400/50 shadow-rose-900/20"
+      : variant === "purple"
+      ? "bg-gradient-to-br from-purple-600 to-purple-800 ring-1 ring-purple-400/50 shadow-purple-900/20"
+      : "bg-gradient-to-br from-[#1b5e20] to-[#2e7d32] ring-1 ring-emerald-500/40 shadow-emerald-950/25";
+
+  return (
+    <div
+      className={cn(
+        "inline-flex items-center justify-center rounded-full shrink-0 shadow-sm transition-transform hover:scale-110",
+        dim,
+        outerBg
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center justify-center rounded-full bg-white shadow-inner font-mono font-black text-neutral-900",
+          innerDim
+        )}
+      >
+        {displayVal}
+      </div>
+    </div>
+  );
+}
+
+// ─── แยกชุดตัวเลขที่สมาชิกแทงออกมาเป็นก้อนลูกบอล (1 ลูกบอล = 1 หลักตัวเลข) ──
+function parseBetNumbers(raw: any): { position?: string; balls: string[] } {
+  if (!raw) return { balls: [] };
+  let position: string | undefined;
+  let rawList: string[] = [];
+
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed.units) {
+          position = "หลักหน่วย";
+          rawList = Array.isArray(parsed.units) ? parsed.units.map(String) : [String(parsed.units)];
+        } else if (parsed.tens) {
+          position = "หลักสิบ";
+          rawList = Array.isArray(parsed.tens) ? parsed.tens.map(String) : [String(parsed.tens)];
+        } else if (parsed.hundreds) {
+          position = "หลักร้อย";
+          rawList = Array.isArray(parsed.hundreds) ? parsed.hundreds.map(String) : [String(parsed.hundreds)];
+        } else {
+          rawList = Object.values(parsed).flat().map(String);
+        }
+      } catch {
+        rawList = trimmed.split(/[\s,]+/);
+      }
+    } else if (trimmed.includes(",")) {
+      rawList = trimmed.split(",").map((s) => s.trim()).filter(Boolean);
+    } else if (trimmed.includes(" ")) {
+      rawList = trimmed.split(/\s+/).filter(Boolean);
+    } else {
+      rawList = [trimmed];
+    }
+  } else if (Array.isArray(raw)) {
+    rawList = raw.map(String);
+  } else if (typeof raw === "object") {
+    if (raw.units) {
+      position = "หลักหน่วย";
+      rawList = Array.isArray(raw.units) ? raw.units.map(String) : [String(raw.units)];
+    } else if (raw.tens) {
+      position = "หลักสิบ";
+      rawList = Array.isArray(raw.tens) ? raw.tens.map(String) : [String(raw.tens)];
+    } else if (raw.hundreds) {
+      position = "หลักร้อย";
+      rawList = Array.isArray(raw.hundreds) ? raw.hundreds.map(String) : [String(raw.hundreds)];
+    } else {
+      rawList = Object.values(raw).flat().map(String);
+    }
+  }
+
+  // แตกตัวเลขทุกตัวออกเป็นหลักละ 1 ลูกบอล เช่น "999" -> ['9', '9', '9'], "59" -> ['5', '9']
+  const balls: string[] = [];
+  for (const item of rawList) {
+    const s = String(item).trim();
+    if (!isNaN(Number(s)) && s.length > 1) {
+      balls.push(...s.split(""));
+    } else if (s.length > 0) {
+      balls.push(s);
+    }
+  }
+
+  return { position, balls };
+}
+
+// ─── แปลงประเภทการแทงเป็นภาษาไทยที่คนเล่นหวยและแอดมินเข้าใจง่าย ─────────────
+function formatInstantBetTypeThai(typeCode: string, position?: string): { main: string; badgeCls: string } {
+  const code = (typeCode || "").toLowerCase();
+
+  if (code === "pin_top" || code === "pak_bon") {
+    return {
+      main: position ? `ปัก${position}บน` : "ปักหลักบน",
+      badgeCls: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    };
+  }
+  if (code === "pin_bottom" || code === "pak_lang") {
+    return {
+      main: position ? `ปัก${position}ล่าง` : "ปักหลักล่าง",
+      badgeCls: "bg-teal-50 text-teal-700 ring-teal-200",
+    };
+  }
+  if (code === "3top" || code === "3_top" || code === "3digit_top") {
+    return { main: "3 ตัวบน", badgeCls: "bg-purple-50 text-purple-700 ring-purple-200" };
+  }
+  if (code === "3toad" || code === "3_toad" || code === "3tode") {
+    return { main: "3 ตัวโต๊ด", badgeCls: "bg-amber-50 text-amber-700 ring-amber-200" };
+  }
+  if (code === "3front" || code === "3_front") {
+    return { main: "3 ตัวหน้า", badgeCls: "bg-indigo-50 text-indigo-700 ring-indigo-200" };
+  }
+  if (code === "3back" || code === "3_back") {
+    return { main: "3 ตัวท้าย", badgeCls: "bg-blue-50 text-blue-700 ring-blue-200" };
+  }
+  if (code === "2top" || code === "2_top") {
+    return { main: "2 ตัวบน", badgeCls: "bg-sky-50 text-sky-700 ring-sky-200" };
+  }
+  if (code === "2bottom" || code === "2_bottom") {
+    return { main: "2 ตัวล่าง", badgeCls: "bg-cyan-50 text-cyan-700 ring-cyan-200" };
+  }
+  if (code === "6straight" || code === "6_straight") {
+    return { main: "6 ตัวตรง", badgeCls: "bg-rose-50 text-rose-700 ring-rose-200" };
+  }
+  if (code.includes("run_top")) return { main: "วิ่งบน", badgeCls: "bg-orange-50 text-orange-700 ring-orange-200" };
+  if (code.includes("run_down") || code.includes("run_bottom"))
+    return { main: "วิ่งล่าง", badgeCls: "bg-orange-50 text-orange-700 ring-orange-200" };
+
+  return { main: typeCode || "หวยไว", badgeCls: "bg-neutral-100 text-neutral-700 ring-neutral-200" };
+}
+
+// ─── ป้ายสถานะภาษาไทยชัดเจน (ถูกรางวัล / ไม่ถูกรางวัล / รอออกผล) ─────────────
+function InstantStatusBadge({ status, winnings }: { status: string; winnings?: number }) {
+  const s = (status || "").toUpperCase();
+  if (s === "WIN" || s === "WON") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-300 whitespace-nowrap">
+        <CheckCircle2 className="size-3 text-emerald-600 shrink-0" />
+        ถูกรางวัล {winnings && Number(winnings) > 0 ? `(+${fmtTHB(winnings)})` : ""}
+      </span>
+    );
+  }
+  if (s === "LOSE" || s === "LOST") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-500 ring-1 ring-inset ring-neutral-200 whitespace-nowrap">
+        <X className="size-3 text-neutral-400 shrink-0" />
+        ไม่ถูกรางวัล
+      </span>
+    );
+  }
+  if (s === "PENDING" || s === "WAITING") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 whitespace-nowrap">
+        <span className="size-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+        รอออกผล
+      </span>
+    );
+  }
+  if (s === "CANCEL" || s === "CANCELLED") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 ring-1 ring-inset ring-rose-200 whitespace-nowrap">
+        ยกเลิก
+      </span>
+    );
+  }
+  return <span className="text-xs text-neutral-500">{status}</span>;
+}
 
 export function InstantOverviewPage() {
   const [activeTab, setActiveTab] = React.useState<"overview" | "rates" | "settings">("overview");
@@ -20,8 +211,20 @@ export function InstantOverviewPage() {
   const [editMaxBet, setEditMaxBet] = React.useState<number>(0);
   const { toast } = useToast();
 
+  const [liveStats, setLiveStats] = React.useState({
+    total_draws_today: 0,
+    total_bets_today: 0,
+    total_bet_amount_today: 0,
+    total_payout_today: 0,
+    active_players_today: 9,
+    hourly: [] as { hour: string; BET: number; PAYOUT: number }[],
+  });
+  const [liveDraws, setLiveDraws] = React.useState<any[]>([]);
+  const [liveBets, setLiveBets] = React.useState<any[]>([]);
+  const [loadingLive, setLoadingLive] = React.useState(true);
+
   const [instantSettings, setInstantSettings] = React.useState({
-    name: "หวยไทย 1 นาที",
+    name: "ล็อตโต้ 1 นาที (หวย 1 นาที)",
     logo_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/instant/logo_1780622398844.png",
     maintenance: false,
     draw_interval: 60,
@@ -32,23 +235,44 @@ export function InstantOverviewPage() {
   });
   const [savingSettings, setSavingSettings] = React.useState(false);
 
-  const s = INSTANT_STATS;
-  const net = s.total_bet_amount_today - s.total_payout_today;
+  const loadLiveData = React.useCallback(async () => {
+    try {
+      const [resStats, resDraws, resBets] = await Promise.all([
+        fetch("/api/admin/data?resource=instant-stats"),
+        fetch("/api/admin/data?resource=instant-draws&limit=15"),
+        fetch("/api/admin/data?resource=instant-bets&limit=15"),
+      ]);
+      const jsonStats = await resStats.json();
+      const jsonDraws = await resDraws.json();
+      const jsonBets = await resBets.json();
+      if (jsonStats.success && jsonStats.data) setLiveStats(jsonStats.data);
+      if (jsonDraws.success && Array.isArray(jsonDraws.data)) setLiveDraws(jsonDraws.data);
+      if (jsonBets.success && Array.isArray(jsonBets.data)) setLiveBets(jsonBets.data);
+      setRefreshedAt(new Date().toLocaleTimeString("th-TH"));
+    } catch (e) {
+      console.error("Failed to load live instant data:", e);
+    } finally {
+      setLoadingLive(false);
+    }
+  }, []);
 
-  // Auto-refresh ทุก 30 วินาที (ตามสเปก admin_get_instant_stats)
+  const s = liveStats;
+  const net = (s.total_bet_amount_today || 0) - (s.total_payout_today || 0);
+
+  // Auto-refresh ทุก 30 วินาที ดึงข้อมูลจริงจาก Supabase
   React.useEffect(() => {
+    loadLiveData();
     const iv = setInterval(() => {
       setTick((t) => {
         if (t <= 1) {
-          setRefreshedAt(new Date().toLocaleTimeString("th-TH"));
+          loadLiveData();
           return 30;
         }
         return t - 1;
       });
     }, 1000);
-    setRefreshedAt(new Date().toLocaleTimeString("th-TH"));
     return () => clearInterval(iv);
-  }, []);
+  }, [loadLiveData]);
 
   // Live Supabase Sync for 9 Bet Types and Instant Settings
   React.useEffect(() => {
@@ -271,10 +495,10 @@ export function InstantOverviewPage() {
 
           {/* Chart */}
           <Panel className="p-5 sm:p-6">
-            <h2 className="mb-4 text-base font-bold text-neutral-900">ยอดแทงเทียบยอดจ่ายรางวัล รายชั่วโมง</h2>
+            <h2 className="mb-4 text-base font-bold text-neutral-900">ยอดแทงเทียบยอดจ่ายรางวัล รายชั่วโมง (ล็อตโต้ 1 นาที สด)</h2>
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={INSTANT_HOURLY} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
+                <BarChart data={s.hourly && s.hourly.length > 0 ? s.hourly : [{ hour: "ปัจจุบัน", BET: 0, PAYOUT: 0 }]} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                   <XAxis dataKey="hour" tick={{ fontSize: 12, fill: "#737373" }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#a3a3a3" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${Math.round(v / 1000)}k`} />
@@ -289,56 +513,180 @@ export function InstantOverviewPage() {
 
           {/* Tables */}
           <div className="grid gap-5 xl:grid-cols-2">
+            {/* Table 1: ผลรางวัลล่าสุด */}
             <Panel className="min-w-0">
-              <p className="border-b border-neutral-100 px-4 py-3.5 text-sm font-bold text-neutral-900">
-                งวดออกรางวัลล่าสุด 10 รายการ
-              </p>
+              <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3.5">
+                <div>
+                  <h3 className="text-sm font-bold text-neutral-900">ผลรางวัลล่าสุด</h3>
+                  <p className="text-[11px] text-neutral-500">สรุปผลการออกรางวัลรอบล่าสุด (ออกผลทุก 60 วินาที)</p>
+                </div>
+                <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  สดทุก 60 วิ
+                </span>
+              </div>
               <TableWrap>
                 <thead>
-                  <tr><Th>รหัสรอบ</Th><Th>เวลา</Th><Th>สถานะ</Th><Th>ผลรางวัล</Th><Th className="text-right">โพย</Th><Th className="text-right">ยอดแทง</Th><Th className="text-right">ยอดจ่าย</Th></tr>
+                  <tr>
+                    <Th>รหัสรอบ</Th>
+                    <Th>เวลา</Th>
+                    <Th>สถานะ</Th>
+                    <Th>ผล 3 ตัวบน / 2 ตัวล่าง</Th>
+                    <Th className="text-right">โพย</Th>
+                    <Th className="text-right">ยอดแทง</Th>
+                    <Th className="text-right">ยอดจ่าย</Th>
+                  </tr>
                 </thead>
                 <tbody>
-                  {INSTANT_DRAWS.map((d) => (
-                    <tr key={d.draw_id} className="transition-colors hover:bg-neutral-50/70">
-                      <Td className="font-mono text-xs font-bold text-neutral-800">{d.draw_id}</Td>
-                      <Td className="whitespace-nowrap text-xs">{d.draw_time}</Td>
-                      <Td><StatusBadge status={d.status} /></Td>
-                      <Td>
-                        {d.result ? (
-                          <span className="rounded-lg bg-brand-50 px-2 py-0.5 font-mono text-sm font-black tracking-widest text-brand-700">{d.result}</span>
-                        ) : (
-                          <span className="text-xs text-neutral-300">รอออกผล</span>
-                        )}
-                      </Td>
-                      <Td className="text-right text-xs">{d.bet_count}</Td>
-                      <Td className="whitespace-nowrap text-right text-xs font-semibold">{fmtTHB(d.total_bet)}</Td>
-                      <Td className={cn("whitespace-nowrap text-right text-xs font-semibold", d.total_payout > 0 ? "text-rose-600" : "text-neutral-400")}>
-                        {d.total_payout > 0 ? fmtTHB(d.total_payout) : "—"}
+                  {liveDraws.length > 0 ? (
+                    liveDraws.map((d) => {
+                      const timeStr = d.created_at
+                        ? new Date(d.created_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+                        : "—";
+                      const statusVal = (d.status || "PENDING").toLowerCase();
+                      const threeTop = d.result_6d ? d.result_6d.slice(-3) : null;
+                      const twoBottom = d.result_2bottom || null;
+
+                      return (
+                        <tr key={d.id || d.draw_id} className="transition-colors hover:bg-neutral-50/70">
+                          <Td className="font-mono text-xs font-bold text-neutral-800">#{d.draw_id}</Td>
+                          <Td className="whitespace-nowrap text-xs text-neutral-500">{timeStr}</Td>
+                          <Td><StatusBadge status={statusVal as any} /></Td>
+                          <Td>
+                            {threeTop ? (
+                              <div className="flex items-center gap-2 flex-wrap py-0.5">
+                                <div className="inline-flex items-center gap-1 rounded-lg bg-emerald-50/70 px-2 py-1 ring-1 ring-inset ring-emerald-200/60">
+                                  <span className="text-[10px] font-bold text-emerald-900">3บน</span>
+                                  <div className="flex items-center gap-0.5">
+                                    {threeTop.split("").map((digit: string, idx: number) => (
+                                      <LottoBall key={idx} num={digit} size="sm" />
+                                    ))}
+                                  </div>
+                                </div>
+                                {twoBottom && (
+                                  <div className="inline-flex items-center gap-1 rounded-lg bg-amber-50/70 px-2 py-1 ring-1 ring-inset ring-amber-200/60">
+                                    <span className="text-[10px] font-bold text-amber-900">2ล่าง</span>
+                                    <div className="flex items-center gap-0.5">
+                                      {twoBottom.split("").map((digit: string, idx: number) => (
+                                        <LottoBall key={idx} num={digit} size="sm" variant="amber" />
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-neutral-400 font-medium">รอออกผล</span>
+                            )}
+                          </Td>
+                          <Td className="text-right text-xs font-mono">{d.total_bets || 0}</Td>
+                          <Td className="whitespace-nowrap text-right text-xs font-semibold">{fmtTHB(d.total_wagers || d.total_bet || 0)}</Td>
+                          <Td className={cn("whitespace-nowrap text-right text-xs font-semibold", Number(d.total_payouts || d.total_payout || 0) > 0 ? "text-rose-600" : "text-neutral-400")}>
+                            {Number(d.total_payouts || d.total_payout || 0) > 0 ? fmtTHB(d.total_payouts || d.total_payout) : "—"}
+                          </Td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <Td colSpan={7} className="py-8 text-center text-xs text-neutral-400">
+                        {loadingLive ? "กำลังโหลดข้อมูลสด..." : "ยังไม่มีรอบออกรางวัล"}
                       </Td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </TableWrap>
             </Panel>
 
+            {/* Table 2: รายการแทงล่าสุด */}
             <Panel className="min-w-0">
-              <p className="border-b border-neutral-100 px-4 py-3.5 text-sm font-bold text-neutral-900">
-                รายการแทงล่าสุด 10 รายการ
-              </p>
+              <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3.5">
+                <div>
+                  <h3 className="text-sm font-bold text-neutral-900">รายการแทงล่าสุด</h3>
+                  <p className="text-[11px] text-neutral-500">โพยแทงสดจากสมาชิกในรอบปัจจุบันและรอบล่าสุด</p>
+                </div>
+                <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-600">
+                  {liveBets.length} รายการ
+                </span>
+              </div>
               <TableWrap>
                 <thead>
-                  <tr><Th>สมาชิก</Th><Th>เลขที่แทง</Th><Th>ประเภท</Th><Th className="text-right">ยอดแทง</Th><Th>สถานะ</Th></tr>
+                  <tr>
+                    <Th>สมาชิก</Th>
+                    <Th>ประเภท</Th>
+                    <Th>เลขที่แทง</Th>
+                    <Th className="text-right">ยอดแทง</Th>
+                    <Th className="text-center">สถานะ</Th>
+                  </tr>
                 </thead>
                 <tbody>
-                  {INSTANT_BETS.map((b, i) => (
-                    <tr key={i} className="transition-colors hover:bg-neutral-50/70">
-                      <Td className="whitespace-nowrap font-medium text-neutral-800">{b.member_name}</Td>
-                      <Td><span className="rounded-lg bg-neutral-100 px-2 py-0.5 font-mono text-sm font-black tracking-widest text-neutral-800">{b.numbers}</span></Td>
-                      <Td className="whitespace-nowrap text-xs">{b.bet_type}</Td>
-                      <Td className="whitespace-nowrap text-right text-xs font-semibold">{fmtTHB(b.amount)}</Td>
-                      <Td><StatusBadge status={b.status} /></Td>
+                  {liveBets.length > 0 ? (
+                    liveBets.map((b, i) => {
+                      const profile = b.profiles;
+                      const memberName = profile?.full_name || b.member_name || "ผู้ใช้งาน";
+                      const memberIdentifier = profile?.member_id || profile?.phone || (b.user_id ? b.user_id.slice(0, 8) : "—");
+                      const parsed = parseBetNumbers(b.numbers || b.number);
+                      const betTypeThai = formatInstantBetTypeThai(b.bet_type, parsed.position);
+
+                      return (
+                        <tr key={b.id || i} className="transition-colors hover:bg-neutral-50/70">
+                          {/* สมาชิกพร้อม Avatar และรหัสสมาชิก */}
+                          <Td className="whitespace-nowrap">
+                            <div className="flex items-center gap-2.5">
+                              <Avatar
+                                name={memberName}
+                                imageUrl={profile?.avatar_url}
+                                className="size-8 text-xs font-bold"
+                              />
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-neutral-900 truncate">
+                                  {memberName}
+                                </p>
+                                <p className="text-[10px] font-mono text-neutral-400">
+                                  {memberIdentifier}
+                                </p>
+                              </div>
+                            </div>
+                          </Td>
+
+                          {/* ประเภทการแทง ภาษาไทยพร้อมระบุปักหลักบน/ล่าง */}
+                          <Td className="whitespace-nowrap">
+                            <span className={cn("inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold ring-1 ring-inset", betTypeThai.badgeCls)}>
+                              {betTypeThai.main}
+                            </span>
+                          </Td>
+
+                          {/* เลขที่แทง แสดงผลเป็นชุดลูกบอลหวย (Lotto Balls) แบรนด์เขียว/ขาว/ดำ */}
+                          <Td>
+                            <div className="flex flex-wrap items-center gap-1 max-w-[220px] py-0.5">
+                              {parsed.balls.length > 0 ? (
+                                parsed.balls.map((ballNum, bIdx) => (
+                                  <LottoBall key={bIdx} num={ballNum} size="sm" />
+                                ))
+                              ) : (
+                                <span className="font-mono text-xs text-neutral-400">—</span>
+                              )}
+                            </div>
+                          </Td>
+
+                          {/* ยอดแทง */}
+                          <Td className="whitespace-nowrap text-right text-xs font-semibold text-neutral-800">
+                            {fmtTHB(b.amount)}
+                          </Td>
+
+                          {/* สถานะผลรางวัล ชัดเจน เข้าใจง่าย */}
+                          <Td className="text-center">
+                            <InstantStatusBadge status={b.status} winnings={b.payout || b.winnings} />
+                          </Td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <Td colSpan={5} className="py-8 text-center text-xs text-neutral-400">
+                        {loadingLive ? "กำลังโหลดข้อมูลสด..." : "รอบปัจจุบันยังไม่มีรายการแทง (ระบบรอรับโพยใหม่ทุก 60 วินาที)"}
+                      </Td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </TableWrap>
             </Panel>
@@ -351,7 +699,7 @@ export function InstantOverviewPage() {
             <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
               <div>
                 <h3 className="text-base font-bold text-neutral-900">
-                  โครงสร้างรูปแบบการแทงและอัตราจ่าย 9 ชนิด (public.instant_bet_types)
+                  โครงสร้างรูปแบบการแทงและอัตราจ่าย 9 ชนิด
                 </h3>
                 <p className="text-xs text-neutral-500">
                   ควบคุมการเปิด/ปิดรับแทงชั่วคราว และปรับเปลี่ยนตัวคูณอัตราจ่ายรางวัลสำหรับหวยเร็ว 1 นาที

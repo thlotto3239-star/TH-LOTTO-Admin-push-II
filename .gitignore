@@ -24,12 +24,16 @@ tests/screenshots/
 **/.archive/
 tool-results/
 **/*.webp
+temp_admin_repo/
 
 # Environment variables & secrets
 .env*
 !.env.example
 *.pem
 *.key
+client_secret*.json
+*recovery-codes*.txt
+
 
 # Logs
 *.log

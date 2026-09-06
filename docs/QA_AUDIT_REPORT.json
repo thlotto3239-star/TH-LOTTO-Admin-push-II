@@ -1,0 +1,106 @@
+{
+  "timestamp": "2026-09-05T21:14:24.093Z",
+  "tests": [
+    {
+      "category": "Financial",
+      "name": "Negative Balance Check",
+      "passed": true,
+      "details": "Found 0 negative wallets",
+      "isWarning": false
+    },
+    {
+      "category": "Financial",
+      "name": "Wallets Total Active Balance",
+      "passed": true,
+      "details": "Total System Balance = ฿969",
+      "isWarning": false
+    },
+    {
+      "category": "Financial",
+      "name": "Wallets Count",
+      "passed": true,
+      "details": "Total 54 active member wallets",
+      "isWarning": false
+    },
+    {
+      "category": "RPC",
+      "name": "rpc: get_markets_with_countdown",
+      "passed": true,
+      "details": "Returned 22 markets",
+      "isWarning": false
+    },
+    {
+      "category": "RPC",
+      "name": "rpc: admin_rebuild_draw_schedules",
+      "passed": true,
+      "details": "Schedules regenerated (0 added/verified)",
+      "isWarning": false
+    },
+    {
+      "category": "RPC",
+      "name": "rpc: generate_15m_schedules",
+      "passed": true,
+      "details": "15M Schedules generated (174 rounds)",
+      "isWarning": false
+    },
+    {
+      "category": "Lottery",
+      "name": "Active Markets Count",
+      "passed": true,
+      "details": "Found 26 markets configured",
+      "isWarning": false
+    },
+    {
+      "category": "Lottery",
+      "name": "API Key Mapping",
+      "passed": true,
+      "details": "Missing API key for: ",
+      "isWarning": false
+    },
+    {
+      "category": "Lottery",
+      "name": "Lottery Results Ingestion",
+      "passed": true,
+      "details": "Total 79 results stored in database",
+      "isWarning": false
+    },
+    {
+      "category": "Lottery",
+      "name": "Draw Schedules Active",
+      "passed": true,
+      "details": "Sample schedules verified",
+      "isWarning": false
+    },
+    {
+      "category": "Admin API",
+      "name": "POST action: update_setting",
+      "passed": true,
+      "details": "Heartbeat setting saved",
+      "isWarning": false
+    },
+    {
+      "category": "Admin API",
+      "name": "POST action: upsert_restricted_number",
+      "passed": true,
+      "details": "Created ID: ceb4edf5-ec8b-4906-bc1e-1c407e2735fa",
+      "isWarning": false
+    },
+    {
+      "category": "Admin API",
+      "name": "POST action: delete_restricted_number",
+      "passed": true,
+      "details": "Restricted number cleanly cleaned up",
+      "isWarning": false
+    },
+    {
+      "category": "Customer Pages",
+      "name": "All 22 Core Customer Pages Verified & Present",
+      "passed": true,
+      "details": "All 22 customer application screens confirmed",
+      "isWarning": false
+    }
+  ],
+  "passed": 14,
+  "failed": 0,
+  "warnings": 0
+}

@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import { Search, Eye, FileText, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
-import { Panel, Btn, PageHeader, TableWrap, Th, Td, StatusBadge, EmptyState, Avatar } from "../primitives";
+import { Panel, Btn, PageHeader, TableWrap, Th, Td, StatusBadge, EmptyState, Avatar, MarketLogo } from "../primitives";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MARKETS, type GlobalBet, fmtTHB, mktShort } from "@/data/admin-mock";
+import { LottoBall } from "./instant";
 import { cn } from "@/lib/utils";
 
 // Format bet type to friendly Thai without touching DB or data types
@@ -66,6 +67,7 @@ export function formatDateTimeSplit(val: string): { time: string; date: string }
 
 export function BetsPage() {
   const [rows, setRows] = React.useState<GlobalBet[]>([]);
+  const [markets, setMarkets] = React.useState<any[]>([]);
   const [statusFilter, setStatusFilter] = React.useState<string>("ALL");
   const [marketFilter, setMarketFilter] = React.useState<string>("ALL");
   const [q, setQ] = React.useState<string>("");
@@ -73,20 +75,28 @@ export function BetsPage() {
 
   // Live Supabase Sync
   React.useEffect(() => {
+    fetch("/api/admin/data?resource=markets")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          setMarkets(res.data);
+        }
+      })
+      .catch(() => {});
+
     fetch("/api/admin/data?resource=bets&limit=100")
       .then((r) => r.json())
       .then((res) => {
         if (res.success && Array.isArray(res.data)) {
           const mapped: GlobalBet[] = res.data.map((b: any) => {
-            const mkt = MARKETS.find((m) => m.id === b.market_id || m.code === (b.lottery_markets?.code || b.lottery_code)) || MARKETS[0];
             const memberId = b.profiles?.member_id || (b.user_id ? b.user_id.substring(0, 8).toUpperCase() : "MB-GUEST");
             const memberName = b.profiles?.full_name || b.profiles?.username || ("สมาชิก #" + memberId);
             const memberPhone = b.profiles?.phone || "-";
             const memberAvatar = b.profiles?.avatar_url || null;
-            const marketName = b.lottery_markets?.name || mkt.name;
-            const marketCode = b.lottery_markets?.code || b.lottery_code || mkt.code;
-            const marketColor = mkt.color || "#059669";
-            const marketLogo = b.lottery_markets?.logo_url || mkt.logo_url || null;
+            const marketName = b.lottery_markets?.name || "หวย";
+            const marketCode = b.lottery_markets?.code || b.lottery_code || "MKT";
+            const marketColor = b.lottery_markets?.color || "#059669";
+            const marketLogo = b.lottery_markets?.logo_url || null;
             return {
               id: b.id,
               bet_no: "TK-" + (b.id.substring(0, 8).toUpperCase()),
@@ -149,26 +159,26 @@ export function BetsPage() {
           <p className="text-lg font-bold text-brand-600">{fmtTHB(totalBetAmount)}</p>
         </Panel>
         <Panel className="p-3.5">
-          <p className="text-xs text-neutral-400">โพยที่ถูกรางวัล</p>
-          <p className="text-lg font-bold text-amber-600">{wonCount} โพย</p>
-        </Panel>
-        <Panel className="p-3.5">
           <p className="text-xs text-neutral-400">ยอดจ่ายรางวัลรวม</p>
           <p className="text-lg font-bold text-rose-600">{fmtTHB(totalPayout)}</p>
         </Panel>
+        <Panel className="p-3.5">
+          <p className="text-xs text-neutral-400">โพยที่ถูกรางวัล</p>
+          <p className="text-lg font-bold text-neutral-900">{wonCount} โพย</p>
+        </Panel>
       </div>
 
-      {/* Filters */}
+      {/* Filters & Search */}
       <Panel className="p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             <Select value={marketFilter} onValueChange={setMarketFilter}>
-              <SelectTrigger className="h-9 w-48 rounded-xl border-neutral-200 text-xs">
+              <SelectTrigger className="h-9 w-52 rounded-xl border-neutral-200 text-xs">
                 <SelectValue placeholder="เลือกตลาดหวย" />
               </SelectTrigger>
               <SelectContent className="max-h-72 rounded-2xl">
-                <SelectItem value="ALL">ทุกตลาด (21 ตลาด)</SelectItem>
-                {MARKETS.map((m) => (
+                <SelectItem value="ALL">ทุกตลาด ({markets.length || 37} ตลาด)</SelectItem>
+                {markets.map((m) => (
                   <SelectItem key={m.id} value={m.code}>
                     {m.name}
                   </SelectItem>
@@ -248,23 +258,13 @@ export function BetsPage() {
                   {/* ตลาดหวย / รหัสโพย: โลโก้หวย + ชื่อหวยด้านบน + รหัสโพยด้านล่าง */}
                   <Td>
                     <div className="flex items-center gap-2.5 whitespace-nowrap">
-                      {b.market_logo ? (
-                        <img
-                          src={b.market_logo}
-                          alt={b.market_name}
-                          className="size-9 rounded-2xl object-cover bg-white p-0.5 ring-1 ring-neutral-200/80 shadow-xs shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLElement).style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <span
-                          className="flex size-9 items-center justify-center rounded-2xl text-[11px] font-black text-white shrink-0 shadow-xs"
-                          style={{ backgroundColor: b.market_color || "#059669" }}
-                        >
-                          {mktShort(b.market_code)}
-                        </span>
-                      )}
+                      <MarketLogo
+                        logoUrl={b.market_logo}
+                        name={b.market_name}
+                        code={b.market_code}
+                        color={b.market_color}
+                        size="md"
+                      />
                       <div>
                         <p className="font-bold text-neutral-900 leading-tight">{b.market_name}</p>
                         <p className="font-mono text-[11px] font-bold text-neutral-400 mt-0.5">{b.bet_no}</p>
@@ -294,11 +294,15 @@ export function BetsPage() {
                     </span>
                   </Td>
 
-                  {/* ตัวเลข: สีฟิลสถานะ เขียวแบรนด์ ตัวเลข สีขาว */}
+                  {/* ตัวเลข: LottoBall ลูกละ 1 ตัวเลขตามมาตรฐาน */}
                   <Td>
-                    <span className="inline-flex items-center justify-center min-w-[48px] rounded-xl bg-brand-600 px-3 py-1 font-mono text-sm font-black tracking-widest text-white shadow-xs">
-                      {b.numbers}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      {String(b.numbers ?? "")
+                        .split("")
+                        .map((digit, idx) => (
+                          <LottoBall key={idx} digit={digit} size="md" />
+                        ))}
+                    </div>
                   </Td>
 
                   {/* ยอดแทง */}
@@ -370,9 +374,13 @@ export function BetsPage() {
               <div className="flex justify-between items-center border-b border-neutral-200/60 pb-2">
                 <span className="text-neutral-500">ตลาดหวย:</span>
                 <div className="flex items-center gap-2">
-                  {selectedBet.market_logo ? (
-                    <img src={selectedBet.market_logo} alt={selectedBet.market_name} className="size-5 rounded-lg object-cover" />
-                  ) : null}
+                  <MarketLogo
+                    logoUrl={selectedBet.market_logo}
+                    name={selectedBet.market_name}
+                    code={selectedBet.market_code}
+                    color={selectedBet.market_color}
+                    size="sm"
+                  />
                   <span className="font-bold text-neutral-900">{selectedBet.market_name}</span>
                 </div>
               </div>
@@ -382,9 +390,13 @@ export function BetsPage() {
               </div>
               <div className="flex justify-between items-center border-b border-neutral-200/60 pb-2">
                 <span className="text-neutral-500">ตัวเลขที่แทง:</span>
-                <span className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-3 py-0.5 font-mono text-sm font-black text-white shadow-xs">
-                  {selectedBet.numbers}
-                </span>
+                <div className="flex items-center gap-1">
+                  {String(selectedBet.numbers ?? "")
+                    .split("")
+                    .map((digit, idx) => (
+                      <LottoBall key={idx} digit={digit} size="md" />
+                    ))}
+                </div>
               </div>
               <div className="flex justify-between border-b border-neutral-200/60 pb-2">
                 <span className="text-neutral-500">ยอดเงินที่แทง:</span>
