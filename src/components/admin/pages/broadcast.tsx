@@ -132,6 +132,51 @@ export function BroadcastPage() {
         description={`ส่งการแจ้งเตือนและประกาศไปยังเว็บสมาชิกโดยตรง (In-App) · ส่งแล้ว ${history.length} ครั้ง`}
       />
 
+      {/* KPI Mini-Dashboard (PC Ergonomic Header) */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Panel className="p-4 bg-linear-to-br from-white to-neutral-50/50">
+          <p className="text-[11px] font-medium text-neutral-400">ส่งประกาศสะสม</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-neutral-900">{history.length}</p>
+            <span className="text-xs font-semibold text-neutral-500">ครั้ง</span>
+          </div>
+          <p className="mt-1 text-[11px] text-neutral-400">ข้อความแจ้งเตือนทั้งหมด</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-sky-50/30 border-sky-100">
+          <p className="text-[11px] font-medium text-sky-700">ข่าวสารทั่วไป</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-sky-600">
+              {history.filter((h) => h.type === "info").length}
+            </p>
+            <span className="text-xs font-bold text-sky-600">ประกาศ</span>
+          </div>
+          <p className="mt-1 text-[11px] text-sky-600/80">ข้อมูลแนะนำและการบริการ</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-amber-50/30 border-amber-100">
+          <p className="text-[11px] font-medium text-amber-700">แจ้งเตือนระบบ</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-amber-600">
+              {history.filter((h) => h.type === "warning").length}
+            </p>
+            <span className="text-xs font-bold text-amber-600">แจ้งด่วน</span>
+          </div>
+          <p className="mt-1 text-[11px] text-amber-600/80">ปิดปรับปรุง/ระบบธนาคาร</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-emerald-50/30 border-emerald-100">
+          <p className="text-[11px] font-medium text-emerald-700">กิจกรรมและโปรโมชั่น</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-emerald-600">
+              {history.filter((h) => h.type === "success").length}
+            </p>
+            <span className="text-xs font-bold text-emerald-600">สิทธิพิเศษ</span>
+          </div>
+          <p className="mt-1 text-[11px] text-emerald-600/80">กิจกรรมแจกเครดิต/รางวัล</p>
+        </Panel>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-5">
         {/* Compose */}
         <Panel className="min-w-0 p-5 lg:col-span-2">

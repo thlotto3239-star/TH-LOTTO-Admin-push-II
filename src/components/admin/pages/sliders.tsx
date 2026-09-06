@@ -236,16 +236,61 @@ export function SlidersPage() {
     }
   };
 
+  const activeCount = rows.filter((r) => r.is_active).length;
+  const firstSlide = sorted[0];
+
   return (
     <div className="space-y-4">
       <PageHeader
         title="สไลเดอร์"
-        description={`ตารางสไลด์ · ทั้งหมด ${rows.length} สไลด์ · เปิดใช้งาน ${rows.filter((r) => r.is_active).length} สไลด์ · ลากเรียงลำดับได้`}
+        description={`ตารางสไลด์ · ทั้งหมด ${rows.length} สไลด์ · เปิดใช้งาน ${activeCount} สไลด์ · ลากเรียงลำดับได้`}
       >
         <Btn className="rounded-full" onClick={() => setForm({ initial: { ...EMPTY_SLIDE, display_order: rows.length + 1 } })}>
           <Plus className="size-4" /> เพิ่มสไลด์
         </Btn>
       </PageHeader>
+
+      {/* KPI Mini-Dashboard (PC Ergonomic Header) */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Panel className="p-4 bg-linear-to-br from-white to-neutral-50/50">
+          <p className="text-[11px] font-medium text-neutral-400">แบนเนอร์ทั้งหมด</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-neutral-900">{rows.length}</p>
+            <span className="text-xs font-semibold text-neutral-500">ภาพสไลด์</span>
+          </div>
+          <p className="mt-1 text-[11px] text-neutral-400">รูปภาพประชาสัมพันธ์ทั้งหมด</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-emerald-50/30 border-emerald-100">
+          <p className="text-[11px] font-medium text-emerald-700">กำลังแสดงผลหน้าแรก</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-emerald-600">{activeCount}</p>
+            <span className="text-xs font-bold text-emerald-600">
+              {rows.length > 0 ? Math.round((activeCount / rows.length) * 100) : 0}%
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] text-emerald-600/80">สไลด์วนอัตโนมัติบนหน้าเว็บ</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-neutral-50/50">
+          <p className="text-[11px] font-medium text-neutral-500">ปิดการแสดงผล</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-neutral-600">{rows.length - activeCount}</p>
+            <span className="text-xs font-semibold text-neutral-500">ฉบับซ่อน</span>
+          </div>
+          <p className="mt-1 text-[11px] text-neutral-400">ซ่อนจากหน้าสมาชิกรอใช้งาน</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-blue-50/30 border-blue-100">
+          <p className="text-[11px] font-medium text-blue-700">สไลด์หลักอันดับ 1</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-sm font-bold truncate text-blue-900">{firstSlide ? firstSlide.title : "—"}</p>
+          </div>
+          <p className="mt-1 text-[11px] truncate text-blue-600/80">
+            {firstSlide ? `ลิงก์: ${firstSlide.link_url || "ไม่มี"}` : "ยังไม่มีสไลด์"}
+          </p>
+        </Panel>
+      </div>
 
       {sorted.length === 0 ? <Panel><EmptyState title="ยังไม่มีสไลด์ — กดปุ่มเพิ่มสไลด์เพื่อสร้าง" /></Panel> : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
