@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "next build && node -e \"const fs=require('fs'); if(fs.existsSync('.next/standalone')){fs.cpSync('.next/static', '.next/standalone/.next/static', {recursive:true}); fs.cpSync('public', '.next/standalone/public', {recursive:true});}\"",
-    "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
+    "build": "next build",
+    "build:standalone": "next build && node -e \"const fs=require('fs'); if(fs.existsSync('.next/standalone')){fs.cpSync('.next/static', '.next/standalone/.next/static', {recursive:true}); fs.cpSync('public', '.next/standalone/public', {recursive:true});}\"",
+    "start": "next start",
     "lint": "eslint .",
     "push:admin": "node scripts/sync-push.js",
     "db:push": "prisma db push --accept-data-loss",
