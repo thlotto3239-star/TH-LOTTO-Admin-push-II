@@ -3,9 +3,22 @@
 import * as React from "react";
 import { AdminApp } from "@/components/admin/admin-app";
 import { AdminLogin } from "@/components/admin/login";
+import { useAdminNav } from "@/components/admin/store";
 import { supabase } from "@/lib/supabase";
 
 const SESSION_KEY = "thlotto_admin_session";
+
+function syncAdminProfile(profile: any, fallbackName: string) {
+  const isSuper = profile?.admin_role === "super_admin" || profile?.phone === "0622306037" || profile?.is_super === true;
+  useAdminNav.getState().setCurrentAdmin({
+    id: profile?.id || "admin-session",
+    full_name: profile?.full_name || fallbackName,
+    phone: profile?.phone || "-",
+    admin_role: isSuper ? "super_admin" : "admin",
+    is_super: isSuper,
+    avatar_url: profile?.avatar_url || null,
+  });
+}
 
 export default function Page() {
   // Guard กัน hydration mismatch ของ Radix ids (aria-controls) ระหว่าง SSR/client
@@ -26,15 +39,15 @@ export default function Page() {
       // ignore localStorage errors in private browsing/sandboxes
     }
 
-    // 2. ตรวจสอบ Supabase Session สำหรับกรณี Google OAuth Redirect
+    // 2. ตรวจสอบ Supabase Session สำหรับกรณี Google OAuth Redirect หรือ Existing Session
     const verifySupabaseAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           // ตรวจสอบสิทธิ์ผู้ดูแลระบบในฐานข้อมูล (Security-by-Design Whitelist)
-          const { data: profile, error } = await supabase
+          const { data: profile } = await supabase
             .from("profiles")
-            .select("id, full_name, is_admin, admin_role, phone")
+            .select("id, full_name, is_admin, admin_role, phone, avatar_url")
             .eq("id", session.user.id)
             .maybeSingle();
 
@@ -45,6 +58,7 @@ export default function Page() {
           if (isAdmin) {
             const adminName = profile?.full_name || session.user.email?.split("@")[0] || "ผู้ดูแลระบบ";
             setCurrentUser(adminName);
+            syncAdminProfile(profile, adminName);
             setUnauthorizedError(null);
             try {
               localStorage.setItem(SESSION_KEY, adminName);
@@ -75,7 +89,7 @@ export default function Page() {
       if (event === "SIGNED_IN" && session?.user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("id, full_name, is_admin, admin_role, phone")
+          .select("id, full_name, is_admin, admin_role, phone, avatar_url")
           .eq("id", session.user.id)
           .maybeSingle();
 
@@ -86,6 +100,7 @@ export default function Page() {
         if (isAdmin) {
           const adminName = profile?.full_name || session.user.email?.split("@")[0] || "ผู้ดูแลระบบ";
           setCurrentUser(adminName);
+          syncAdminProfile(profile, adminName);
           setUnauthorizedError(null);
           try {
             localStorage.setItem(SESSION_KEY, adminName);
@@ -138,8 +153,9 @@ export default function Page() {
           </div>
         )}
         <AdminLogin
-          onLogin={(name) => {
+          onLogin={(name, profile) => {
             setCurrentUser(name);
+            syncAdminProfile(profile, name);
             setUnauthorizedError(null);
             try {
               localStorage.setItem(SESSION_KEY, name);
