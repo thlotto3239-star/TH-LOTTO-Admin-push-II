@@ -350,20 +350,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, data });
       }
 
-      case "bets": {
-        const limit = parseInt(searchParams.get("limit") || "50", 10);
-        const { data, error } = await supabaseAdmin
-          .from("bets")
-          .select(`
-            *,
-            profiles!bets_profile_fkey (id, full_name, username, phone, member_id, avatar_url),
-            lottery_markets!bets_market_id_fkey (id, name, code, category, logo_url)
-          `)
-          .order("created_at", { ascending: false })
-          .limit(limit);
-        if (error) throw error;
-        return NextResponse.json({ success: true, data });
-      }
+
 
       case "deposits": {
         const { data, error } = await supabaseAdmin
@@ -1315,22 +1302,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, count: updates.length });
       }
 
-      case "batch_update_settings": {
-        const { settings } = payload;
-        if (!settings || typeof settings !== "object") {
-          return NextResponse.json({ success: false, error: "Invalid settings payload" }, { status: 400 });
-        }
-        const updates = Object.entries(settings).map(([key, value]) => ({
-          key,
-          value: String(value ?? ""),
-          updated_at: new Date().toISOString(),
-        }));
-        if (updates.length > 0) {
-          const { error } = await supabaseAdmin.from("settings").upsert(updates, { onConflict: "key" });
-          if (error) throw error;
-        }
-        return NextResponse.json({ success: true, count: updates.length });
-      }
 
       default:
         return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 });
