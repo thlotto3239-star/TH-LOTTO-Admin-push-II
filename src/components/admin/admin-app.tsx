@@ -258,9 +258,8 @@ function NotificationBell() {
   );
 }
 
-function AdminUserSwitcher({ onLogout }: { onLogout?: () => void }) {
-  const { currentAdmin, setCurrentAdmin } = useAdminNav();
-  const { toast } = useToast();
+function AdminProfileMenu({ onLogout }: { onLogout?: () => void }) {
+  const { currentAdmin } = useAdminNav();
   const [open, setOpen] = React.useState(false);
 
   const roleLabel = currentAdmin.admin_role === "super_admin" ? "Super Admin" : "Admin";
@@ -269,8 +268,8 @@ function AdminUserSwitcher({ onLogout }: { onLogout?: () => void }) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="flex w-full items-center gap-2.5 rounded-full border border-neutral-200 bg-white p-1.5 pr-3 text-left transition-colors hover:bg-neutral-50"
-          title="สลับบัญชีเพื่อทดสอบสิทธิ์ (Super Admin vs Admin)"
+          className="flex w-full items-center gap-2.5 rounded-full border border-neutral-200 bg-white p-1.5 pr-3 text-left transition-colors hover:bg-neutral-50 cursor-pointer"
+          title="ข้อมูลโปรไฟล์ผู้ดูแลระบบ"
         >
           <Avatar
             name={currentAdmin.full_name}
@@ -287,57 +286,38 @@ function AdminUserSwitcher({ onLogout }: { onLogout?: () => void }) {
           <ChevronDown className="size-3.5 text-neutral-400 shrink-0" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-64 rounded-2xl p-2 shadow-xl ring-1 ring-neutral-200">
-        <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-          สลับบัญชีแอดมิน (ทดสอบสิทธิ์)
-        </p>
-        <div className="space-y-1">
-          {KNOWN_ADMINS.map((adm) => {
-            const isSelected = adm.id === currentAdmin.id;
-            return (
-              <button
-                key={adm.id}
-                onClick={() => {
-                  setCurrentAdmin(adm);
-                  setOpen(false);
-                  toast({
-                    title: `สลับเป็น ${adm.full_name}`,
-                    description: `ระดับสิทธิ์: ${adm.admin_role === "super_admin" ? "Super Admin (จัดการสิทธิ์และเพิ่มแอดมินได้)" : "Admin (ธรรมดา — ไม่เห็นปุ่มสร้างแอดมิน)"}`,
-                  });
-                }}
-                className={cn(
-                  "flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs transition-colors",
-                  isSelected ? "bg-brand-50 text-brand-700 font-bold" : "text-neutral-700 hover:bg-neutral-100"
-                )}
-              >
-                <Avatar
-                  name={adm.full_name}
-                  imageUrl={adm.avatar_url}
-                  className={cn(
-                    "size-7 text-[10px] shrink-0",
-                    adm.admin_role === "super_admin" ? "bg-amber-600 text-white" : "bg-teal-600 text-white"
-                  )}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold">{adm.full_name}</p>
-                  <p className="truncate text-[10px] text-neutral-400">
-                    {adm.admin_role === "super_admin" ? "Super Admin (เต็มสิทธิ์)" : "Admin (ธรรมดา)"}
-                  </p>
-                </div>
-                {isSelected ? <Check className="size-3.5 text-brand-600 shrink-0" /> : null}
-              </button>
-            );
-          })}
+      <PopoverContent align="end" className="w-64 rounded-2xl p-3 shadow-xl ring-1 ring-neutral-200">
+        <div className="flex items-center gap-3 pb-3 border-b border-neutral-100">
+          <Avatar
+            name={currentAdmin.full_name}
+            imageUrl={currentAdmin.avatar_url}
+            className={cn(
+              "size-10 text-xs shrink-0",
+              currentAdmin.admin_role === "super_admin" ? "bg-amber-600 text-white" : "bg-teal-600 text-white"
+            )}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold text-neutral-900">{currentAdmin.full_name}</p>
+            <p className="truncate text-xs text-neutral-500 font-mono">{currentAdmin.phone}</p>
+            <span className={cn(
+              "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full mt-1",
+              currentAdmin.admin_role === "super_admin" ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-teal-50 text-teal-700 border border-teal-200"
+            )}>
+              <span className="size-1.5 rounded-full bg-emerald-500"></span>
+              {roleLabel}
+            </span>
+          </div>
         </div>
-        <div className="mt-2 border-t border-neutral-100 pt-1.5">
+
+        <div className="pt-2">
           <button
             onClick={() => {
               setOpen(false);
               onLogout?.();
             }}
-            className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50"
+            className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs font-bold text-rose-600 transition-colors hover:bg-rose-50 cursor-pointer"
           >
-            <LogOut className="size-3.5" />
+            <LogOut className="size-4" />
             ออกจากระบบ
           </button>
         </div>
@@ -407,7 +387,7 @@ export function AdminApp({ onLogout }: { onLogout?: () => void } = {}) {
         <Brand />
         <SidebarNav />
         <div className="border-t border-neutral-100 p-3">
-          <AdminUserSwitcher onLogout={onLogout} />
+          <AdminProfileMenu onLogout={onLogout} />
         </div>
       </aside>
 
@@ -428,7 +408,7 @@ export function AdminApp({ onLogout }: { onLogout?: () => void } = {}) {
               </SheetHeader>
               <SidebarNav onNavigate={() => setMobileNav(false)} />
               <div className="border-t border-neutral-100 p-3">
-                <AdminUserSwitcher onLogout={onLogout} />
+                <AdminProfileMenu onLogout={onLogout} />
               </div>
             </SheetContent>
           </Sheet>
@@ -449,7 +429,7 @@ export function AdminApp({ onLogout }: { onLogout?: () => void } = {}) {
           <NotificationBell />
 
           <div className="w-48 hidden sm:block">
-            <AdminUserSwitcher onLogout={onLogout} />
+            <AdminProfileMenu onLogout={onLogout} />
           </div>
         </header>
 
