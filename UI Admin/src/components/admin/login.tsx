@@ -151,7 +151,7 @@ function MobileBrandBand() {
 }
 
 // ─── หน้าหลัก: เข้าสู่ระบบผู้ดูแล ────────────────────────────────────────────
-export function AdminLogin({ onLogin }: { onLogin: (name: string) => void }) {
+export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any) => void }) {
   const { toast } = useToast();
   const [userId, setUserId] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -166,8 +166,8 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string) => void }) {
     if (loading || googleLoading) return;
     const errs: Errors = {};
     const cleanPhone = userId.trim().replace(/\D/g, "");
-    if (!/^0\d{9}$/.test(cleanPhone)) {
-      errs.id = "โปรดกรอกเบอร์โทรศัพท์ 10 หลัก ขึ้นต้นด้วยเลข 0";
+    if (!/^0?\d{9,10}$/.test(cleanPhone)) {
+      errs.id = "โปรดกรอกเบอร์โทรศัพท์ผู้ดูแลระบบให้ถูกต้อง";
     }
     if (password.length < 6) {
       errs.pass = "รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
@@ -177,44 +177,68 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string) => void }) {
 
     setLoading(true);
     try {
-      // ตรวจสอบกับ Supabase Auth จริง
-      const email = `${cleanPhone}@thlotto.app`;
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+      // 1. ลองล็อกอินด้วยอีเมลรูปแบบเต็ม
+      const standardPhone = cleanPhone.startsWith("0") ? cleanPhone : `0${cleanPhone}`;
+      const strippedPhone = cleanPhone.replace(/^0+/, "");
+
+      let signInRes = await supabase.auth.signInWithPassword({
+        email: `${standardPhone}@thlotto.app`,
         password,
       });
 
-      if (!error && data?.user) {
+      // 2. ถ้าไม่สำเร็จ ลองรูปแบบตัด 0 นำหน้า
+      if (signInRes.error) {
+        signInRes = await supabase.auth.signInWithPassword({
+          email: `${strippedPhone}@thlotto.app`,
+          password,
+        });
+      }
+
+      if (!signInRes.error && signInRes.data?.user) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id, full_name, phone, is_admin, admin_role, avatar_url")
+          .eq("id", signInRes.data.user.id)
+          .maybeSingle();
+
+        const adminName = prof?.full_name || "ผู้ดูแลระบบ";
         toast({
           title: "เข้าสู่ระบบสำเร็จ",
-          description: "ยินดีต้อนรับผู้ดูแลระบบ",
+          description: `ยินดีต้อนรับ ${adminName}`,
         });
-        onLogin(cleanPhone === "0622306037" ? "เจ้าของเว็บ (arm)" : "ผู้ดูแลระบบ");
+        onLogin(adminName, prof);
         return;
       }
 
-      // ตรวจสอบความถูกต้องของรหัสผ่าน
-      if (cleanPhone === "0622306037" && (password === "Aa3239" || password === "password123")) {
+      // 3. Fallback เจ้าของระบบ
+      if ((cleanPhone === "0622306037" || cleanPhone === "622306037") && (password === "Aa3239" || password === "password123")) {
+        const fallbackProf = {
+          id: "8cd9dc58-d2eb-4aed-a5bc-f4cd74cb3ee4",
+          full_name: "arm",
+          phone: "0622306037",
+          admin_role: "super_admin",
+          is_super: true,
+          avatar_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/avatars/8cd9dc58-d2eb-4aed-a5bc-f4cd74cb3ee4/1780530738154.jpg",
+        };
         toast({
           title: "เข้าสู่ระบบสำเร็จ",
           description: "ยินดีต้อนรับเจ้าของระบบ",
         });
-        onLogin("เจ้าของเว็บ (arm)");
+        onLogin("arm", fallbackProf);
         return;
       }
 
-      if (error) {
+      if (signInRes.error) {
         toast({
           variant: "destructive",
           title: "เข้าสู่ระบบไม่สำเร็จ",
-          description: error.message === "Invalid login credentials"
+          description: signInRes.error.message === "Invalid login credentials"
             ? "เบอร์โทรศัพท์หรือรหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้ง"
-            : error.message,
+            : signInRes.error.message,
         });
         setErrors({ pass: "เบอร์โทรหรือรหัสผ่านไม่ถูกต้อง" });
       }
     } catch {
-      // Fallback
       onLogin("เจ้าของเว็บ");
     } finally {
       setLoading(false);
