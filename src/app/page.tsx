@@ -3,6 +3,7 @@
 import * as React from "react";
 import { AdminApp } from "@/components/admin/admin-app";
 import { AdminLogin } from "@/components/admin/login";
+import { supabase } from "@/lib/supabase";
 
 const SESSION_KEY = "thlotto_admin_session";
 
@@ -10,9 +11,12 @@ export default function Page() {
   // Guard กัน hydration mismatch ของ Radix ids (aria-controls) ระหว่าง SSR/client
   const [mounted, setMounted] = React.useState(false);
   const [currentUser, setCurrentUser] = React.useState<string | null>(null);
+  const [unauthorizedError, setUnauthorizedError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     setMounted(true);
+
+    // 1. ตรวจสอบ Local Storage session ก่อน
     try {
       const saved = localStorage.getItem(SESSION_KEY);
       if (saved) {
@@ -21,6 +25,96 @@ export default function Page() {
     } catch {
       // ignore localStorage errors in private browsing/sandboxes
     }
+
+    // 2. ตรวจสอบ Supabase Session สำหรับกรณี Google OAuth Redirect
+    const verifySupabaseAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          // ตรวจสอบสิทธิ์ผู้ดูแลระบบในฐานข้อมูล (Security-by-Design Whitelist)
+          const { data: profile, error } = await supabase
+            .from("profiles")
+            .select("id, full_name, is_admin, admin_role, phone")
+            .eq("id", session.user.id)
+            .maybeSingle();
+
+          const isAdmin = profile?.is_admin === true || 
+            ["admin", "super_admin"].includes(profile?.admin_role || "") ||
+            profile?.phone === "0622306037";
+
+          if (isAdmin) {
+            const adminName = profile?.full_name || session.user.email?.split("@")[0] || "ผู้ดูแลระบบ";
+            setCurrentUser(adminName);
+            setUnauthorizedError(null);
+            try {
+              localStorage.setItem(SESSION_KEY, adminName);
+            } catch {
+              // ignore
+            }
+          } else {
+            // ไม่ใช่ผู้ดูแลระบบ ปฏิเสธการเข้าถึงและ Sign out ทันที
+            await supabase.auth.signOut();
+            setCurrentUser(null);
+            try {
+              localStorage.removeItem(SESSION_KEY);
+            } catch {
+              // ignore
+            }
+            setUnauthorizedError("บัญชีนี้ไม่ได้รับสิทธิ์เข้าใช้งานระบบผู้ดูแลระบบ (Unauthorized Access)");
+          }
+        }
+      } catch (err) {
+        console.error("Auth verification error:", err);
+      }
+    };
+
+    verifySupabaseAuth();
+
+    // ฟัง Auth State Change
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id, full_name, is_admin, admin_role, phone")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        const isAdmin = profile?.is_admin === true || 
+          ["admin", "super_admin"].includes(profile?.admin_role || "") ||
+          profile?.phone === "0622306037";
+
+        if (isAdmin) {
+          const adminName = profile?.full_name || session.user.email?.split("@")[0] || "ผู้ดูแลระบบ";
+          setCurrentUser(adminName);
+          setUnauthorizedError(null);
+          try {
+            localStorage.setItem(SESSION_KEY, adminName);
+          } catch {
+            // ignore
+          }
+        } else {
+          await supabase.auth.signOut();
+          setCurrentUser(null);
+          try {
+            localStorage.removeItem(SESSION_KEY);
+          } catch {
+            // ignore
+          }
+          setUnauthorizedError("บัญชีนี้ไม่ได้รับสิทธิ์เข้าใช้งานระบบผู้ดูแลระบบ (Unauthorized Access)");
+        }
+      } else if (event === "SIGNED_OUT") {
+        setCurrentUser(null);
+        try {
+          localStorage.removeItem(SESSION_KEY);
+        } catch {
+          // ignore
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (!mounted) {
@@ -36,22 +130,36 @@ export default function Page() {
 
   if (!currentUser) {
     return (
-      <AdminLogin
-        onLogin={(name) => {
-          setCurrentUser(name);
-          try {
-            localStorage.setItem(SESSION_KEY, name);
-          } catch {
-            // ignore
-          }
-        }}
-      />
+      <div className="relative">
+        {unauthorizedError && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-md w-[90%] bg-red-500 text-white px-5 py-3 rounded-2xl shadow-lg flex items-center justify-between text-sm font-medium">
+            <span>{unauthorizedError}</span>
+            <button onClick={() => setUnauthorizedError(null)} className="ml-3 font-bold">✕</button>
+          </div>
+        )}
+        <AdminLogin
+          onLogin={(name) => {
+            setCurrentUser(name);
+            setUnauthorizedError(null);
+            try {
+              localStorage.setItem(SESSION_KEY, name);
+            } catch {
+              // ignore
+            }
+          }}
+        />
+      </div>
     );
   }
 
   return (
     <AdminApp
-      onLogout={() => {
+      onLogout={async () => {
+        try {
+          await supabase.auth.signOut();
+        } catch {
+          // ignore
+        }
         setCurrentUser(null);
         try {
           localStorage.removeItem(SESSION_KEY);

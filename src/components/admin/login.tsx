@@ -228,7 +228,7 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string) => void }) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/admin`,
+          redirectTo: `${window.location.origin}/`,
         },
       });
       if (error) throw error;
