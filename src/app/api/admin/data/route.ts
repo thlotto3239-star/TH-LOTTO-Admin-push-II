@@ -519,6 +519,33 @@ export async function GET(req: NextRequest) {
         });
       }
 
+      case "bets": {
+        const limit = Number(searchParams.get("limit") || 100);
+        const status = searchParams.get("status");
+        const marketId = searchParams.get("market_id");
+
+        let query = supabaseAdmin
+          .from("bets")
+          .select(`
+            *,
+            profiles!bets_profile_fkey (id, full_name, member_id, avatar_url, phone, username),
+            lottery_markets!bets_market_id_fkey (id, name, code, category, logo_url, color)
+          `)
+          .order("created_at", { ascending: false })
+          .limit(limit);
+
+        if (status && status !== "ALL") {
+          query = query.eq("status", status);
+        }
+        if (marketId && marketId !== "ALL") {
+          query = query.eq("market_id", marketId);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return NextResponse.json({ success: true, data: data || [] });
+      }
+
       case "settings": {
         const { data, error } = await supabaseAdmin.from("settings").select("*");
         if (error) throw error;
