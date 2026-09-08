@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Eye, Pencil, Wallet, Plus, Minus, Download } from "lucide-react";
+import { Eye, Pencil, Wallet, Plus, Minus, Download, Lock, Unlock } from "lucide-react";
 import { Panel, Btn, StatusBadge, BankBadge, Avatar, SearchInput, TableWrap, Th, Td, Pagination, EmptyState, Field, inputCls, PageHeader } from "../primitives";
 import { BankSelector } from "../primitives";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -336,6 +336,39 @@ export function MembersPage() {
     }
   };
 
+  const handleToggleLock = async (m: Member) => {
+    const nextStatus: Member["status"] = m.status === "suspended" ? "active" : "suspended";
+    const isLocking = nextStatus === "suspended";
+    setRows((p) => p.map((r) => (r.id === m.id ? { ...r, status: nextStatus } : r)));
+    toast({
+      title: isLocking ? "ระงับ/ล็อคบัญชีสมาชิกแล้ว" : "ปลดล็อคบัญชีสมาชิกแล้ว",
+      description: `${m.full_name} (${m.member_id})`,
+      variant: isLocking ? "destructive" : "default",
+    });
+
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_member",
+          payload: {
+            id: m.id,
+            status: nextStatus,
+          },
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        toast({ title: "อัปเดตสถานะล้มเหลว", description: json.error, variant: "destructive" });
+        fetchMembers();
+      }
+    } catch (e: any) {
+      toast({ title: "เชื่อมต่อล้มเหลว", description: e.message, variant: "destructive" });
+      fetchMembers();
+    }
+  };
+
   const handleAdjustWallet = async (id: string, delta: number, note: string) => {
     setRows((p) => p.map((r) => (r.id === id ? { ...r, balance: Math.max(0, r.balance + delta) } : r)));
     try {
@@ -528,6 +561,27 @@ export function MembersPage() {
                       <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" onClick={() => openMember(m.id)}><Eye className="size-3.5" /> ดู</Btn>
                       <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" onClick={() => setEdit(m)}><Pencil className="size-3.5" /> แก้ไข</Btn>
                       <Btn size="sm" variant="outline" className="h-8 whitespace-nowrap rounded-full border-brand-200 px-2.5 text-brand-700 hover:bg-brand-50" onClick={() => setWallet(m)}><Wallet className="size-3.5" /> ยอด</Btn>
+                      {m.status === "suspended" ? (
+                        <Btn
+                          size="sm"
+                          variant="outline"
+                          className="h-8 whitespace-nowrap rounded-full border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-2.5"
+                          title="ปลดล็อคบัญชีนี้"
+                          onClick={() => handleToggleLock(m)}
+                        >
+                          <Unlock className="size-3.5" /> ปลดล็อค
+                        </Btn>
+                      ) : (
+                        <Btn
+                          size="sm"
+                          variant="outline"
+                          className="h-8 whitespace-nowrap rounded-full border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 px-2.5"
+                          title="ระงับ/ล็อคบัญชีนี้ชั่วคราว"
+                          onClick={() => handleToggleLock(m)}
+                        >
+                          <Lock className="size-3.5" /> ล็อค
+                        </Btn>
+                      )}
                     </div>
                   </Td>
                 </tr>

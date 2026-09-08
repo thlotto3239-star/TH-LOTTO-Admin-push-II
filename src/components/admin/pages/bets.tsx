@@ -1,11 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Search, Eye, FileText, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
+import { Search, Eye, FileText, CheckCircle2, XCircle, Clock, AlertCircle, Ban, RotateCcw } from "lucide-react";
 import { Panel, Btn, PageHeader, TableWrap, Th, Td, StatusBadge, EmptyState, Avatar, MarketLogo } from "../primitives";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import { MARKETS, type GlobalBet, fmtTHB, mktShort } from "@/data/admin-mock";
 import { LottoBall } from "./instant";
 import { cn } from "@/lib/utils";
@@ -66,24 +67,16 @@ export function formatDateTimeSplit(val: string): { time: string; date: string }
 }
 
 export function BetsPage() {
+  const { toast } = useToast();
   const [rows, setRows] = React.useState<GlobalBet[]>([]);
   const [markets, setMarkets] = React.useState<any[]>([]);
   const [statusFilter, setStatusFilter] = React.useState<string>("ALL");
   const [marketFilter, setMarketFilter] = React.useState<string>("ALL");
   const [q, setQ] = React.useState<string>("");
   const [selectedBet, setSelectedBet] = React.useState<GlobalBet | null>(null);
+  const [isCancelling, setIsCancelling] = React.useState<boolean>(false);
 
-  // Live Supabase Sync
-  React.useEffect(() => {
-    fetch("/api/admin/data?resource=markets")
-      .then((r) => r.json())
-      .then((res) => {
-        if (res.success && Array.isArray(res.data)) {
-          setMarkets(res.data);
-        }
-      })
-      .catch(() => {});
-
+  const fetchBets = React.useCallback(() => {
     fetch("/api/admin/data?resource=bets&limit=100")
       .then((r) => r.json())
       .then((res) => {
@@ -97,33 +90,95 @@ export function BetsPage() {
             const marketCode = b.lottery_markets?.code || b.lottery_code || "MKT";
             const marketColor = b.lottery_markets?.color || "#059669";
             const marketLogo = b.lottery_markets?.logo_url || null;
+
             return {
               id: b.id,
-              bet_no: "TK-" + (b.id.substring(0, 8).toUpperCase()),
-              member_id: memberId,
-              member_name: memberName,
-              member_phone: memberPhone,
-              member_avatar: memberAvatar,
+              bet_no: b.bet_no || b.id.substring(0, 10).toUpperCase(),
+              user_id: b.user_id,
               market_code: marketCode,
               market_name: marketName,
               market_color: marketColor,
               market_logo: marketLogo,
-              draw_date: b.draw_date ? new Date(b.draw_date).toLocaleDateString("th-TH") : "-",
-              bet_type: b.bet_type || "2BOTTOM",
-              numbers: b.numbers || "00",
-              amount: parseFloat(b.amount) || 0,
-              payout_rate: parseFloat(b.payout_rate) || 90,
-              payout_amount: parseFloat(b.actual_payout ?? b.payout_amount) || 0,
-              status: (b.status ? b.status.toUpperCase() : "PENDING") as any,
-              is_paid: Boolean(b.is_paid),
-              created_at: b.created_at || new Date().toISOString(),
-            };
+              bet_type: b.bet_type,
+              numbers: b.numbers,
+              amount: Number(b.amount || 0),
+              payout_rate: Number(b.payout_rate || 0),
+              payout_amount: Number(b.payout_amount || 0),
+              status: (b.status || "PENDING").toUpperCase(),
+              created_at: b.created_at,
+              draw_date: b.draw_date || (b.created_at ? b.created_at.slice(0, 10) : "-"),
+              member_id: memberId,
+              member_name: memberName,
+              member_phone: memberPhone,
+              member_avatar: memberAvatar,
+            } as GlobalBet;
           });
           setRows(mapped);
         }
       })
-      .catch((e) => console.error("Could not fetch live bets:", e));
+      .catch(() => {});
   }, []);
+
+  const handleCancelBet = async (bet: GlobalBet) => {
+    if (!confirm(`ยืนยันการยกเลิกโพย ${bet.bet_no} ยอดเงิน ${fmtTHB(bet.amount)} ใช่หรือไม่?\nเงินจะถูกคืนเข้ากระเป๋าของสมาชิกทันที`)) {
+      return;
+    }
+
+    setIsCancelling(true);
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "cancel_bet",
+          payload: {
+            id: bet.id,
+            reason: "ยกเลิกโพยและคืนเงินโดยแอดมิน",
+          },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({
+          title: "ยกเลิกโพยและคืนเงินสำเร็จ",
+          description: `คืนเงิน ${fmtTHB(bet.amount)} เข้ากระเป๋า ${bet.member_name} แล้ว`,
+        });
+        setRows((p) => p.map((r) => (r.id === bet.id ? { ...r, status: "CANCELLED" } : r)));
+        if (selectedBet?.id === bet.id) {
+          setSelectedBet((p) => (p ? { ...p, status: "CANCELLED" } : null));
+        }
+        fetchBets();
+      } else {
+        toast({
+          title: "ยกเลิกโพยไม่สำเร็จ",
+          description: json.error || "เกิดข้อผิดพลาดในการยกเลิกโพย",
+          variant: "destructive",
+        });
+      }
+    } catch (e: any) {
+      toast({
+        title: "เกิดข้อผิดพลาดในการเชื่อมต่อ",
+        description: e.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  // Live Supabase Sync
+  React.useEffect(() => {
+    fetch("/api/admin/data?resource=markets")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          setMarkets(res.data);
+        }
+      })
+      .catch(() => {});
+
+    fetchBets();
+  }, [fetchBets]);
 
   const filtered = rows
     .filter((r) => statusFilter === "ALL" || r.status === statusFilter)
@@ -329,17 +384,31 @@ export function BetsPage() {
                     <StatusBadge status={b.status} />
                   </Td>
 
-                  {/* ดูโพย */}
-                  <Td className="text-right">
-                    <Btn
-                      variant="outline"
-                      size="sm"
-                      className="size-8 rounded-full p-0"
-                      title="ดูรายละเอียดโพย"
-                      onClick={() => setSelectedBet(b)}
-                    >
-                      <Eye className="size-3.5" />
-                    </Btn>
+                  {/* จัดการโพย */}
+                  <Td className="text-right whitespace-nowrap">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Btn
+                        variant="outline"
+                        size="sm"
+                        className="size-8 rounded-full p-0"
+                        title="ดูรายละเอียดโพย"
+                        onClick={() => setSelectedBet(b)}
+                      >
+                        <Eye className="size-3.5" />
+                      </Btn>
+                      {b.status === "PENDING" ? (
+                        <Btn
+                          variant="outline"
+                          size="sm"
+                          className="h-8 rounded-full border-rose-200 bg-rose-50 px-2.5 text-rose-700 hover:bg-rose-100 text-xs font-semibold"
+                          title="ยกเลิกโพยและคืนเงินเข้ากระเป๋า"
+                          onClick={() => handleCancelBet(b)}
+                          disabled={isCancelling}
+                        >
+                          <Ban className="size-3 mr-1" /> ยกเลิกโพย
+                        </Btn>
+                      ) : null}
+                    </div>
                   </Td>
                 </tr>
               );
@@ -418,8 +487,18 @@ export function BetsPage() {
               </div>
             </div>
 
-            <DialogFooter>
-              <Btn className="w-full rounded-full" onClick={() => setSelectedBet(null)}>
+            <DialogFooter className="flex-col gap-2 sm:flex-row">
+              {selectedBet.status === "PENDING" ? (
+                <Btn
+                  variant="outline"
+                  className="rounded-full border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-semibold"
+                  onClick={() => handleCancelBet(selectedBet)}
+                  disabled={isCancelling}
+                >
+                  <Ban className="size-3.5 mr-1.5" /> ยกเลิกโพย & คืนเงิน ({fmtTHB(selectedBet.amount)})
+                </Btn>
+              ) : null}
+              <Btn className="flex-1 rounded-full" onClick={() => setSelectedBet(null)}>
                 ปิดหน้าต่าง
               </Btn>
             </DialogFooter>
