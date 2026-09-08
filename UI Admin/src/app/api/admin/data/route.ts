@@ -1308,14 +1308,95 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      case "update_appearance": {
-        const { primary_color, font, dark_mode, logo_url, favicon_url } = payload;
+      case "batch_update_settings": {
+        const { settings: settingsObj } = payload || {};
+        if (!settingsObj || typeof settingsObj !== "object") {
+          return NextResponse.json({ success: false, error: "Invalid settings payload" }, { status: 400 });
+        }
+        const now = new Date().toISOString();
         const updates: { key: string; value: string; updated_at: string }[] = [];
-        if (primary_color) updates.push({ key: "theme_primary_color", value: primary_color, updated_at: new Date().toISOString() });
-        if (font) updates.push({ key: "theme_font", value: font, updated_at: new Date().toISOString() });
-        if (dark_mode !== undefined) updates.push({ key: "theme_dark_mode", value: String(dark_mode), updated_at: new Date().toISOString() });
-        if (logo_url) updates.push({ key: "site_logo_url", value: logo_url, updated_at: new Date().toISOString() });
-        if (favicon_url) updates.push({ key: "site_favicon_url", value: favicon_url, updated_at: new Date().toISOString() });
+        for (const [k, v] of Object.entries(settingsObj)) {
+          if (k) {
+            updates.push({ key: k, value: String(v ?? ""), updated_at: now });
+            if (k === "theme_primary_color") {
+              updates.push({ key: "site_primary_color", value: String(v ?? ""), updated_at: now });
+            } else if (k === "site_primary_color") {
+              updates.push({ key: "theme_primary_color", value: String(v ?? ""), updated_at: now });
+            }
+          }
+        }
+        if (updates.length > 0) {
+          const { error } = await supabaseAdmin.from("settings").upsert(updates, { onConflict: "key" });
+          if (error) throw error;
+        }
+        return NextResponse.json({ success: true, count: updates.length });
+      }
+
+      case "update_appearance": {
+        const {
+          site_name,
+          site_tagline,
+          site_short_name,
+          primary_color,
+          secondary_color,
+          font,
+          ui_radius,
+          dark_mode,
+          logo_url,
+          logo_dark_url,
+          favicon_url,
+          app_icon_url,
+          footer_copyright,
+          line_id,
+          line_url,
+          facebook_url,
+          telegram_url,
+          phone,
+          livechat_enabled,
+          seo_meta_title,
+          seo_meta_description,
+          seo_meta_keywords,
+          seo_og_image_url,
+          login_bg_url,
+        } = payload || {};
+
+        const now = new Date().toISOString();
+        const updates: { key: string; value: string; updated_at: string }[] = [];
+
+        // Brand Identity
+        if (site_name !== undefined) updates.push({ key: "site_name", value: String(site_name), updated_at: now });
+        if (site_tagline !== undefined) updates.push({ key: "site_tagline", value: String(site_tagline), updated_at: now });
+        if (site_short_name !== undefined) updates.push({ key: "site_short_name", value: String(site_short_name), updated_at: now });
+        if (logo_url !== undefined) updates.push({ key: "site_logo_url", value: String(logo_url), updated_at: now });
+        if (logo_dark_url !== undefined) updates.push({ key: "site_logo_dark_url", value: String(logo_dark_url), updated_at: now });
+        if (favicon_url !== undefined) updates.push({ key: "site_favicon_url", value: String(favicon_url), updated_at: now });
+        if (app_icon_url !== undefined) updates.push({ key: "site_app_icon_url", value: String(app_icon_url), updated_at: now });
+        if (login_bg_url !== undefined) updates.push({ key: "login_bg_url", value: String(login_bg_url), updated_at: now });
+        if (footer_copyright !== undefined) updates.push({ key: "footer_copyright", value: String(footer_copyright), updated_at: now });
+
+        // Design & Theming
+        if (primary_color !== undefined) {
+          updates.push({ key: "theme_primary_color", value: String(primary_color), updated_at: now });
+          updates.push({ key: "site_primary_color", value: String(primary_color), updated_at: now });
+        }
+        if (secondary_color !== undefined) updates.push({ key: "theme_secondary_color", value: String(secondary_color), updated_at: now });
+        if (font !== undefined) updates.push({ key: "theme_font", value: String(font), updated_at: now });
+        if (ui_radius !== undefined) updates.push({ key: "theme_ui_radius", value: String(ui_radius), updated_at: now });
+        if (dark_mode !== undefined) updates.push({ key: "theme_dark_mode", value: String(dark_mode), updated_at: now });
+
+        // Social & Channels
+        if (line_id !== undefined) updates.push({ key: "contact_line_id", value: String(line_id), updated_at: now });
+        if (line_url !== undefined) updates.push({ key: "contact_line_url", value: String(line_url), updated_at: now });
+        if (facebook_url !== undefined) updates.push({ key: "contact_facebook_url", value: String(facebook_url), updated_at: now });
+        if (telegram_url !== undefined) updates.push({ key: "contact_telegram_url", value: String(telegram_url), updated_at: now });
+        if (phone !== undefined) updates.push({ key: "contact_phone", value: String(phone), updated_at: now });
+        if (livechat_enabled !== undefined) updates.push({ key: "contact_livechat_enabled", value: String(livechat_enabled), updated_at: now });
+
+        // SEO & Metadata
+        if (seo_meta_title !== undefined) updates.push({ key: "seo_meta_title", value: String(seo_meta_title), updated_at: now });
+        if (seo_meta_description !== undefined) updates.push({ key: "seo_meta_description", value: String(seo_meta_description), updated_at: now });
+        if (seo_meta_keywords !== undefined) updates.push({ key: "seo_meta_keywords", value: String(seo_meta_keywords), updated_at: now });
+        if (seo_og_image_url !== undefined) updates.push({ key: "seo_og_image_url", value: String(seo_og_image_url), updated_at: now });
 
         if (updates.length > 0) {
           const { error } = await supabaseAdmin.from("settings").upsert(updates, { onConflict: "key" });

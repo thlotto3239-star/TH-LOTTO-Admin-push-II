@@ -14,9 +14,10 @@ function syncAdminProfile(profile: any, fallbackName: string) {
     id: profile?.id || "admin-session",
     full_name: profile?.full_name || fallbackName,
     phone: profile?.phone || "-",
-    admin_role: isSuper ? "super_admin" : "admin",
+    admin_role: isSuper ? "super_admin" : (profile?.admin_role || "staff"),
     is_super: isSuper,
     avatar_url: profile?.avatar_url || null,
+    permissions: isSuper ? undefined : (profile?.admin_permissions || []),
   });
 }
 
@@ -40,42 +41,54 @@ export default function Page() {
     }
 
     // 2. ตรวจสอบ Supabase Session สำหรับกรณี Google OAuth Redirect หรือ Existing Session
+    const handleAuthUser = async (sessionUser: any) => {
+      try {
+        let { data: profile } = await supabase
+          .from("profiles")
+          .select("id, full_name, is_admin, admin_role, admin_permissions, phone, avatar_url")
+          .eq("id", sessionUser.id)
+          .maybeSingle();
+
+        // หากเป็นเจ้าหน้าที่ที่กดเข้าผ่าน Google แล้วยังไม่มีข้อมูลใน profiles
+        if (!profile) {
+          const newStaff = {
+            id: sessionUser.id,
+            full_name: sessionUser.user_metadata?.full_name || sessionUser.email?.split("@")[0] || "เจ้าหน้าที่ใหม่",
+            phone: sessionUser.phone || sessionUser.email || "-",
+            is_admin: true,
+            admin_role: "staff",
+            admin_permissions: [],
+            status: "active",
+          };
+          const { data: created } = await supabase.from("profiles").insert(newStaff).select().maybeSingle();
+          profile = created || newStaff;
+        } else if (profile.is_admin !== true && !["admin", "super_admin"].includes(profile.admin_role || "")) {
+          // หากเป็นโปรไฟล์เดิมที่ยังไม่ได้เปิดสิทธิ์แอดมิน ให้เปิดสถานะเป็น staff แบบจำกัดสิทธิ์ (รอ Super Admin มอบหมาย)
+          await supabase.from("profiles").update({ is_admin: true, admin_role: "staff", admin_permissions: [] }).eq("id", profile.id);
+          profile.is_admin = true;
+          profile.admin_role = "staff";
+          profile.admin_permissions = [];
+        }
+
+        const adminName = profile?.full_name || sessionUser.email?.split("@")[0] || "ผู้ดูแลระบบ";
+        setCurrentUser(adminName);
+        syncAdminProfile(profile, adminName);
+        setUnauthorizedError(null);
+        try {
+          localStorage.setItem(SESSION_KEY, adminName);
+        } catch {
+          // ignore
+        }
+      } catch (err) {
+        console.error("Auth verification error:", err);
+      }
+    };
+
     const verifySupabaseAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          // ตรวจสอบสิทธิ์ผู้ดูแลระบบในฐานข้อมูล (Security-by-Design Whitelist)
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("id, full_name, is_admin, admin_role, phone, avatar_url")
-            .eq("id", session.user.id)
-            .maybeSingle();
-
-          const isAdmin = profile?.is_admin === true || 
-            ["admin", "super_admin"].includes(profile?.admin_role || "") ||
-            profile?.phone === "0622306037";
-
-          if (isAdmin) {
-            const adminName = profile?.full_name || session.user.email?.split("@")[0] || "ผู้ดูแลระบบ";
-            setCurrentUser(adminName);
-            syncAdminProfile(profile, adminName);
-            setUnauthorizedError(null);
-            try {
-              localStorage.setItem(SESSION_KEY, adminName);
-            } catch {
-              // ignore
-            }
-          } else {
-            // ไม่ใช่ผู้ดูแลระบบ ปฏิเสธการเข้าถึงและ Sign out ทันที
-            await supabase.auth.signOut();
-            setCurrentUser(null);
-            try {
-              localStorage.removeItem(SESSION_KEY);
-            } catch {
-              // ignore
-            }
-            setUnauthorizedError("บัญชีนี้ไม่ได้รับสิทธิ์เข้าใช้งานระบบผู้ดูแลระบบ (Unauthorized Access)");
-          }
+          await handleAuthUser(session.user);
         }
       } catch (err) {
         console.error("Auth verification error:", err);
@@ -87,36 +100,7 @@ export default function Page() {
     // ฟัง Auth State Change
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id, full_name, is_admin, admin_role, phone, avatar_url")
-          .eq("id", session.user.id)
-          .maybeSingle();
-
-        const isAdmin = profile?.is_admin === true || 
-          ["admin", "super_admin"].includes(profile?.admin_role || "") ||
-          profile?.phone === "0622306037";
-
-        if (isAdmin) {
-          const adminName = profile?.full_name || session.user.email?.split("@")[0] || "ผู้ดูแลระบบ";
-          setCurrentUser(adminName);
-          syncAdminProfile(profile, adminName);
-          setUnauthorizedError(null);
-          try {
-            localStorage.setItem(SESSION_KEY, adminName);
-          } catch {
-            // ignore
-          }
-        } else {
-          await supabase.auth.signOut();
-          setCurrentUser(null);
-          try {
-            localStorage.removeItem(SESSION_KEY);
-          } catch {
-            // ignore
-          }
-          setUnauthorizedError("บัญชีนี้ไม่ได้รับสิทธิ์เข้าใช้งานระบบผู้ดูแลระบบ (Unauthorized Access)");
-        }
+        await handleAuthUser(session.user);
       } else if (event === "SIGNED_OUT") {
         setCurrentUser(null);
         try {

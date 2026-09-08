@@ -2,17 +2,25 @@
 
 import * as React from "react";
 import {
-  Palette, Save, Upload, Sun, Moon, Monitor, Type, Check, ImageIcon,
-  Smartphone, Laptop, Sparkles, RefreshCw, Eye
+  Palette, Save, Sun, Moon, Monitor, Type, Check, ImageIcon,
+  RefreshCw, RotateCcw, Smartphone, Laptop, ExternalLink, Eye
 } from "lucide-react";
-import { Panel, Btn, PageHeader, Field, inputCls, ToggleRow, ColorPickerInput } from "../primitives";
+import { Panel, Btn, PageHeader, Field, inputCls, ColorPickerInput } from "../primitives";
 import { useToast } from "@/hooks/use-toast";
 import { APPEARANCE_SETTINGS, PRIMARY_PALETTE, FONT_OPTIONS } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
 function ImageSlot({
-  label, hint, value, onPick,
-}: { label: string; hint: string; value: string; onPick: (v: string) => void }) {
+  label,
+  hint,
+  value,
+  onPick,
+}: {
+  label: string;
+  hint: string;
+  value: string;
+  onPick: (v: string) => void;
+}) {
   return (
     <div className="flex items-center gap-4 rounded-2xl border border-neutral-100 p-3.5 bg-neutral-50/50">
       <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-neutral-300 bg-white shadow-xs">
@@ -31,9 +39,18 @@ function ImageSlot({
           <input
             value={value}
             onChange={(e) => onPick(e.target.value)}
-            placeholder="วาง URL รูปภาพ..."
+            placeholder="วาง URL รูปภาพ (เช่น https://... หรือ /logo.svg)"
             className="h-8 min-w-0 flex-1 rounded-xl border border-neutral-200 bg-white px-3 text-xs outline-none placeholder:text-neutral-300 focus:border-brand-500"
           />
+          {value ? (
+            <button
+              type="button"
+              onClick={() => onPick("")}
+              className="text-[10px] font-semibold text-rose-500 hover:text-rose-700 px-2 py-1 rounded-lg bg-rose-50"
+            >
+              ล้าง
+            </button>
+          ) : null}
         </div>
       </div>
     </div>
@@ -46,9 +63,45 @@ export function AppearancePage() {
   const [initial, setInitial] = React.useState({ ...APPEARANCE_SETTINGS });
   const [previewDevice, setPreviewDevice] = React.useState<"mobile" | "pc">("mobile");
   const [isSaving, setIsSaving] = React.useState(false);
+  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+  const previewContainerRef = React.useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = React.useState(480);
+
+  React.useEffect(() => {
+    if (!previewContainerRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0) {
+          setContainerWidth(entry.contentRect.width);
+        }
+      }
+    });
+    ro.observe(previewContainerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const pcScale = Math.min(1, Math.max(0.2, (containerWidth - 24) / 1024));
 
   const set = <K extends keyof typeof APPEARANCE_SETTINGS>(k: K, v: (typeof APPEARANCE_SETTINGS)[K]) =>
     setS((p) => ({ ...p, [k]: v }));
+
+  // ซิงค์ส่ง postMessage ไปยังหน้าเว็บจริงของลูกค้าใน iframe พรีวิว
+  React.useEffect(() => {
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        {
+          type: "UPDATE_APPEARANCE",
+          payload: {
+            site_primary_color: s.primary_color,
+            theme_primary_color: s.primary_color,
+            site_logo_url: s.logo_url,
+            site_name: "TH LOTTO",
+          },
+        },
+        "*"
+      );
+    }
+  }, [s.primary_color, s.logo_url]);
 
   React.useEffect(() => {
     fetch("/api/admin/data?resource=settings")
@@ -64,14 +117,19 @@ export function AppearancePage() {
             favicon_url: dict.site_favicon_url || dict.favicon_url || APPEARANCE_SETTINGS.favicon_url,
             login_bg_url: dict.login_bg_url || APPEARANCE_SETTINGS.login_bg_url,
           };
-          setS(loaded);
-          setInitial(loaded);
+          setS((prev) => ({ ...prev, ...loaded }));
+          setInitial((prev) => ({ ...prev, ...loaded }));
         }
       })
       .catch(() => {});
   }, []);
 
   const dirty = JSON.stringify(s) !== JSON.stringify(initial);
+
+  const handleReset = () => {
+    setS({ ...initial });
+    toast({ title: "คืนค่าการตั้งค่าเดิม", description: "ยกเลิกการเปลี่ยนแปลงที่ยังไม่ได้บันทึก" });
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -87,12 +145,16 @@ export function AppearancePage() {
             dark_mode: s.default_mode === "dark",
             logo_url: s.logo_url,
             favicon_url: s.favicon_url,
+            login_bg_url: s.login_bg_url,
           },
         }),
       });
       const json = await res.json();
       if (json.success) {
-        toast({ title: "บันทึกรูปลักษณ์สำเร็จ", description: "ตั้งค่าถูกบันทึกลงระบบ Supabase เรียบร้อย" });
+        toast({
+          title: "บันทึกรูปลักษณ์สำเร็จ",
+          description: "อัปเดตการตั้งค่าลงฐานข้อมูล Supabase เรียบร้อย",
+        });
         setInitial({ ...s });
       } else {
         toast({ title: "บันทึกล้มเหลว", description: json.error, variant: "destructive" });
@@ -107,25 +169,38 @@ export function AppearancePage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="สตูดิโอออกแบบแบรนด์ & รูปลักษณ์"
-        description="Brand & Theme Studio · ปรับแต่งสีหลัก ฟอนต์ โลโก้ และทดสอบแสดงผลสดทั้ง Mobile และ PC"
+        title="ตั้งค่ารูปลักษณ์ระบบ (Appearance Settings)"
+        description="ปรับแต่งโทนสีหลักของระบบ ฟอนต์ที่แสดงผล โลโก้ และพรีวิวหน้าล็อกอินจริงของฝั่งลูกค้า (Real Customer Login)"
       >
-        <Btn
-          className="rounded-full shadow-md shadow-brand-500/20"
-          disabled={!dirty || isSaving}
-          onClick={handleSave}
-        >
-          {isSaving ? <RefreshCw className="size-4 animate-spin" /> : <Save className="size-4" />}
-          บันทึกการเปลี่ยนแปลง
-        </Btn>
+        <div className="flex items-center gap-2">
+          {dirty ? (
+            <Btn
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              disabled={isSaving}
+              className="text-neutral-500 hover:text-neutral-800"
+            >
+              <RotateCcw className="size-3.5 mr-1" /> คืนค่าเดิม
+            </Btn>
+          ) : null}
+          <Btn
+            className="rounded-full shadow-md shadow-brand-500/20"
+            disabled={!dirty || isSaving}
+            onClick={handleSave}
+          >
+            {isSaving ? <RefreshCw className="size-4 animate-spin" /> : <Save className="size-4" />}
+            บันทึกการเปลี่ยนแปลง
+          </Btn>
+        </div>
       </PageHeader>
 
       <div className="grid gap-5 lg:grid-cols-12">
-        {/* LEFT COLUMN: Interactive PC Landscape Live Visualizer (5 Cols) */}
+        {/* LEFT COLUMN: Real Customer Login Page Iframe Preview (5 Cols) */}
         <div className="min-w-0 lg:col-span-5 space-y-3">
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide flex items-center gap-1.5">
-              <Eye className="size-4 text-brand-600" /> แซนด์บ็อกซ์พรีวิวสด (Live Sandbox)
+              <Eye className="size-4 text-brand-600" /> พรีวิวหน้าล็อกอินจริงของลูกค้า (Real Customer Login)
             </span>
             <div className="flex items-center gap-1 rounded-full bg-neutral-100 p-0.5 border border-neutral-200">
               <button
@@ -149,124 +224,90 @@ export function AppearancePage() {
             </div>
           </div>
 
-          <Panel
-            className={cn(
-              "overflow-hidden p-4 shadow-xl border-neutral-200 transition-all rounded-3xl min-h-[540px] flex flex-col justify-between",
-              s.default_mode === "dark" ? "bg-neutral-950 text-white" : "bg-white text-neutral-900"
-            )}
-            style={{ fontFamily: s.font_family }}
-          >
-            {/* Simulated App Top Bar */}
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800">
-              <div className="flex items-center gap-2">
-                <div
-                  className="flex size-8 items-center justify-center rounded-xl font-black text-white shadow-xs overflow-hidden"
-                  style={{ backgroundColor: s.primary_color }}
-                >
-                  {s.logo_url ? (
-                    <img src={s.logo_url} alt="" className="size-8 object-contain" />
-                  ) : (
-                    <img src="/logo.svg" alt="" className="size-8 object-contain" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs font-black tracking-tight leading-none">TH-LOTTO</p>
-                  <p className="text-[10px] text-neutral-400 leading-none mt-0.5">หวยออนไลน์ครบวงจร</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span
-                  className="rounded-full px-3 py-1 text-[10px] font-bold text-white shadow-xs"
-                  style={{ backgroundColor: s.primary_color }}
-                >
-                  เข้าสู่ระบบ
-                </span>
-              </div>
-            </div>
-
-            {/* Simulated Hero Banner Card */}
+          <Panel ref={previewContainerRef} className="overflow-hidden p-2 shadow-xl border-neutral-200 rounded-3xl min-h-[580px] flex flex-col items-center justify-start bg-neutral-100">
             <div
-              className="my-3 rounded-2xl p-4 text-white shadow-md relative overflow-hidden"
-              style={{
-                background: `linear-gradient(135deg, ${s.primary_color} 0%, #064e3b 100%)`,
-              }}
+              className={cn(
+                "transition-all duration-300 overflow-hidden shadow-2xl rounded-2xl border border-neutral-300 bg-white relative flex items-center justify-center",
+                previewDevice === "mobile" ? "w-[360px] h-[560px]" : "w-full overflow-hidden flex flex-col items-center"
+              )}
             >
-              <div className="relative z-10">
-                <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider backdrop-blur-xs">
-                  งวดวันที่ 16 มีนาคม
-                </span>
-                <h4 className="mt-1 text-base font-black">สลากกินแบ่งรัฐบาล</h4>
-                <p className="text-xs text-white/80 mt-0.5">รางวัลที่ 1 จ่ายบาทละ 900</p>
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="rounded-xl bg-white px-3 py-1.5 text-xs font-black text-neutral-900 shadow-xs">
-                    แทงหวยตอนนี้
-                  </span>
-                  <span className="text-xs text-white/90 underline font-medium">ดูผลรางวัล</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Simulated Lottery Ball Row */}
-            <div className="space-y-2">
-              <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">ผลสลากล่าสุด (ตัวอย่างลูกบอล)</p>
-              <div className="flex items-center justify-between rounded-2xl border border-neutral-100 dark:border-neutral-800 p-3 bg-neutral-50/60 dark:bg-neutral-900/60">
-                <div className="flex items-center gap-1.5">
-                  {["8", "4", "3", "6", "5", "0"].map((n, i) => (
-                    <span
-                      key={i}
-                      className="flex size-7 items-center justify-center rounded-full text-xs font-black text-white shadow-sm"
-                      style={{ backgroundColor: i < 3 ? s.primary_color : "#475569" }}
-                    >
-                      {n}
-                    </span>
-                  ))}
-                </div>
-                <span className="text-xs font-bold" style={{ color: s.primary_color }}>
-                  3 ตัวตรง 900฿
-                </span>
-              </div>
-            </div>
-
-            {/* Font Typography Preview Card */}
-            <div className="my-3 rounded-2xl border border-neutral-100 dark:border-neutral-800 p-3.5 bg-neutral-50/50 dark:bg-neutral-900/50">
-              <p className="text-[10px] text-neutral-400 font-semibold">พรีวิวฟอนต์ — {s.font_family}</p>
-              <p className="mt-1 text-sm font-bold text-neutral-900 dark:text-white">
-                แทงหวยออนไลน์ บาทละ 900 จ่ายจริง รวดเร็ว ปลอดภัย
-              </p>
-              <p className="text-xs text-neutral-500 mt-0.5">
-                กขคงจฉชซ ๐๑๒๓๔๕๖๗๘๙ The quick brown fox jumps over the lazy dog.
-              </p>
-            </div>
-
-            {/* Simulated Balance & Action Buttons */}
-            <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] text-neutral-400">กระเป๋าเงินสมาชิก</p>
-                <p className="text-sm font-black" style={{ color: s.primary_color }}>
-                  ฿15,240.00
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span
-                  className="rounded-full px-3 py-1 text-xs font-bold text-white shadow-xs"
-                  style={{ backgroundColor: s.primary_color }}
+              {previewDevice === "mobile" ? (
+                <iframe
+                  ref={iframeRef}
+                  src="http://localhost:5173/login?preview=true"
+                  title="Customer Login Live Preview (Mobile)"
+                  className="w-full h-full border-0"
+                  onLoad={() => {
+                    if (iframeRef.current?.contentWindow) {
+                      iframeRef.current.contentWindow.postMessage(
+                        {
+                          type: "UPDATE_APPEARANCE",
+                          payload: {
+                            site_primary_color: s.primary_color,
+                            theme_primary_color: s.primary_color,
+                            site_logo_url: s.logo_url,
+                          },
+                        },
+                        "*"
+                      );
+                    }
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 1024,
+                    height: 680,
+                    transform: `scale(${pcScale})`,
+                    transformOrigin: "top center",
+                    marginBottom: `-${680 * (1 - pcScale)}px`,
+                  }}
+                  className="shrink-0"
                 >
-                  เติมเงิน
-                </span>
-                <span className="rounded-full border border-neutral-200 dark:border-neutral-700 px-3 py-1 text-xs font-bold">
-                  ถอนเงิน
-                </span>
-              </div>
+                  <iframe
+                    ref={iframeRef}
+                    src="http://localhost:5173/login?preview=true"
+                    title="Customer Login Live Preview (PC Desktop)"
+                    className="w-full h-full border-0"
+                    onLoad={() => {
+                      if (iframeRef.current?.contentWindow) {
+                        iframeRef.current.contentWindow.postMessage(
+                          {
+                            type: "UPDATE_APPEARANCE",
+                            payload: {
+                              site_primary_color: s.primary_color,
+                              theme_primary_color: s.primary_color,
+                              site_logo_url: s.logo_url,
+                            },
+                          },
+                          "*"
+                        );
+                      }
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="mt-auto pt-3 flex items-center justify-between w-full px-2 text-[11px] text-neutral-400">
+              <span>พรีวิวสดจาก: http://localhost:5173/login</span>
+              <a
+                href="http://localhost:5173/login"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 text-brand-600 hover:underline font-semibold"
+              >
+                เปิดในแท็บใหม่ <ExternalLink className="size-3" />
+              </a>
             </div>
           </Panel>
         </div>
 
-        {/* RIGHT COLUMN: Theme Design Controls (7 Cols) */}
+        {/* RIGHT COLUMN: Settings Controls (7 Cols) */}
         <div className="min-w-0 space-y-4 lg:col-span-7">
           {/* Primary Color Palette */}
           <Panel className="min-w-0 p-5 space-y-4">
             <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-neutral-400">
-              <Palette className="size-4 text-brand-600" /> สีหลักประจำแบรนด์ (Primary Color)
+              <Palette className="size-4 text-brand-600" /> สีหลักประจำระบบ (Primary Color)
             </p>
             <div className="flex flex-wrap gap-2.5">
               {PRIMARY_PALETTE.map((c) => (
@@ -303,7 +344,7 @@ export function AppearancePage() {
                 onChange={(e) => set("primary_color", e.target.value)}
                 className="h-9 w-28 rounded-xl border border-neutral-200 px-3 font-mono text-xs uppercase outline-none focus:border-brand-500"
               />
-              <span className="text-xs text-neutral-400">ใส่รหัสสี HEX เพื่อปรับแต่งให้ตรงตามอัตลักษณ์แบรนด์</span>
+              <span className="text-xs text-neutral-400">ใส่รหัสสี HEX เพื่อกำหนดสีของปุ่มและไฮไลต์</span>
             </div>
           </Panel>
 
@@ -313,14 +354,14 @@ export function AppearancePage() {
               <ImageIcon className="size-4 text-brand-600" /> ไฟล์ภาพและโลโก้ (Visual Assets)
             </p>
             <ImageSlot
-              label="โลโก้เว็บ (Web Logo)"
-              hint="ภาพโปร่งใส แนะนำ 512×512 px"
+              label="โลโก้ระบบ (System Logo)"
+              hint="ไฟล์รูปภาพโปร่งใส แนะนำ 512×512 px"
               value={s.logo_url}
               onPick={(v) => set("logo_url", v)}
             />
             <ImageSlot
               label="ไอคอนแท็บเบราว์เซอร์ (Favicon)"
-              hint="ภาพ 32×32 หรือ 64×64 px"
+              hint="ขนาด 32×32 หรือ 64×64 px"
               value={s.favicon_url}
               onPick={(v) => set("favicon_url", v)}
             />
@@ -358,7 +399,7 @@ export function AppearancePage() {
                 </div>
               </Field>
 
-              <Field label="โหมดเริ่มต้นของเว็บสมาชิก">
+              <Field label="โหมดเริ่มต้นของระบบ">
                 <div className="grid grid-cols-3 gap-1.5">
                   {[
                     { v: "light", label: "สว่าง", icon: Sun },

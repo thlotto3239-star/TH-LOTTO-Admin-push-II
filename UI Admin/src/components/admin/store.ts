@@ -29,9 +29,10 @@ export interface CurrentAdminProfile {
   id: string;
   full_name: string;
   phone: string;
-  admin_role: "super_admin" | "admin" | "support";
+  admin_role: "super_admin" | "admin" | "support" | "staff";
   is_super: boolean;
   avatar_url?: string | null;
+  permissions?: string[];
 }
 
 export const KNOWN_ADMINS: CurrentAdminProfile[] = [
