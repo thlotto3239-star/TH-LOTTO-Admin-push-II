@@ -1027,33 +1027,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, data });
       }
 
-      case "update_admin_user": {
-        const { id, full_name, phone, admin_role, status } = payload;
-        const { data, error } = await supabaseAdmin
-          .from("profiles")
-          .update({ full_name, phone, admin_role, status, updated_at: new Date().toISOString() })
-          .eq("id", id)
-          .select();
-        if (error) throw error;
-        return NextResponse.json({ success: true, data });
-      }
-
-      case "create_admin_user": {
-        const { full_name, phone, admin_role } = payload;
-        const { data, error } = await supabaseAdmin
-          .from("profiles")
-          .insert([{
-            full_name,
-            phone,
-            is_admin: true,
-            admin_role: admin_role || "admin",
-            status: "active",
-          }])
-          .select();
-        if (error) throw error;
-        return NextResponse.json({ success: true, data });
-      }
-
       case "update_setting": {
         const { key, value } = payload;
         const { data, error } = await supabaseAdmin
@@ -1351,6 +1324,150 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, count: updates.length });
       }
 
+      case "create_admin_user": {
+        const { full_name, phone, password, admin_role, permissions } = payload;
+        if (!phone) {
+          return NextResponse.json({ success: false, error: "กรุณาระบุเบอร์โทรศัพท์" }, { status: 400 });
+        }
+
+        const cleanPhone = String(phone).replace(/\D/g, "");
+        const email = `${cleanPhone}@thlotto.app`;
+        const role = admin_role === "super_admin" ? "super_admin" : "admin";
+        const perms = role === "super_admin" ? ["*"] : (Array.isArray(permissions) ? permissions : []);
+
+        // 1. Check if user already exists in profiles
+        const { data: existingProfile } = await supabaseAdmin
+          .from("profiles")
+          .select("id, phone, is_admin, full_name")
+          .or(`phone.eq.${cleanPhone},phone.eq.${phone}`)
+          .maybeSingle();
+
+        let userId = existingProfile?.id;
+
+        if (!userId) {
+          const { data: userList } = await supabaseAdmin.auth.admin.listUsers();
+          const foundAuth = userList?.users?.find((u: any) => u.email === email || u.phone === cleanPhone);
+          if (foundAuth) {
+            userId = foundAuth.id;
+          }
+        }
+
+        if (userId) {
+          // Promote existing user to admin
+          const { data: updated, error: uErr } = await supabaseAdmin
+            .from("profiles")
+            .update({
+              is_admin: true,
+              admin_role: role,
+              admin_permissions: perms,
+              full_name: full_name || existingProfile?.full_name || "แอดมิน",
+              phone: cleanPhone,
+              status: "active",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", userId)
+            .select();
+          if (uErr) throw uErr;
+
+          if (password && password.length >= 6) {
+            await supabaseAdmin.auth.admin.updateUserById(userId, {
+              password: password,
+            });
+          }
+
+          return NextResponse.json({ success: true, data: updated });
+        } else {
+          // 2. Create new Auth user (handle_new_user trigger automatically provisions profiles & wallets)
+          const adminPassword = password && password.length >= 6 ? password : "Password123!";
+          const { data: authUser, error: aErr } = await supabaseAdmin.auth.admin.createUser({
+            email,
+            password: adminPassword,
+            email_confirm: true,
+            user_metadata: {
+              full_name: full_name || "แอดมิน",
+              phone: cleanPhone,
+              username: full_name || `admin_${cleanPhone.slice(-4)}`,
+            },
+          });
+
+          if (aErr) throw aErr;
+          userId = authUser.user.id;
+
+          // 3. Update the newly created profile with admin role and permissions
+          const { data: newProfile, error: pErr } = await supabaseAdmin
+            .from("profiles")
+            .update({
+              is_admin: true,
+              admin_role: role,
+              admin_permissions: perms,
+              full_name: full_name || "แอดมิน",
+              phone: cleanPhone,
+              status: "active",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", userId)
+            .select();
+
+          if (pErr) throw pErr;
+
+          return NextResponse.json({ success: true, data: newProfile });
+        }
+      }
+
+      case "update_admin_user": {
+        const { id, full_name, phone, admin_role, permissions, status, password } = payload;
+        if (!id) {
+          return NextResponse.json({ success: false, error: "กรุณาระบุ ID แอดมิน" }, { status: 400 });
+        }
+
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (full_name !== undefined) updateData.full_name = full_name;
+        if (phone !== undefined) updateData.phone = phone;
+        if (status !== undefined) updateData.status = status;
+        if (admin_role !== undefined) {
+          updateData.admin_role = admin_role === "super_admin" ? "super_admin" : "admin";
+          if (admin_role === "super_admin") {
+            updateData.admin_permissions = ["*"];
+          }
+        }
+        if (permissions !== undefined && admin_role !== "super_admin") {
+          updateData.admin_permissions = Array.isArray(permissions) ? permissions : [];
+        }
+
+        const { data, error } = await supabaseAdmin
+          .from("profiles")
+          .update(updateData)
+          .eq("id", id)
+          .select();
+        if (error) throw error;
+
+        if (password && password.length >= 6) {
+          await supabaseAdmin.auth.admin.updateUserById(id, { password });
+        }
+
+        return NextResponse.json({ success: true, data });
+      }
+
+      case "delete_admin_user": {
+        const { id } = payload;
+        if (!id) {
+          return NextResponse.json({ success: false, error: "กรุณาระบุ ID แอดมิน" }, { status: 400 });
+        }
+
+        const { data, error } = await supabaseAdmin
+          .from("profiles")
+          .update({
+            is_admin: false,
+            admin_role: null,
+            admin_permissions: [],
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", id)
+          .select();
+        if (error) throw error;
+
+        return NextResponse.json({ success: true, data });
+      }
 
       default:
         return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 });
