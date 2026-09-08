@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { parseUserAgent, resolveIpGeo } from "@/lib/geo-device";
 
 export const dynamic = "force-dynamic";
 
@@ -428,6 +429,11 @@ export async function GET(req: NextRequest) {
               admin_role,
               status,
               created_at,
+              last_seen_at,
+              last_login_at,
+              last_login_ip,
+              last_login_device,
+              last_login_city,
               wallets (
                 balance,
                 commission_balance
@@ -636,14 +642,12 @@ export async function GET(req: NextRequest) {
             .select("*")
             .eq("user_id", id)
             .order("created_at", { ascending: false }),
-          profile.phone
-            ? supabaseAdmin
-                .from("login_attempts")
-                .select("*")
-                .eq("phone", profile.phone)
-                .order("attempted_at", { ascending: false })
-                .limit(20)
-            : Promise.resolve({ data: [] }),
+          supabaseAdmin
+            .from("login_attempts")
+            .select("*")
+            .or(`user_id.eq.${id}${profile.phone ? `,phone.eq.${profile.phone}` : ""}`)
+            .order("attempted_at", { ascending: false })
+            .limit(30),
         ]);
 
         return NextResponse.json({
@@ -740,6 +744,10 @@ export async function POST(req: NextRequest) {
           is_open,
           is_active,
           rates,
+          limits,
+          min_bet,
+          max_bet,
+          max_per_number,
         } = payload;
 
         const updateData: any = {};
@@ -754,6 +762,12 @@ export async function POST(req: NextRequest) {
         if (show_in_trending !== undefined) updateData.show_in_trending = show_in_trending;
         if (is_open !== undefined) updateData.is_open = is_open;
         if (is_active !== undefined) updateData.is_active = is_active;
+        if (min_bet !== undefined) updateData.min_bet = Number(min_bet);
+        else if (limits?.min_bet !== undefined) updateData.min_bet = Number(limits.min_bet);
+        if (max_bet !== undefined) updateData.max_bet = Number(max_bet);
+        else if (limits?.max_bet !== undefined) updateData.max_bet = Number(limits.max_bet);
+        if (max_per_number !== undefined) updateData.max_per_number = Number(max_per_number);
+        else if (limits?.max_per_number !== undefined) updateData.max_per_number = Number(limits.max_per_number);
 
         const { data, error } = await supabaseAdmin
           .from("lottery_markets")
@@ -822,6 +836,47 @@ export async function POST(req: NextRequest) {
           .delete()
           .eq("id", id);
         if (error) throw error;
+        return NextResponse.json({ success: true });
+      }
+
+      case "record_login_attempt": {
+        const { phone, user_id, success } = payload;
+        const forwarded = req.headers.get("x-forwarded-for");
+        const realIp = req.headers.get("x-real-ip");
+        const rawIp = forwarded ? forwarded.split(",")[0].trim() : (realIp || "127.0.0.1");
+        const ua = req.headers.get("user-agent") || "";
+        const dev = parseUserAgent(ua);
+        const geo = await resolveIpGeo(rawIp);
+
+        const { data, error } = await supabaseAdmin.rpc("record_login_session", {
+          p_phone: phone || null,
+          p_user_id: user_id || null,
+          p_success: success ?? true,
+          p_ip: geo.ip,
+          p_user_agent: ua,
+          p_city: geo.city,
+          p_region: geo.region,
+          p_country: geo.country,
+          p_lat: geo.lat,
+          p_lon: geo.lon,
+          p_isp: geo.isp,
+          p_device_type: dev.deviceType,
+          p_device_model: dev.deviceModel,
+          p_os: dev.os,
+          p_browser: dev.browser,
+        });
+        if (error) throw error;
+        return NextResponse.json({ success: true, data, geo, dev });
+      }
+
+      case "heartbeat": {
+        const { user_id } = payload;
+        if (user_id) {
+          await supabaseAdmin
+            .from("profiles")
+            .update({ last_seen_at: new Date().toISOString() })
+            .eq("id", user_id);
+        }
         return NextResponse.json({ success: true });
       }
 
@@ -1175,10 +1230,17 @@ export async function POST(req: NextRequest) {
       }
 
       case "upsert_promotion": {
+        const parseDateOrNull = (val: any) => {
+          if (!val || typeof val !== "string" || !val.trim()) return null;
+          const d = new Date(val);
+          return isNaN(d.getTime()) ? null : d.toISOString();
+        };
+
         const {
           id, title, description, image_url, bonus_rate, bonus_amount, min_deposit, max_withdrawal,
           turnover_multiplier, promo_code, type, allowed_game, is_active, badge_text, background_color,
-          default_amount, target_view, line1, line2, max_uses_per_user, max_uses_total, max_uses_per_day
+          default_amount, target_view, line1, line2, max_uses_per_user, max_uses_total, max_uses_per_day,
+          starts_at, expires_at
         } = payload;
         const rowData: any = {
           title: title || "",
@@ -1189,7 +1251,7 @@ export async function POST(req: NextRequest) {
           min_deposit: Number(min_deposit || 0),
           max_withdrawal: Number(max_withdrawal || 0),
           turnover_multiplier: Number(turnover_multiplier || 1),
-          promo_code: promo_code || "",
+          promo_code: promo_code && String(promo_code).trim() ? String(promo_code).trim().toUpperCase() : null,
           type: type || "percent",
           allowed_game: allowed_game || "all",
           is_active: Boolean(is_active),
@@ -1202,6 +1264,8 @@ export async function POST(req: NextRequest) {
           max_uses_per_user: Number(max_uses_per_user || 1),
           max_uses_total: Number(max_uses_total || 1000),
           max_uses_per_day: Number(max_uses_per_day || 100),
+          starts_at: parseDateOrNull(starts_at),
+          expires_at: parseDateOrNull(expires_at),
         };
         let res;
         if (id && !String(id).startsWith("pm-")) {

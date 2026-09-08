@@ -124,6 +124,11 @@ export interface Member {
   total_bets: number;
   total_won: number;
   created_at: string;
+  last_seen_at?: string | null;
+  last_login_at?: string | null;
+  last_login_ip?: string | null;
+  last_login_device?: string | null;
+  last_login_city?: string | null;
 }
 
 const NAMES = [

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Pencil, Trash2, Eye, Search, Newspaper, Bold, Italic, Underline, List, Heading2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, Search, Newspaper, Bold, Italic, Underline, List, Heading2, Upload, Image as ImageIcon, Sparkles, X } from "lucide-react";
 import { Panel, Btn, PageHeader, Field, inputCls, EmptyState, ConfirmDialog, TableWrap, Th, Td, Pagination, StatusBadge, SearchInput } from "../primitives";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -23,9 +23,49 @@ function ArticleForm({
   initial, onClose, onSave,
 }: { initial: Article; onClose: () => void; onSave: (a: Article) => void }) {
   const [f, setF] = React.useState<Article>(initial);
+  const [uploading, setUploading] = React.useState(false);
+  const [imgError, setImgError] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const isNew = !initial.id;
-  const set = <K extends keyof Article>(k: K, v: Article[K]) => setF((p) => ({ ...p, [k]: v }));
+  const set = <K extends keyof Article>(k: K, v: Article[K]) => {
+    if (k === "image_url") setImgError(false);
+    setF((p) => ({ ...p, [k]: v }));
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("bucket", "appearance");
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: fd,
+      }).then((r) => r.json());
+
+      if (res.success && res.url) {
+        set("image_url", res.url);
+        toast({
+          title: "อัปโหลดภาพสำเร็จ",
+          description: "อัปเดตรูปภาพหน้าปกบทความเรียบร้อย",
+        });
+      } else {
+        throw new Error(res.error || "Upload failed");
+      }
+    } catch (err: any) {
+      toast({
+        title: "อัปโหลดล้มเหลว",
+        description: err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const wrap = (before: string, after: string) => {
     set("content", `${f.content}${before}ข้อความ${after}`);
@@ -35,14 +75,142 @@ function ArticleForm({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[92vh] overflow-y-auto rounded-3xl sm:max-w-4xl lg:max-w-5xl">
         <DialogHeader>
-          <DialogTitle>{isNew ? "เขียนบทความใหม่" : `แก้ไขบทความ — ${initial.title}`}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Newspaper className="size-5 text-brand-600" />
+            {isNew ? "เขียนบทความใหม่" : `แก้ไขบทความ — ${initial.title}`}
+          </DialogTitle>
           <DialogDescription>
-            {isNew ? "กรอกข้อมูลและเนื้อหาบทความเพื่อเผยแพร่บนหน้าเว็บ" : "แก้ไขข้อมูลและเนื้อหาบทความ"}
+            {isNew ? "กรอกข้อมูลและเนื้อหาบทความเพื่อเผยแพร่บนหน้าเว็บสมาชิก พร้อมพรีวิวรูปภาพหน้าปกแบบสด" : "แก้ไขข้อมูลและเนื้อหาบทความ พร้อมตรวจสอบภาพหน้าปกด้านบน"}
           </DialogDescription>
         </DialogHeader>
 
+        {/* ─── รูปภาพตัวอย่างหน้าปกบทความด้านบน (Live Cover Image Preview at top) ─── */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-neutral-500 px-1">
+            <span className="font-bold flex items-center gap-1.5 text-neutral-700">
+              <ImageIcon className="size-3.5 text-brand-600" />
+              ภาพตัวอย่างหน้าปกบทความ (Live Cover Preview)
+            </span>
+            <span className="text-[11px] text-neutral-400">
+              {f.image_url && !imgError ? "โหมดแสดงรูปภาพจริง" : "ยังไม่มีภาพหน้าปก"}
+            </span>
+          </div>
+
+          <div className="relative overflow-hidden rounded-2xl border border-neutral-200/90 bg-neutral-900 shadow-sm">
+            {f.image_url && !imgError ? (
+              <div className="relative h-44 sm:h-56 w-full overflow-hidden bg-neutral-950 flex items-center justify-center">
+                <img
+                  src={f.image_url}
+                  alt={f.title || "ตัวอย่างหน้าปกบทความ"}
+                  className="h-full w-full object-cover transition-all"
+                  onError={() => setImgError(true)}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
+
+                {/* Badges Overlay */}
+                <div className="absolute top-3 left-3 flex items-center gap-2">
+                  <span className="rounded-full bg-brand-600 px-3 py-1 text-xs font-black text-white shadow-sm ring-1 ring-white/20">
+                    {f.category || "บทความ"}
+                  </span>
+                  <span className="rounded-full bg-black/60 backdrop-blur-md px-2.5 py-1 text-[11px] font-medium text-neutral-300 border border-white/10">
+                    โดย {f.author || "แอดมิน"}
+                  </span>
+                </div>
+
+                {!f.is_published ? (
+                  <span className="absolute top-3 right-3 rounded-full bg-neutral-900/90 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold text-neutral-300 border border-neutral-700">
+                    ฉบับร่าง
+                  </span>
+                ) : (
+                  <span className="absolute top-3 right-3 rounded-full bg-emerald-600/90 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold text-white shadow-sm">
+                    เผยแพร่อยู่
+                  </span>
+                )}
+
+                {/* Bottom title info */}
+                <div className="absolute bottom-3 left-4 right-4 text-white">
+                  <p className="text-[11px] text-neutral-300 font-medium">ตัวอย่างการแสดงผลบนการ์ดบทความ</p>
+                  <p className="text-lg sm:text-xl font-black drop-shadow line-clamp-1">{f.title || "หัวข้อบทความ"}</p>
+                  {f.excerpt && (
+                    <p className="text-xs text-neutral-300 line-clamp-1 opacity-90 mt-0.5">{f.excerpt}</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* กล่องพรีวิวแบบไม่มีรูปภาพ */
+              <div className="relative h-40 sm:h-48 w-full p-5 flex flex-col justify-between items-center text-center bg-gradient-to-br from-neutral-800 via-neutral-900 to-neutral-950 text-white">
+                <div className="flex items-center justify-between w-full">
+                  <span className="rounded-full bg-white/15 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase text-neutral-300">
+                    หมวด: {f.category || "ทั่วไป"}
+                  </span>
+                  {!f.is_published ? (
+                    <span className="rounded-full bg-neutral-800 px-2.5 py-0.5 text-[10px] font-bold text-neutral-400">ฉบับร่าง</span>
+                  ) : (
+                    <span className="rounded-full bg-emerald-600/80 px-2.5 py-0.5 text-[10px] font-bold text-white">เผยแพร่</span>
+                  )}
+                </div>
+
+                <div className="my-auto space-y-1">
+                  <div className="inline-flex size-10 items-center justify-center rounded-2xl bg-white/10 text-neutral-400 mb-1">
+                    <Newspaper className="size-5" />
+                  </div>
+                  <p className="text-base sm:text-lg font-bold text-neutral-200 line-clamp-1">{f.title || "หัวข้อบทความ"}</p>
+                  <p className="text-xs text-neutral-400">ยังไม่มีรูปภาพหน้าปก (สามารถใส่ลิงก์ URL หรือกดอัปโหลดภาพด้านล่าง)</p>
+                </div>
+
+                <div className="text-[11px] text-neutral-500">
+                  ผู้เขียน: {f.author || "ทีมงาน"} · เนื้อหา {f.content.length.toLocaleString()} อักขระ
+                </div>
+              </div>
+            )}
+
+            {/* แถบควบคุมรูปภาพด่วนบนตัวอย่าง */}
+            <div className="flex items-center justify-between gap-2 bg-neutral-900 px-4 py-2 border-t border-neutral-800 text-xs text-neutral-300">
+              <span className="flex items-center gap-1.5 text-neutral-400 text-[11px]">
+                <span className={cn("size-1.5 rounded-full", f.image_url && !imgError ? "bg-emerald-400" : "bg-neutral-500")} />
+                {f.image_url && !imgError
+                  ? "กำลังแสดงตัวอย่างภาพหน้าปกจริง"
+                  : imgError
+                  ? "ลิงก์รูปภาพโหลดไม่สำเร็จ (กรุณาตรวจ URL)"
+                  : "ยังไม่มีภาพหน้าปก"}
+              </span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Btn
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs rounded-lg border-neutral-700 bg-neutral-800 text-neutral-200 hover:bg-neutral-700"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <Upload className="size-3 mr-1" />
+                  {uploading ? "กำลังอัปโหลด..." : "อัปโหลดภาพหน้าปก"}
+                </Btn>
+                {f.image_url && (
+                  <Btn
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs rounded-lg border-neutral-700 text-neutral-400 hover:text-rose-400 hover:border-rose-800"
+                    onClick={() => { set("image_url", ""); setImgError(false); }}
+                  >
+                    ล้างภาพ
+                  </Btn>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* 2-Column Responsive Layout for PC */}
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2 pt-2">
           {/* Column 1: ข้อมูลบทความ */}
           <div className="space-y-3.5">
             <div className="rounded-2xl border border-neutral-100 bg-neutral-50/40 p-4 space-y-3">
@@ -66,7 +234,23 @@ function ArticleForm({
               </div>
 
               <Field label="ลิงก์รูปภาพหน้าปก (URL)">
-                <Input value={f.image_url} onChange={(e) => set("image_url", e.target.value)} placeholder="https://... (ปล่อยว่าง = ไม่มีรูป)" className={inputCls} />
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={f.image_url}
+                    onChange={(e) => set("image_url", e.target.value)}
+                    placeholder="https://... หรือกดอัปโหลดภาพด้านขวา"
+                    className={inputCls}
+                  />
+                  <Btn
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 h-10 px-3 rounded-xl border-brand-200 text-brand-700 hover:bg-brand-50"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="size-3.5 mr-1" /> อัปโหลด
+                  </Btn>
+                </div>
               </Field>
 
               <Field label="คำโปรย / สรุปเนื้อหาย่อ">

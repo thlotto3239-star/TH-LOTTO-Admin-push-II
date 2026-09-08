@@ -291,6 +291,11 @@ export function MembersPage() {
             total_bets: Number(p.total_bets || 0),
             total_won: Number(p.total_won || 0),
             created_at: p.created_at || new Date().toISOString(),
+            last_seen_at: p.last_seen_at || null,
+            last_login_at: p.last_login_at || null,
+            last_login_ip: p.last_login_ip || null,
+            last_login_device: p.last_login_device || null,
+            last_login_city: p.last_login_city || null,
           };
         });
         setRows(mapped);
@@ -512,12 +517,13 @@ export function MembersPage() {
             </tr>
           </thead>
           <tbody>
-            {view.map((m, idx) => {
-              const isOnline = m.status === "active";
-              const cities = ["กรุงเทพมหานคร", "เชียงใหม่", "ชลบุรี", "นครราชสีมา", "ภูเก็ต", "ขอนแก่น"];
-              const deviceIcons = ["📱 iPhone (iOS)", "💻 PC (Chrome)", "📱 Samsung (Android)", "💻 Mac (Safari)"];
-              const userCity = cities[idx % cities.length];
-              const userDevice = deviceIcons[idx % deviceIcons.length];
+            {view.map((m) => {
+              const isOnline = Boolean(
+                m.last_seen_at &&
+                Date.now() - new Date(m.last_seen_at).getTime() < 5 * 60 * 1000
+              );
+              const userCity = m.last_login_city || "ยังไม่มีพิกัด";
+              const userDevice = m.last_login_device || "ไม่ระบุอุปกรณ์";
 
               return (
                 <tr key={m.id} className="transition-colors hover:bg-neutral-50/70">
@@ -538,9 +544,9 @@ export function MembersPage() {
                           <span className="size-1.5 rounded-full bg-neutral-400" /> ออฟไลน์
                         </span>
                       )}
-                      <span className="text-[10px] text-neutral-400">📍 {userCity}</span>
+                      <span className="text-[10px] text-neutral-500 font-medium">📍 {userCity}</span>
                     </div>
-                    <p className="mt-0.5 text-[10px] text-neutral-500 font-mono">{userDevice}</p>
+                    <p className="mt-0.5 text-[10px] text-neutral-500 font-mono truncate max-w-[200px]" title={userDevice}>💻 {userDevice}</p>
                   </Td>
                   <Td><span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-bold text-neutral-500">{m.member_id}</span></Td>
                   <Td className="whitespace-nowrap font-mono text-xs">{m.phone}</Td>
