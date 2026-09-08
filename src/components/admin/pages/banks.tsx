@@ -1,14 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Pencil, Trash2, Copy, Star, Landmark, ArrowUp, ArrowDown, ShieldCheck } from "lucide-react";
+import { Plus, Pencil, Trash2, Copy, Star, Landmark, ArrowUp, ArrowDown, ShieldCheck, Wallet, RefreshCw, CheckCircle2, SlidersHorizontal } from "lucide-react";
 import { Panel, Btn, PageHeader, Field, inputCls, EmptyState, ConfirmDialog, BankSelector, ToggleRow } from "../primitives";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { BANK_DISPLAYS, BANKS, bankOf, type BankAccountBook } from "@/data/admin-mock";
+import { BANK_DISPLAYS, BANKS, bankOf, fmtNum, type BankAccountBook } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
 const EMPTY_ACC: BankAccountBook = {
@@ -91,6 +91,14 @@ export function BanksPage() {
   const [form, setForm] = React.useState<{ initial: BankAccountBook } | null>(null);
   const [confirmDel, setConfirmDel] = React.useState<BankAccountBook | null>(null);
 
+  const [limits, setLimits] = React.useState({
+    min_deposit: 100,
+    max_deposit: 500000,
+    min_withdraw: 100,
+    max_withdraw: 100000,
+  });
+  const [isSavingLimits, setIsSavingLimits] = React.useState(false);
+
   React.useEffect(() => {
     fetch("/api/admin/data?resource=content")
       .then((r) => r.json())
@@ -109,6 +117,11 @@ export function BanksPage() {
           res.data.settings.forEach((s: any) => {
             if (s.key) dict[s.key] = s.value;
           });
+          if (dict.min_deposit) setLimits((p) => ({ ...p, min_deposit: Number(dict.min_deposit) }));
+          if (dict.max_deposit) setLimits((p) => ({ ...p, max_deposit: Number(dict.max_deposit) }));
+          if (dict.min_withdraw) setLimits((p) => ({ ...p, min_withdraw: Number(dict.min_withdraw) }));
+          if (dict.max_withdraw_per_request) setLimits((p) => ({ ...p, max_withdraw: Number(dict.max_withdraw_per_request) }));
+
           if (dict.company_bank_account_number) {
             setAccounts([
               {
@@ -202,48 +215,62 @@ export function BanksPage() {
     setForm(null);
   };
 
+  const handleSaveLimits = async () => {
+    setIsSavingLimits(true);
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "batch_update_settings",
+          payload: {
+            settings: {
+              min_deposit: limits.min_deposit,
+              max_deposit: limits.max_deposit,
+              min_withdraw: limits.min_withdraw,
+              max_withdraw_per_request: limits.max_withdraw,
+            },
+          },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({
+          title: "บันทึกเกณฑ์ธุรกรรมการเงินแล้ว",
+          description: `ฝาก ฿${fmtNum(limits.min_deposit)}-฿${fmtNum(limits.max_deposit)} · ถอน ฿${fmtNum(limits.min_withdraw)}-฿${fmtNum(limits.max_withdraw)} เรียบร้อย`,
+        });
+      } else {
+        toast({ title: "บันทึกล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "เกิดข้อผิดพลาด", description: e.message, variant: "destructive" });
+    } finally {
+      setIsSavingLimits(false);
+    }
+  };
+
   const activeBanks = displays.filter((d) => d.is_active).length;
   const depositAccounts = accounts.filter((a) => a.account_type === "deposit").length;
   const withdrawAccounts = accounts.filter((a) => a.account_type === "withdraw").length;
   const defaultAcc = accounts.find((a) => a.is_default) || accounts[0];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <PageHeader
-        title="ธนาคาร"
-        description={`ตารางธนาคาร · ธนาคารที่รองรับ ${activeBanks}/${displays.length} · บัญชีรับ-โอนเงิน ${accounts.length} บัญชี`}
+        title="ธนาคาร & เกณฑ์การเงิน"
+        description={`ศูนย์กลางการเงินและเกตเวย์ · บัญชีรับฝาก-โอนเงิน ${accounts.length} บัญชี · ฝาก ฿${fmtNum(limits.min_deposit)}-฿${fmtNum(limits.max_deposit)} · ธนาคารรองรับ ${activeBanks}/${displays.length} สถาบัน`}
       >
         <Btn className="rounded-full" onClick={() => setForm({ initial: EMPTY_ACC })}>
           <Plus className="size-4" /> เพิ่มบัญชีธนาคาร
         </Btn>
       </PageHeader>
 
-      {/* KPI Mini-Dashboard (PC Ergonomic Header) */}
+      {/* KPI Mini-Dashboard (4 Financial Pillars) */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Panel className="p-4 bg-linear-to-br from-white to-neutral-50/50">
-          <p className="text-[11px] font-medium text-neutral-400">ธนาคารในเกตเวย์</p>
+        <Panel className="p-4 bg-linear-to-br from-white to-blue-50/40 border-blue-100">
+          <p className="text-[11px] font-medium text-blue-700">บัญชีรับฝากเงินของบริษัท</p>
           <div className="mt-1.5 flex items-baseline justify-between">
-            <p className="text-2xl font-black tracking-tight text-neutral-900">{displays.length}</p>
-            <span className="text-xs font-semibold text-neutral-500">สถาบันการเงิน</span>
-          </div>
-          <p className="mt-1 text-[11px] text-neutral-400">ระบบเกตเวย์ทั้งหมด</p>
-        </Panel>
-
-        <Panel className="p-4 bg-linear-to-br from-white to-emerald-50/30 border-emerald-100">
-          <p className="text-[11px] font-medium text-emerald-700">เปิดใช้งานรองรับ</p>
-          <div className="mt-1.5 flex items-baseline justify-between">
-            <p className="text-2xl font-black tracking-tight text-emerald-600">{activeBanks}</p>
-            <span className="text-xs font-bold text-emerald-600">
-              {displays.length > 0 ? Math.round((activeBanks / displays.length) * 100) : 0}%
-            </span>
-          </div>
-          <p className="mt-1 text-[11px] text-emerald-600/80">พร้อมรับฝากและโอนออก</p>
-        </Panel>
-
-        <Panel className="p-4 bg-linear-to-br from-white to-blue-50/30 border-blue-100">
-          <p className="text-[11px] font-medium text-blue-700">บัญชีรับฝากเงิน</p>
-          <div className="mt-1.5 flex items-baseline justify-between">
-            <p className="text-2xl font-black tracking-tight text-blue-600">{depositAccounts || accounts.length}</p>
+            <p className="text-2xl font-black tracking-tight text-blue-900">{depositAccounts || accounts.length}</p>
             <span className="text-xs font-semibold text-blue-600">บัญชี</span>
           </div>
           <p className="mt-1 text-[11px] truncate text-blue-600/80">
@@ -251,15 +278,110 @@ export function BanksPage() {
           </p>
         </Panel>
 
-        <Panel className="p-4 bg-linear-to-br from-white to-amber-50/30 border-amber-100">
-          <p className="text-[11px] font-medium text-amber-700">บัญชีโอนเงินออก (ถอน)</p>
+        <Panel className="p-4 bg-linear-to-br from-white to-emerald-50/40 border-emerald-100">
+          <p className="text-[11px] font-medium text-emerald-700">เกณฑ์การฝากเงิน (ต่อบิล)</p>
           <div className="mt-1.5 flex items-baseline justify-between">
-            <p className="text-2xl font-black tracking-tight text-amber-600">{withdrawAccounts || 1}</p>
-            <span className="text-xs font-semibold text-amber-600">บัญชี</span>
+            <p className="text-xl font-black tracking-tight text-emerald-900">฿{fmtNum(limits.min_deposit)} - ฿{fmtNum(limits.max_deposit)}</p>
           </div>
-          <p className="mt-1 text-[11px] text-amber-600/80">ระบบโอนเงินอัตโนมัติ/แอดมิน</p>
+          <p className="mt-1 text-[11px] text-emerald-700/80">ขั้นต่ำ - สูงสุดที่ระบบอนุญาต</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-amber-50/40 border-amber-100">
+          <p className="text-[11px] font-medium text-amber-700">เกณฑ์การถอนเงิน (ต่อบิล)</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-xl font-black tracking-tight text-amber-900">฿{fmtNum(limits.min_withdraw)} - ฿{fmtNum(limits.max_withdraw)}</p>
+          </div>
+          <p className="mt-1 text-[11px] text-amber-700/80">ขั้นต่ำ - สูงสุดต่อคำร้อง</p>
+        </Panel>
+
+        <Panel className="p-4 bg-linear-to-br from-white to-violet-50/40 border-violet-100">
+          <p className="text-[11px] font-medium text-violet-700">ธนาคารเปิดรับสมัคร</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-2xl font-black tracking-tight text-violet-900">{activeBanks}</p>
+            <span className="text-xs font-bold text-violet-600">
+              {displays.length > 0 ? Math.round((activeBanks / displays.length) * 100) : 0}% ของทั้งหมด
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] text-violet-700/80">ผู้เล่นเลือกตอนสมัคร ({displays.length} สถาบัน)</p>
         </Panel>
       </div>
+
+      {/* Financial Limits Configuration Panel */}
+      <Panel className="p-5 border-neutral-200 bg-linear-to-br from-white to-neutral-50/40">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-neutral-100">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-brand-100 text-brand-700">
+              <SlidersHorizontal className="size-4.5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-neutral-900 text-sm">เกณฑ์ธุรกรรมการเงินส่วนกลาง (Deposit & Withdrawal Thresholds)</h3>
+              <p className="text-[11px] text-neutral-400">กำหนดเพดานยอดเงินฝาก-ถอนเพื่อความปลอดภัยและควบคุมวินัยการเงินของระบบ</p>
+            </div>
+          </div>
+          <Btn
+            className="rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold shadow-xs"
+            disabled={isSavingLimits}
+            onClick={handleSaveLimits}
+          >
+            {isSavingLimits ? <RefreshCw className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5" />}
+            บันทึกเกณฑ์การเงิน
+          </Btn>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
+          <Field label="ยอดฝากขั้นต่ำ (บาท)">
+            <div className="relative">
+              <input
+                type="number"
+                min="1"
+                value={limits.min_deposit}
+                onChange={(e) => setLimits((p) => ({ ...p, min_deposit: Number(e.target.value) }))}
+                className={cn(inputCls, "font-mono font-bold text-sm bg-white pr-7")}
+              />
+              <span className="absolute right-2.5 top-2 text-xs font-bold text-neutral-400">฿</span>
+            </div>
+          </Field>
+
+          <Field label="ยอดฝากสูงสุด (บาท)">
+            <div className="relative">
+              <input
+                type="number"
+                min="100"
+                value={limits.max_deposit}
+                onChange={(e) => setLimits((p) => ({ ...p, max_deposit: Number(e.target.value) }))}
+                className={cn(inputCls, "font-mono font-bold text-sm bg-white pr-7")}
+              />
+              <span className="absolute right-2.5 top-2 text-xs font-bold text-neutral-400">฿</span>
+            </div>
+          </Field>
+
+          <Field label="ยอดถอนขั้นต่ำ (บาท)">
+            <div className="relative">
+              <input
+                type="number"
+                min="1"
+                value={limits.min_withdraw}
+                onChange={(e) => setLimits((p) => ({ ...p, min_withdraw: Number(e.target.value) }))}
+                className={cn(inputCls, "font-mono font-bold text-sm bg-white pr-7")}
+              />
+              <span className="absolute right-2.5 top-2 text-xs font-bold text-neutral-400">฿</span>
+            </div>
+          </Field>
+
+          <Field label="ยอดถอนสูงสุดต่อครั้ง (บาท)">
+            <div className="relative">
+              <input
+                type="number"
+                min="100"
+                value={limits.max_withdraw}
+                onChange={(e) => setLimits((p) => ({ ...p, max_withdraw: Number(e.target.value) }))}
+                className={cn(inputCls, "font-mono font-bold text-sm bg-white pr-7")}
+              />
+              <span className="absolute right-2.5 top-2 text-xs font-bold text-neutral-400">฿</span>
+            </div>
+          </Field>
+        </div>
+      </Panel>
 
       <Panel className="p-5">
         <div className="mb-4 flex items-center justify-between">

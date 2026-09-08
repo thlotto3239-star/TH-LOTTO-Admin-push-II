@@ -549,6 +549,128 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, data: dict, raw: data });
       }
 
+      case "affiliate": {
+        const [
+          { data: profiles, error: pErr },
+          { data: bets, error: bErr },
+          { data: settingsRows, error: sErr },
+        ] = await Promise.all([
+          supabaseAdmin
+            .from("profiles")
+            .select(`
+              id,
+              member_id,
+              full_name,
+              phone,
+              avatar_url,
+              referrer_id,
+              status,
+              created_at,
+              wallets (
+                balance,
+                commission_balance
+              )
+            `)
+            .eq("is_admin", false)
+            .order("created_at", { ascending: false }),
+          supabaseAdmin.from("bets").select("user_id, amount, status, created_at"),
+          supabaseAdmin.from("settings").select("*"),
+        ]);
+
+        if (pErr) throw pErr;
+
+        const settingsDict: Record<string, string> = {};
+        for (const r of settingsRows || []) {
+          if (r.key) settingsDict[r.key] = r.value ?? "";
+        }
+
+        const profileMap = new Map<string, any>();
+        (profiles || []).forEach((p: any) => profileMap.set(p.id, p));
+
+        const betsByUser = new Map<string, number>();
+        (bets || []).forEach((b: any) => {
+          if (!b.user_id) return;
+          betsByUser.set(b.user_id, (betsByUser.get(b.user_id) || 0) + Number(b.amount || 0));
+        });
+
+        // Group downlines by referrer_id
+        const downlinesByReferrer = new Map<string, any[]>();
+        const referredMembersList: any[] = [];
+        let totalCommissionBalance = 0;
+
+        (profiles || []).forEach((p: any) => {
+          const w = Array.isArray(p.wallets) ? p.wallets[0] : p.wallets;
+          const commBal = Number(w?.commission_balance || 0);
+          totalCommissionBalance += commBal;
+
+          if (p.referrer_id) {
+            const referrer = profileMap.get(p.referrer_id);
+            const userTurnover = betsByUser.get(p.id) || 0;
+            const item = {
+              id: p.id,
+              member_id: p.member_id,
+              full_name: p.full_name,
+              phone: p.phone,
+              avatar_url: p.avatar_url,
+              created_at: p.created_at,
+              status: p.status,
+              referrer_id: p.referrer_id,
+              referrer_name: referrer?.full_name || referrer?.member_id || "ไม่ระบุ",
+              referrer_phone: referrer?.phone || "-",
+              turnover: userTurnover,
+            };
+            referredMembersList.push(item);
+
+            const arr = downlinesByReferrer.get(p.referrer_id) || [];
+            arr.push(item);
+            downlinesByReferrer.set(p.referrer_id, arr);
+          }
+        });
+
+        // Calculate top referrers
+        const topReferrersList: any[] = [];
+        downlinesByReferrer.forEach((downlines, refId) => {
+          const refUser = profileMap.get(refId);
+          if (!refUser) return;
+          const totalTurnover = downlines.reduce((sum, d) => sum + d.turnover, 0);
+          const w = Array.isArray(refUser.wallets) ? refUser.wallets[0] : refUser.wallets;
+          const commBal = Number(w?.commission_balance || 0);
+          topReferrersList.push({
+            id: refUser.id,
+            member_id: refUser.member_id,
+            full_name: refUser.full_name,
+            phone: refUser.phone,
+            avatar_url: refUser.avatar_url,
+            downline_count: downlines.length,
+            total_turnover: totalTurnover,
+            commission_balance: commBal,
+          });
+        });
+
+        topReferrersList.sort((a, b) => b.downline_count - a.downline_count || b.total_turnover - a.total_turnover);
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            stats: {
+              total_members: (profiles || []).length,
+              total_referred: referredMembersList.length,
+              total_referrers: downlinesByReferrer.size,
+              total_commission_balance: totalCommissionBalance,
+            },
+            top_referrers: topReferrersList.slice(0, 20),
+            referred_members: referredMembersList,
+            settings: {
+              enabled: settingsDict.referral_enabled !== "false" && settingsDict.referral_enabled !== "FALSE",
+              commission_rate: Number(settingsDict.referral_commission_rate || "8.0"),
+              calculation_basis: settingsDict.referral_calculation_basis || "turnover",
+              min_transfer: Number(settingsDict.referral_min_transfer || "100"),
+              cookie_days: Number(settingsDict.referral_cookie_days || "30"),
+            },
+          },
+        });
+      }
+
       case "table-stats": {
         const tableNames = [
           { key: "draw_schedules", name: "ตารางออกรางวัล (draw_schedules)" },
