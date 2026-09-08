@@ -516,7 +516,7 @@ export async function GET(req: NextRequest) {
           .select(`
             *,
             profiles!bets_profile_fkey (id, full_name, member_id, avatar_url, phone, username),
-            lottery_markets!bets_market_id_fkey (id, name, code, category, logo_url, color)
+            lottery_markets!bets_market_id_fkey (id, name, code, category, logo_url)
           `)
           .order("created_at", { ascending: false })
           .limit(limit);
@@ -852,18 +852,18 @@ export async function POST(req: NextRequest) {
 
       case "update_member": {
         const { id, full_name, phone, bank_name, bank_account_number, bank_account_name, status, vip_level } = payload;
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (full_name !== undefined) updateData.full_name = full_name;
+        if (phone !== undefined) updateData.phone = phone;
+        if (bank_name !== undefined) updateData.bank_name = bank_name;
+        if (bank_account_number !== undefined) updateData.bank_account_number = bank_account_number;
+        if (bank_account_name !== undefined) updateData.bank_account_name = bank_account_name;
+        if (status !== undefined) updateData.status = status;
+        if (vip_level !== undefined) updateData.vip_level = String(vip_level);
+
         const { data, error } = await supabaseAdmin
           .from("profiles")
-          .update({
-            full_name,
-            phone,
-            bank_name,
-            bank_account_number,
-            bank_account_name,
-            status,
-            vip_level: String(vip_level),
-            updated_at: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq("id", id)
           .select();
         if (error) throw error;
@@ -902,7 +902,6 @@ export async function POST(req: NextRequest) {
 
       case "record_result": {
         const { market_id, draw_date, result_main, result_3top, result_2top, result_2bottom, result_3front, result_3bottom } = payload;
-        // Call existing database stored procedure to settle and pay out automatically
         const { data: rpcData, error: rpcErr } = await supabaseAdmin.rpc("admin_set_result_and_settle", {
           p_market_id: market_id,
           p_draw_date: draw_date,
@@ -914,24 +913,18 @@ export async function POST(req: NextRequest) {
           p_2bottom: result_2bottom || "",
         });
 
-        // Also ensure lottery_results has status 'ANNOUNCED' to fire trigger trg_on_result_announced
-        const { data, error } = await supabaseAdmin
+        if (rpcErr) throw rpcErr;
+
+        const { data: row } = await supabaseAdmin
           .from("lottery_results")
-          .upsert([{
-            market_id,
-            draw_date,
-            result_main,
-            result_3top,
-            result_2top,
-            result_2bottom,
-            result_3front,
-            result_3bottom,
-            status: "ANNOUNCED",
-            announced_at: new Date().toISOString(),
-          }], { onConflict: "market_id,draw_date" })
-          .select();
-        if (error && !rpcData) throw error;
-        return NextResponse.json({ success: true, data: data || rpcData });
+          .select("*")
+          .eq("market_id", market_id)
+          .eq("draw_date", draw_date)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        return NextResponse.json({ success: true, data: row || rpcData });
       }
 
       case "update_withdrawal": {
@@ -972,6 +965,53 @@ export async function POST(req: NextRequest) {
               }]);
             } catch (txErr) {
               console.error("Failed to log refund transaction:", txErr);
+            }
+          }
+        }
+        return NextResponse.json({ success: true, data });
+      }
+
+      case "cancel_bet": {
+        const { id, reason } = payload;
+        const { data: bet, error: bErr } = await supabaseAdmin
+          .from("bets")
+          .select("id, user_id, amount, status")
+          .eq("id", id)
+          .single();
+        if (bErr) throw bErr;
+
+        if (bet.status === "CANCELLED") {
+          return NextResponse.json({ success: false, error: "โพยนี้ถูกยกเลิกไปแล้ว" }, { status: 400 });
+        }
+
+        const { data, error } = await supabaseAdmin
+          .from("bets")
+          .update({
+            status: "CANCELLED",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", id)
+          .select();
+        if (error) throw error;
+
+        // Refund bet amount to user's wallet
+        if (bet.user_id && Number(bet.amount) > 0) {
+          const { data: w } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", bet.user_id).single();
+          if (w) {
+            const newBal = Number(w.balance) + Number(bet.amount);
+            await supabaseAdmin.from("wallets").update({ balance: newBal, updated_at: new Date().toISOString() }).eq("user_id", bet.user_id);
+            try {
+              await supabaseAdmin.from("transactions").insert([{
+                user_id: bet.user_id,
+                type: "REFUND_BET",
+                amount: Number(bet.amount),
+                status: "COMPLETED",
+                reference_id: id,
+                note: reason || "คืนเงินจากการยกเลิกโพยโดยผู้ดูแลระบบ",
+                balance_after: newBal,
+              }]);
+            } catch (txErr) {
+              console.error("Failed to log bet refund transaction:", txErr);
             }
           }
         }
