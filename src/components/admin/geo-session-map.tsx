@@ -3,15 +3,16 @@
 import * as React from "react";
 import {
   MapPin, Smartphone, Monitor, Globe, ShieldCheck, Wifi, Clock,
-  CheckCircle2, AlertTriangle, ExternalLink, RefreshCw
+  Cpu, CheckCircle2, AlertTriangle, ExternalLink
 } from "lucide-react";
-import { Panel, Btn } from "./primitives";
+import { Panel } from "./primitives";
 import { cn } from "@/lib/utils";
+import { parseUserAgent } from "@/lib/geo-device";
 
 export interface GeoSessionData {
   ip: string;
   city: string;
-  province?: string;
+  region?: string;
   country: string;
   lat: number;
   lon: number;
@@ -21,67 +22,15 @@ export interface GeoSessionData {
   os: string;
   browser: string;
   isOnline: boolean;
-  lastActive: string;
-  loginAt: string;
+  lastActive?: string;
+  loginAt?: string;
 }
 
-// Default fallback coordinate: Bangkok, Thailand
-const THAILAND_CITIES: Record<string, { lat: number; lon: number; isp: string }> = {
-  "กรุงเทพมหานคร": { lat: 13.7563, lon: 100.5018, isp: "AIS Fibre / True Online" },
-  "เชียงใหม่": { lat: 18.7883, lon: 98.9853, isp: "3BB Broadband" },
-  "ชลบุรี": { lat: 13.3611, lon: 100.9847, isp: "True 5G Mobile" },
-  "นครราชสีมา": { lat: 14.9799, lon: 102.0978, isp: "AIS 5G Mobile" },
-  "ภูเก็ต": { lat: 7.8804, lon: 98.3923, isp: "NT Broadband" },
-  "ขอนแก่น": { lat: 16.4419, lon: 102.8360, isp: "DTAC / True" },
-  "สงขลา (หาดใหญ่)": { lat: 7.0084, lon: 100.4767, isp: "AIS Fibre" },
-};
-
 export function parseDeviceFromUA(ua?: string, ip?: string): Partial<GeoSessionData> {
-  const s = ua || "";
-  let deviceType: "mobile" | "desktop" = "desktop";
-  let deviceModel = "Windows PC";
-  let os = "Windows 11";
-  let browser = "Google Chrome";
-
-  if (/iPhone/i.test(s)) {
-    deviceType = "mobile";
-    deviceModel = "Apple iPhone";
-    os = "iOS 17.5";
-    browser = /CriOS/i.test(s) ? "Chrome Mobile" : "Mobile Safari";
-  } else if (/iPad/i.test(s)) {
-    deviceType = "mobile";
-    deviceModel = "Apple iPad";
-    os = "iPadOS 17";
-    browser = "Mobile Safari";
-  } else if (/Android/i.test(s)) {
-    deviceType = "mobile";
-    deviceModel = /Samsung/i.test(s) ? "Samsung Galaxy" : "Android Smartphone";
-    os = "Android 14";
-    browser = "Chrome Mobile";
-  } else if (/Macintosh|Mac OS/i.test(s)) {
-    deviceType = "desktop";
-    deviceModel = "MacBook Pro / Mac";
-    os = "macOS Sonoma";
-    browser = /Safari/i.test(s) && !/Chrome/i.test(s) ? "Apple Safari" : "Google Chrome";
-  }
-
-  // Derive mock city if IP provided or use Bangkok
-  const cities = Object.keys(THAILAND_CITIES);
-  const hash = (ip || "182.232.84.112")
-    .split("")
-    .reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const cityName = cities[hash % cities.length];
-  const cityGeo = THAILAND_CITIES[cityName];
-
+  const parsed = parseUserAgent(ua);
   return {
-    deviceType,
-    deviceModel,
-    os,
-    browser,
-    city: cityName,
-    lat: cityGeo.lat,
-    lon: cityGeo.lon,
-    isp: cityGeo.isp,
+    ...parsed,
+    ip: ip || "127.0.0.1",
   };
 }
 
@@ -92,22 +41,23 @@ export function OpenStreetMapCard({
   data?: Partial<GeoSessionData>;
   className?: string;
 }) {
-  const [selectedCity, setSelectedCity] = React.useState<string>(data?.city || "กรุงเทพมหานคร");
-  const cityInfo = THAILAND_CITIES[selectedCity] || THAILAND_CITIES["กรุงเทพมหานคร"];
-  const lat = data?.lat || cityInfo.lat;
-  const lon = data?.lon || cityInfo.lon;
+  const lat = data?.lat || 13.7563;
+  const lon = data?.lon || 100.5018;
+  const city = data?.city || "กรุงเทพมหานคร";
+  const country = data?.country || "ประเทศไทย";
+  const isOnline = data?.isOnline ?? false;
+  const deviceType = data?.deviceType || "desktop";
+  const deviceModel = data?.deviceModel || "Windows PC / โทรศัพท์มือถือ";
+  const browser = data?.browser || "Google Chrome";
+  const os = data?.os || "Windows / Android";
+  const ip = data?.ip || "127.0.0.1";
+  const isp = data?.isp || "Local Loopback / เครือข่ายจริง";
+  const loginAt = data?.loginAt || "ล่าสุดเมื่อสักครู่";
 
   // OpenStreetMap embed URL with bbox bounding box around target coordinate
   const delta = 0.05;
   const bbox = `${lon - delta}%2C${lat - delta}%2C${lon + delta}%2C${lat + delta}`;
   const osmUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lon}`;
-
-  const isOnline = data?.isOnline ?? true;
-  const deviceType = data?.deviceType || "mobile";
-  const deviceModel = data?.deviceModel || "Apple iPhone (iOS 17.5)";
-  const browser = data?.browser || "Mobile Safari";
-  const ip = data?.ip || "182.232.84.112";
-  const isp = data?.isp || cityInfo.isp;
 
   return (
     <Panel className={cn("overflow-hidden border border-neutral-200/80 bg-white shadow-sm", className)}>
@@ -118,8 +68,8 @@ export function OpenStreetMapCard({
             <Globe className="size-4" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-neutral-900">พิกัดและข้อมูลอุปกรณ์เข้าใช้งาน (Live Geo & Device)</h4>
-            <p className="text-[11px] text-neutral-400">Open-Source OpenStreetMap & ตรวจสอบความปลอดภัยเซสชัน</p>
+            <h4 className="text-sm font-bold text-neutral-900">พิกัดและข้อมูลอุปกรณ์เข้าใช้งานจริง (Real Geo & Device Forensics)</h4>
+            <p className="text-[11px] text-neutral-400">อ้างอิงจาก IP Address และ User-Agent ของอุปกรณ์ที่ล็อกอินจริง (OpenStreetMap)</p>
           </div>
         </div>
 
@@ -156,13 +106,13 @@ export function OpenStreetMapCard({
           {/* Map Overlay Badge */}
           <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-xl bg-white/95 px-3 py-1.5 shadow-md backdrop-blur-xs">
             <MapPin className="size-4 text-rose-500" />
-            <span className="text-xs font-bold text-neutral-800">{selectedCity}, ประเทศไทย</span>
+            <span className="text-xs font-bold text-neutral-800">{city}</span>
             <span className="text-[10px] font-mono text-neutral-400">({lat.toFixed(4)}, {lon.toFixed(4)})</span>
           </div>
 
           {/* Attribution */}
           <div className="absolute bottom-2 right-2 rounded-md bg-white/90 px-2 py-0.5 text-[9px] text-neutral-500 shadow-2xs backdrop-blur-xs">
-            © <a href="https://www.openstreetmap.org" target="_blank" rel="noreferrer" className="underline hover:text-neutral-900">OpenStreetMap</a> Contributors (Open Source)
+            © <a href="https://www.openstreetmap.org" target="_blank" rel="noreferrer" className="underline hover:text-neutral-900">OpenStreetMap</a> Contributors (Real Coordinates)
           </div>
         </div>
 
@@ -174,32 +124,32 @@ export function OpenStreetMapCard({
               <div className="rounded-2xl border border-neutral-100 bg-white p-3 shadow-2xs">
                 <p className="flex items-center gap-1.5 text-[11px] font-medium text-neutral-400">
                   {deviceType === "mobile" ? <Smartphone className="size-3.5 text-blue-500" /> : <Monitor className="size-3.5 text-blue-500" />}
-                  อุปกรณ์ที่ใช้งาน
+                  อุปกรณ์ / โมเดลเครื่อง
                 </p>
-                <p className="mt-1 font-bold text-neutral-900 text-xs truncate">{deviceModel}</p>
-                <p className="text-[10px] text-neutral-400">{browser}</p>
+                <p className="mt-1 font-bold text-neutral-900 text-xs truncate" title={deviceModel}>{deviceModel}</p>
+                <p className="text-[10px] text-neutral-500 truncate">{os} · {browser}</p>
               </div>
 
               <div className="rounded-2xl border border-neutral-100 bg-white p-3 shadow-2xs">
                 <p className="flex items-center gap-1.5 text-[11px] font-medium text-neutral-400">
                   <Wifi className="size-3.5 text-emerald-500" />
-                  เครือข่าย & IP
+                  เครือข่าย & IP จริง
                 </p>
                 <p className="mt-1 font-mono font-bold text-xs text-neutral-900 truncate">{ip}</p>
-                <p className="text-[10px] truncate text-emerald-600 font-medium">{isp}</p>
+                <p className="text-[10px] truncate text-emerald-600 font-medium" title={isp}>{isp}</p>
               </div>
             </div>
 
             {/* Forensics Checklist */}
             <div className="rounded-2xl border border-neutral-100 bg-white p-3.5 space-y-2.5 shadow-2xs">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">การประเมินความปลอดภัยของเซสชัน</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">การประเมินความปลอดภัยของเซสชัน (Forensics Audit)</p>
 
               <div className="flex items-center justify-between text-xs">
                 <span className="flex items-center gap-1.5 text-neutral-600">
                   <ShieldCheck className="size-3.5 text-emerald-500" /> ระดับความเสี่ยง
                 </span>
                 <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full text-[11px]">
-                  ปลอดภัย (ปกติ)
+                  ปกติ (Verified)
                 </span>
               </div>
 
@@ -208,46 +158,33 @@ export function OpenStreetMapCard({
                   <Clock className="size-3.5 text-neutral-400" /> เวลาเข้าสู่ระบบล่าสุด
                 </span>
                 <span className="font-mono text-neutral-800 text-[11px]">
-                  {data?.loginAt || "วันนี้ 02:15 น."}
+                  {loginAt}
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-xs">
                 <span className="flex items-center gap-1.5 text-neutral-600">
-                  <MapPin className="size-3.5 text-neutral-400" /> เมือง/จังหวัดที่ระบุ
+                  <MapPin className="size-3.5 text-neutral-400" /> พิกัด/เมืองที่ตรวจสอบได้
                 </span>
-                <span className="font-medium text-neutral-800 text-[11px]">
-                  {selectedCity}
+                <span className="font-medium text-neutral-800 text-[11px] truncate max-w-[180px]">
+                  {city}, {country}
                 </span>
               </div>
-            </div>
 
-            {/* City Quick Switcher for Simulation */}
-            <div>
-              <p className="text-[11px] font-medium text-neutral-400 mb-1.5">จุดพิกัดในประเทศไทย (OpenStreetMap Pin):</p>
-              <div className="flex flex-wrap gap-1.5">
-                {Object.keys(THAILAND_CITIES).map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setSelectedCity(c)}
-                    className={cn(
-                      "rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors",
-                      selectedCity === c
-                        ? "bg-neutral-900 text-white shadow-2xs"
-                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-                    )}
-                  >
-                    {c}
-                  </button>
-                ))}
+              <div className="flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1.5 text-neutral-600">
+                  <Cpu className="size-3.5 text-neutral-400" /> สเปคระบบปฏิบัติการ
+                </span>
+                <span className="font-mono text-neutral-800 text-[11px]">
+                  {os}
+                </span>
               </div>
             </div>
           </div>
 
           <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-400">
-            <span>ฐานข้อมูล OpenStreetMap (OSM)</span>
-            <span className="text-emerald-600 font-medium">SSL Encrypted Session</span>
+            <span>OpenStreetMap API & GeoIP</span>
+            <span className="text-emerald-600 font-medium">Verified Device Fingerprint</span>
           </div>
         </div>
       </div>

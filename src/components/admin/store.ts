@@ -21,6 +21,7 @@ export type PageId =
   | "settings"
   | "appearance"
   | "banks"
+  | "affiliate"
   | "broadcast"
   | "data-management"
   | "admins";
@@ -47,7 +48,7 @@ export const KNOWN_ADMINS: CurrentAdminProfile[] = [
   {
     id: "b439d425-afe0-4353-aefd-2affd053e3c5",
     full_name: "BossMos’X🕊️",
-    phone: "857217124@thlotto.app",
+    phone: "0857217124",
     admin_role: "super_admin",
     is_super: true,
     avatar_url: null,
@@ -55,10 +56,20 @@ export const KNOWN_ADMINS: CurrentAdminProfile[] = [
   {
     id: "98fb9b29-0915-494e-9e43-8844771fc784",
     full_name: "แอดมิน2",
-    phone: "0999999993@thlotto.app",
+    phone: "0999999993",
     admin_role: "admin",
     is_super: false,
     avatar_url: null,
+    permissions: ["members", "bets", "deposits", "withdrawals"],
+  },
+  {
+    id: "290daa61-3596-435f-b6db-67e549d514fe",
+    full_name: "armuxui สําหรับทดสอบระบบ",
+    phone: "armuxui2@gmail.com",
+    admin_role: "admin",
+    is_super: false,
+    avatar_url: null,
+    permissions: ["members", "bets", "deposits", "withdrawals"],
   },
 ];
 
@@ -180,7 +191,8 @@ export const PAGE_META: Record<PageId, { title: string; group: string }> = {
   feeds: { title: "จัดการฟีด", group: "คอนเทนต์" },
   settings: { title: "ตั้งค่าระบบ", group: "ระบบ" },
   appearance: { title: "รูปลักษณ์", group: "ระบบ" },
-  banks: { title: "ธนาคาร", group: "ระบบ" },
+  banks: { title: "ธนาคาร & เกณฑ์การเงิน", group: "การเงิน" },
+  affiliate: { title: "ระบบแนะนำเพื่อน & คอมมิชชั่น", group: "สมาชิก" },
   broadcast: { title: "ส่งแจ้งเตือน", group: "ระบบ" },
   "data-management": { title: "สำรองและจัดการข้อมูล", group: "ระบบ" },
   admins: { title: "ผู้ดูแลระบบ", group: "ระบบ" },

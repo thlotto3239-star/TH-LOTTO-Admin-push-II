@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import {
-  Lock, Eye, EyeOff, ShieldCheck, Loader2, Check, ArrowRight, KeyRound,
+  Lock, Eye, EyeOff, ShieldCheck, Loader2, Check, ArrowRight, KeyRound, User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -165,81 +165,60 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any)
     e.preventDefault();
     if (loading || googleLoading) return;
     const errs: Errors = {};
-    const cleanPhone = userId.trim().replace(/\D/g, "");
-    if (!/^0?\d{9,10}$/.test(cleanPhone)) {
-      errs.id = "โปรดกรอกเบอร์โทรศัพท์ผู้ดูแลระบบให้ถูกต้อง";
+    const inputIdentifier = userId.trim();
+    if (!inputIdentifier) {
+      errs.id = "โปรดกรอกเบอร์โทรศัพท์ อีเมล หรือชื่อผู้ใช้";
     }
-    if (password.length < 6) {
-      errs.pass = "รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
+    if (!password.trim() || password.length < 4) {
+      errs.pass = "โปรดกรอกรหัสผ่านหรือ PIN อย่างน้อย 4 หลัก";
     }
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
     setLoading(true);
     try {
-      // 1. ลองล็อกอินด้วยอีเมลรูปแบบเต็ม
-      const standardPhone = cleanPhone.startsWith("0") ? cleanPhone : `0${cleanPhone}`;
-      const strippedPhone = cleanPhone.replace(/^0+/, "");
-
-      let signInRes = await supabase.auth.signInWithPassword({
-        email: `${standardPhone}@thlotto.app`,
-        password,
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          identifier: inputIdentifier,
+          password: password.trim(),
+        }),
       });
+      const json = await res.json();
 
-      // 2. ถ้าไม่สำเร็จ ลองรูปแบบตัด 0 นำหน้า
-      if (signInRes.error) {
-        signInRes = await supabase.auth.signInWithPassword({
-          email: `${strippedPhone}@thlotto.app`,
-          password,
-        });
-      }
-
-      if (!signInRes.error && signInRes.data?.user) {
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("id, full_name, phone, is_admin, admin_role, avatar_url")
-          .eq("id", signInRes.data.user.id)
-          .maybeSingle();
-
-        const adminName = prof?.full_name || "ผู้ดูแลระบบ";
+      if (res.ok && json.success && json.profile) {
+        const adminName = json.profile.full_name || "ผู้ดูแลระบบ";
         toast({
           title: "เข้าสู่ระบบสำเร็จ",
           description: `ยินดีต้อนรับ ${adminName}`,
         });
-        onLogin(adminName, prof);
+
+        // บันทึก Session ลงใน LocalStorage
+        try {
+          if (remember) {
+            localStorage.setItem("thlotto_admin_session", adminName);
+            localStorage.setItem("thlotto_admin_profile", JSON.stringify(json.profile));
+          }
+        } catch {}
+
+        onLogin(adminName, json.profile);
         return;
       }
 
-      // 3. Fallback เจ้าของระบบ
-      if ((cleanPhone === "0622306037" || cleanPhone === "622306037") && (password === "Aa3239" || password === "password123")) {
-        const fallbackProf = {
-          id: "8cd9dc58-d2eb-4aed-a5bc-f4cd74cb3ee4",
-          full_name: "arm",
-          phone: "0622306037",
-          admin_role: "super_admin",
-          is_super: true,
-          avatar_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/avatars/8cd9dc58-d2eb-4aed-a5bc-f4cd74cb3ee4/1780530738154.jpg",
-        };
-        toast({
-          title: "เข้าสู่ระบบสำเร็จ",
-          description: "ยินดีต้อนรับเจ้าของระบบ",
-        });
-        onLogin("arm", fallbackProf);
-        return;
-      }
-
-      if (signInRes.error) {
-        toast({
-          variant: "destructive",
-          title: "เข้าสู่ระบบไม่สำเร็จ",
-          description: signInRes.error.message === "Invalid login credentials"
-            ? "เบอร์โทรศัพท์หรือรหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้ง"
-            : signInRes.error.message,
-        });
-        setErrors({ pass: "เบอร์โทรหรือรหัสผ่านไม่ถูกต้อง" });
-      }
-    } catch {
-      onLogin("เจ้าของเว็บ");
+      // ถ้าไม่สำเร็จ แสดง Error ข้อความตรงไปตรงมา
+      toast({
+        variant: "destructive",
+        title: "เข้าสู่ระบบไม่สำเร็จ",
+        description: json.error || "เบอร์โทรศัพท์ อีเมล หรือรหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้ง",
+      });
+      setErrors({ pass: json.error || "ข้อมูลเข้าสู่ระบบไม่ถูกต้อง" });
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "เกิดข้อผิดพลาดในการเชื่อมต่อ",
+        description: err.message || "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้",
+      });
     } finally {
       setLoading(false);
     }
@@ -281,16 +260,16 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any)
               เข้าสู่ระบบ
             </h1>
             <p className="mt-1.5 text-sm leading-relaxed text-neutral-500">
-              ยินดีต้อนรับกลับมา กรอกเบอร์โทรศัพท์และรหัสผ่านของคุณ
+              ยินดีต้อนรับกลับมา กรอกเบอร์โทรศัพท์ อีเมล หรือชื่อผู้ใช้ พร้อมรหัสผ่านของคุณ
               หรือเข้าสู่ระบบผ่านบัญชีกูเกิลได้ที่ปุ่มด้านล่าง
             </p>
 
             {/* ฟอร์ม */}
             <form className="mt-6 space-y-4" onSubmit={handleSubmit} noValidate>
-              {/* เบอร์โทรศัพท์ */}
+              {/* เบอร์โทรศัพท์ / อีเมล / ชื่อผู้ใช้ */}
               <div>
                 <label htmlFor="login-id" className="mb-1.5 block text-sm font-medium text-neutral-700">
-                  เบอร์โทรศัพท์
+                  เบอร์โทรศัพท์ / อีเมล / ชื่อผู้ใช้
                 </label>
                 <div
                   className={cn(
@@ -298,20 +277,19 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any)
                     errors.id ? "border-rose-300" : "border-neutral-200"
                   )}
                 >
-                  <span className="flex h-full items-center gap-1.5 border-r border-neutral-200 bg-neutral-50 px-3.5 text-sm font-medium text-neutral-500">
-                    โทร. +66
+                  <span className="flex h-full items-center border-r border-neutral-200 bg-neutral-50 px-3.5 text-neutral-400">
+                    <User className="size-4" />
                   </span>
                   <input
                     id="login-id"
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel"
+                    type="text"
+                    autoComplete="username"
                     value={userId}
                     onChange={(e) => {
-                      setUserId(e.target.value.replace(/\D/g, "").slice(0, 10));
+                      setUserId(e.target.value);
                       if (errors.id) setErrors((p) => ({ ...p, id: undefined }));
                     }}
-                    placeholder="0812345678"
+                    placeholder="0812345678, อีเมล หรือชื่อผู้ใช้"
                     className="h-full min-w-0 flex-1 bg-transparent px-3.5 text-sm text-neutral-900 outline-none placeholder:text-neutral-400"
                   />
                 </div>
@@ -320,10 +298,10 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any)
                 ) : null}
               </div>
 
-              {/* รหัสผ่าน */}
+              {/* รหัสผ่าน หรือ PIN 4 หลัก */}
               <div>
                 <label htmlFor="login-pass" className="mb-1.5 block text-sm font-medium text-neutral-700">
-                  รหัสผ่าน
+                  รหัสผ่าน หรือ PIN 4 หลัก
                 </label>
                 <div
                   className={cn(
@@ -343,7 +321,7 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any)
                       setPassword(e.target.value);
                       if (errors.pass) setErrors((p) => ({ ...p, pass: undefined }));
                     }}
-                    placeholder="กรอกรหัสผ่านของคุณ"
+                    placeholder="กรอกรหัสผ่าน หรือ PIN 4 หลัก"
                     className="h-full min-w-0 flex-1 bg-transparent px-3.5 text-sm text-neutral-900 outline-none placeholder:text-neutral-400"
                   />
                   <button

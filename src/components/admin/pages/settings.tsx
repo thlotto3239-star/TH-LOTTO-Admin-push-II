@@ -9,6 +9,7 @@ import {
 import { Panel, Btn, PageHeader, Field, inputCls } from "../primitives";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminNav } from "../store";
 import {
   FINANCE_SETTINGS, SOCIAL_SETTINGS, SYSTEM_SETTINGS, SITE_CONTROL,
   ADMIN_BANK_ACCOUNTS, fmtTHB, fmtNum, type AdminBankAccount
@@ -34,22 +35,6 @@ const PILLARS: Pillar[] = [
     desc: "เปิด/ปิด การเข้าใช้งานเว็บผู้เล่นทั้งหมด พร้อมข้อความประกาศปรับปรุงระบบ",
     tone: "bg-emerald-50 text-emerald-600 border-emerald-100",
     badge: "Master Control",
-  },
-  {
-    id: "finance",
-    icon: Wallet,
-    label: "เกณฑ์ธุรกรรมการเงิน",
-    desc: "กำหนดยอดฝากและถอน ขั้นต่ำ-สูงสุด ค่าธรรมเนียม และวงเงินต่อวัน",
-    tone: "bg-brand-50 text-brand-600 border-brand-100",
-    badge: "Policy",
-  },
-  {
-    id: "affiliate",
-    icon: Share2,
-    label: "ระบบคอมมิชชั่น & แนะนำเพื่อน",
-    desc: "กำหนด % ค่าคอมมิชชั่นแนะนำเพื่อน ฐานการคิดยอด และเกณฑ์การโอนเข้ากระเป๋า",
-    tone: "bg-blue-50 text-blue-600 border-blue-100",
-    badge: "Growth & Affiliate",
   },
   {
     id: "bot",
@@ -79,6 +64,7 @@ const PILLARS: Pillar[] = [
 
 export function SettingsPage() {
   const { toast } = useToast();
+  const { navigate } = useAdminNav();
   const [modal, setModal] = React.useState<ModalId>(null);
   const [fin, setFin] = React.useState(FINANCE_SETTINGS);
   const [soc, setSoc] = React.useState(SOCIAL_SETTINGS);
@@ -227,10 +213,10 @@ export function SettingsPage() {
     <div className="space-y-4">
       <PageHeader
         title="การตั้งค่าระบบ & นโยบายกลาง"
-        description="System Governance · จัดหมวดหมู่ 6 เสาหลักการควบคุมระบบ พร้อมระบบคอมมิชชั่นแนะนำเพื่อน และบอทแทงหวยจำลองกระตุ้นตลาด"
+        description="System Governance · ศูนย์ควบคุมและกำหนดกติกากลาง 4 เสาหลักของระบบ (สถานะเว็บไซต์, บอทตรวจรางวัล, รหัสลับ CRON, คลังข้อมูล)"
       />
 
-      {/* KPI Mini-Dashboard (6 Pillars Overview) */}
+      {/* KPI Mini-Dashboard (4 Pillars + Dedicated Quick Jumps) */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Panel
           className={cn(
@@ -249,23 +235,21 @@ export function SettingsPage() {
           <p className="mt-1 text-[10px] text-neutral-400 truncate">{site.site_enabled ? "สมาชิกเข้าใช้งานได้ปกติ" : "แสดงหน้าปิดปรับปรุง"}</p>
         </Panel>
 
-        <Panel className="p-4 bg-linear-to-br from-white to-neutral-50/50">
-          <p className="text-[11px] font-medium text-neutral-400">เกณฑ์การฝากเงิน</p>
+        <Panel
+          className="p-4 bg-linear-to-br from-white to-neutral-50/50 cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] border border-neutral-200/80"
+          onClick={() => navigate("banks")}
+        >
+          <p className="text-[11px] font-medium text-neutral-500">เกณฑ์การเงิน (ไปที่เมนู)</p>
           <div className="mt-1.5 flex items-baseline justify-between">
             <p className="text-base font-black tracking-tight text-neutral-900">฿{fmtNum(fin.min_deposit)} - ฿{fmtNum(fin.max_deposit)}</p>
           </div>
-          <p className="mt-1 text-[10px] text-neutral-400">ขั้นต่ำ - สูงสุดต่อบิล</p>
+          <p className="mt-1 text-[10px] text-brand-600 font-semibold flex items-center gap-1">จัดการในหน้าธนาคาร →</p>
         </Panel>
 
-        <Panel className="p-4 bg-linear-to-br from-white to-neutral-50/50">
-          <p className="text-[11px] font-medium text-neutral-400">เกณฑ์การถอนเงิน</p>
-          <div className="mt-1.5 flex items-baseline justify-between">
-            <p className="text-base font-black tracking-tight text-neutral-900">฿{fmtNum(fin.min_withdraw)} - ฿{fmtNum(fin.max_withdraw)}</p>
-          </div>
-          <p className="mt-1 text-[10px] text-neutral-400">ขั้นต่ำ - สูงสุดต่อบิล</p>
-        </Panel>
-
-        <Panel className="p-4 bg-linear-to-br from-white to-blue-50/30 border-blue-100">
+        <Panel
+          className="p-4 bg-linear-to-br from-white to-blue-50/30 border-blue-100 cursor-pointer hover:shadow-md transition-all hover:scale-[1.02]"
+          onClick={() => navigate("affiliate")}
+        >
           <p className="text-[11px] font-medium text-blue-700">คอมมิชชั่นแนะนำเพื่อน</p>
           <div className="mt-1.5 flex items-baseline justify-between">
             <p className="text-base font-black tracking-tight text-blue-900">
@@ -273,10 +257,13 @@ export function SettingsPage() {
             </p>
             <span className={cn("size-2 rounded-full", affiliate.enabled ? "bg-blue-500" : "bg-neutral-300")} />
           </div>
-          <p className="mt-1 text-[10px] text-blue-600/80">โอนขั้นต่ำ ฿{affiliate.min_transfer}</p>
+          <p className="mt-1 text-[10px] text-blue-600 font-semibold flex items-center gap-1">ดูแดชบอร์ดแม่ข่าย →</p>
         </Panel>
 
-        <Panel className="p-4 bg-linear-to-br from-white to-purple-50/30 border-purple-100">
+        <Panel
+          className="p-4 bg-linear-to-br from-white to-purple-50/30 border-purple-100 cursor-pointer hover:shadow-md transition-all hover:scale-[1.02]"
+          onClick={() => setModal("bot")}
+        >
           <p className="text-[11px] font-medium text-purple-700">บอทแทงหวยจำลอง</p>
           <div className="mt-1.5 flex items-baseline justify-between">
             <p className="text-base font-black tracking-tight text-purple-900">
@@ -287,7 +274,10 @@ export function SettingsPage() {
           <p className="mt-1 text-[10px] text-purple-600/80">ทุกๆ {bot.autobet_interval_sec} วินาที</p>
         </Panel>
 
-        <Panel className="p-4 bg-linear-to-br from-white to-violet-50/30 border-violet-100">
+        <Panel
+          className="p-4 bg-linear-to-br from-white to-violet-50/30 border-violet-100 cursor-pointer hover:shadow-md transition-all hover:scale-[1.02]"
+          onClick={() => setModal("bot")}
+        >
           <p className="text-[11px] font-medium text-violet-700">บอทออกผลรางวัล</p>
           <div className="mt-1.5 flex items-baseline justify-between">
             <p className="text-base font-black tracking-tight text-violet-900">
@@ -295,14 +285,26 @@ export function SettingsPage() {
             </p>
             <span className={cn("size-2 rounded-full", bot.auto_settle_enabled ? "bg-emerald-500" : "bg-amber-400")} />
           </div>
-          <p className="mt-1 text-[10px] text-violet-600/80 truncate">CRON Secret พร้อมใช้งาน</p>
+          <p className="mt-1 text-[10px] text-violet-600/80 truncate">ดึงผล ThaiLottoAPI</p>
+        </Panel>
+
+        <Panel
+          className="p-4 bg-linear-to-br from-white to-amber-50/30 border-amber-100 cursor-pointer hover:shadow-md transition-all hover:scale-[1.02]"
+          onClick={() => setModal("security")}
+        >
+          <p className="text-[11px] font-medium text-amber-700">รหัสลับ CRON Secret</p>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <p className="text-base font-black tracking-tight text-amber-900 font-mono truncate">••••••••</p>
+            <span className="size-2 rounded-full bg-emerald-500" />
+          </div>
+          <p className="mt-1 text-[10px] text-amber-700 font-semibold">พร้อมใช้งาน</p>
         </Panel>
       </div>
 
-      {/* 6 Core Pillars */}
+      {/* 4 Core Governance Pillars */}
       <div>
-        <p className="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-3">หมวดหมู่การควบคุมระบบหลัก (Core Governance - 6 เสาหลัก)</p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <p className="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-3">หมวดหมู่การควบคุมระบบหลัก (Core Governance - 4 เสาหลัก)</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PILLARS.map((p) => (
             <button
               key={p.id}
@@ -330,96 +332,103 @@ export function SettingsPage() {
         </div>
       </div>
 
-      {/* Dedicated Modules Direct Jump (Eliminating Redundancy) */}
+      {/* Dedicated Modules Direct Jump (5 Dedicated Centers) */}
       <div className="mt-6">
         <p className="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-3">โมดูลการตั้งค่าเฉพาะทาง (Dedicated Centers)</p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <Panel className="p-4 flex items-center justify-between rounded-2xl border-neutral-200 bg-neutral-50/50 hover:bg-neutral-50 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
-                <Landmark className="size-5" />
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
+                <Landmark className="size-4.5" />
               </div>
               <div>
-                <p className="text-xs font-bold text-neutral-800">จัดการบัญชีธนาคาร</p>
-                <p className="text-[11px] text-neutral-400">บัญชีรับเงินฝากของระบบ</p>
+                <p className="text-xs font-bold text-neutral-800">ธนาคาร & เกณฑ์การเงิน</p>
+                <p className="text-[10px] text-neutral-400">บัญชีรับฝาก & เพดานถอน</p>
               </div>
             </div>
-            <a
-              href="#/banks"
-              onClick={(e) => {
-                e.preventDefault();
-                window.location.hash = "banks";
-              }}
-              className="flex items-center gap-1 rounded-xl bg-white border border-neutral-200 px-2.5 py-1.5 text-xs font-bold text-neutral-700 shadow-xs hover:border-brand-500 hover:text-brand-600"
+            <button
+              type="button"
+              onClick={() => navigate("banks")}
+              className="flex items-center gap-1 rounded-xl bg-white border border-neutral-200 px-2.5 py-1.5 text-xs font-bold text-neutral-700 shadow-2xs hover:border-brand-500 hover:text-brand-600 cursor-pointer"
             >
               ไป <ExternalLink className="size-3" />
-            </a>
+            </button>
+          </Panel>
+
+          <Panel className="p-4 flex items-center justify-between rounded-2xl border-neutral-200 bg-linear-to-br from-blue-50/30 to-white hover:bg-blue-50/50 transition-colors border-blue-100">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                <Share2 className="size-4.5" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-blue-950">แดชบอร์ดแนะนำเพื่อน</p>
+                <p className="text-[10px] text-blue-600/80">เครือข่าย & ส่วนแบ่งคอมฯ</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("affiliate")}
+              className="flex items-center gap-1 rounded-xl bg-blue-600 text-white px-2.5 py-1.5 text-xs font-bold shadow-2xs hover:bg-blue-700 cursor-pointer"
+            >
+              ไป <ExternalLink className="size-3" />
+            </button>
           </Panel>
 
           <Panel className="p-4 flex items-center justify-between rounded-2xl border-neutral-200 bg-neutral-50/50 hover:bg-neutral-50 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-                <Users className="size-5" />
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+                <Users className="size-4.5" />
               </div>
               <div>
-                <p className="text-xs font-bold text-neutral-800">สมาชิก & สายแนะนำ</p>
-                <p className="text-[11px] text-neutral-400">โครงข่ายแม่ข่ายและลูกข่าย</p>
+                <p className="text-xs font-bold text-neutral-800">จัดการสมาชิก</p>
+                <p className="text-[10px] text-neutral-400">ประวัติและข้อมูลผู้เล่น</p>
               </div>
             </div>
-            <a
-              href="#/members"
-              onClick={(e) => {
-                e.preventDefault();
-                window.location.hash = "members";
-              }}
-              className="flex items-center gap-1 rounded-xl bg-white border border-neutral-200 px-2.5 py-1.5 text-xs font-bold text-neutral-700 shadow-xs hover:border-brand-500 hover:text-brand-600"
+            <button
+              type="button"
+              onClick={() => navigate("members")}
+              className="flex items-center gap-1 rounded-xl bg-white border border-neutral-200 px-2.5 py-1.5 text-xs font-bold text-neutral-700 shadow-2xs hover:border-brand-500 hover:text-brand-600 cursor-pointer"
             >
               ไป <ExternalLink className="size-3" />
-            </a>
+            </button>
           </Panel>
 
           <Panel className="p-4 flex items-center justify-between rounded-2xl border-neutral-200 bg-neutral-50/50 hover:bg-neutral-50 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                <Disc3 className="size-5" />
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <Disc3 className="size-4.5" />
               </div>
               <div>
-                <p className="text-xs font-bold text-neutral-800">จัดการวงล้อเสี่ยงโชค</p>
-                <p className="text-[11px] text-neutral-400">อัตราแจกและราคาหมุน</p>
+                <p className="text-xs font-bold text-neutral-800">วงล้อเสี่ยงโชค</p>
+                <p className="text-[10px] text-neutral-400">อัตราแจกและราคาหมุน</p>
               </div>
             </div>
-            <a
-              href="#/wheel"
-              onClick={(e) => {
-                e.preventDefault();
-                window.location.hash = "wheel";
-              }}
-              className="flex items-center gap-1 rounded-xl bg-white border border-neutral-200 px-2.5 py-1.5 text-xs font-bold text-neutral-700 shadow-xs hover:border-brand-500 hover:text-brand-600"
+            <button
+              type="button"
+              onClick={() => navigate("wheel")}
+              className="flex items-center gap-1 rounded-xl bg-white border border-neutral-200 px-2.5 py-1.5 text-xs font-bold text-neutral-700 shadow-2xs hover:border-brand-500 hover:text-brand-600 cursor-pointer"
             >
               ไป <ExternalLink className="size-3" />
-            </a>
+            </button>
           </Panel>
 
           <Panel className="p-4 flex items-center justify-between rounded-2xl border-neutral-200 bg-neutral-50/50 hover:bg-neutral-50 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
-                <Megaphone className="size-5" />
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
+                <Megaphone className="size-4.5" />
               </div>
               <div>
                 <p className="text-xs font-bold text-neutral-800">แถบตัววิ่ง & ประกาศ</p>
-                <p className="text-[11px] text-neutral-400">ตัววิ่งหน้าเว็บและข้อความ</p>
+                <p className="text-[10px] text-neutral-400">ตัววิ่งหน้าเว็บและแจ้งเตือน</p>
               </div>
             </div>
-            <a
-              href="#/broadcast"
-              onClick={(e) => {
-                e.preventDefault();
-                window.location.hash = "broadcast";
-              }}
-              className="flex items-center gap-1 rounded-xl bg-white border border-neutral-200 px-2.5 py-1.5 text-xs font-bold text-neutral-700 shadow-xs hover:border-brand-500 hover:text-brand-600"
+            <button
+              type="button"
+              onClick={() => navigate("broadcast")}
+              className="flex items-center gap-1 rounded-xl bg-white border border-neutral-200 px-2.5 py-1.5 text-xs font-bold text-neutral-700 shadow-2xs hover:border-brand-500 hover:text-brand-600 cursor-pointer"
             >
               ไป <ExternalLink className="size-3" />
-            </a>
+            </button>
           </Panel>
         </div>
       </div>

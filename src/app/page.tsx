@@ -33,8 +33,15 @@ export default function Page() {
     // 1. ตรวจสอบ Local Storage session ก่อน
     try {
       const saved = localStorage.getItem(SESSION_KEY);
+      const savedProf = localStorage.getItem("thlotto_admin_profile");
       if (saved) {
         setCurrentUser(saved);
+        if (savedProf) {
+          try {
+            const parsed = JSON.parse(savedProf);
+            syncAdminProfile(parsed, saved);
+          } catch {}
+        }
       }
     } catch {
       // ignore localStorage errors in private browsing/sandboxes
@@ -163,6 +170,7 @@ export default function Page() {
         setCurrentUser(null);
         try {
           localStorage.removeItem(SESSION_KEY);
+          localStorage.removeItem("thlotto_admin_profile");
         } catch {
           // ignore
         }

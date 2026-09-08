@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Zap, Dices, Banknote, Trophy, Users, TrendingUp, RefreshCw, Settings2, Sliders, CheckCircle2, X, Save, Sparkles } from "lucide-react";
+import { Zap, Dices, Banknote, Trophy, Users, TrendingUp, RefreshCw, Settings2, Sliders, CheckCircle2, X, Save, Sparkles, Clock, Timer } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { Panel, StatCard, StatusBadge, Avatar, PageHeader, RealtimeDot, TableWrap, Th, Td, Btn, Field, inputCls } from "../primitives";
 import { Switch } from "@/components/ui/switch";
@@ -19,13 +19,26 @@ export function LottoBall({
 }: {
   num?: string | number;
   digit?: string | number;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   variant?: "brand" | "amber" | "rose" | "purple";
 }) {
   const displayVal = num ?? digit ?? "";
-  const dim = size === "sm" ? "size-6" : size === "lg" ? "size-9" : "size-7.5";
+  const dim =
+    size === "sm"
+      ? "size-6"
+      : size === "lg"
+      ? "size-9"
+      : size === "xl"
+      ? "size-11 sm:size-12"
+      : "size-7.5";
   const innerDim =
-    size === "sm" ? "size-4.5 text-[11px]" : size === "lg" ? "size-7 text-sm" : "size-5.5 text-xs";
+    size === "sm"
+      ? "size-4.5 text-[11px]"
+      : size === "lg"
+      ? "size-7 text-sm"
+      : size === "xl"
+      ? "size-8 sm:size-9.5 text-base sm:text-lg"
+      : "size-5.5 text-xs";
 
   const outerBg =
     variant === "amber"
@@ -205,6 +218,8 @@ export function InstantOverviewPage() {
   const [activeTab, setActiveTab] = React.useState<"overview" | "rates" | "settings">("overview");
   const [tick, setTick] = React.useState(30);
   const [refreshedAt, setRefreshedAt] = React.useState("--:--:--");
+  const [currentTime, setCurrentTime] = React.useState<string>("");
+  const [secondsToNext, setSecondsToNext] = React.useState<number>(60);
   const [betTypes, setBetTypes] = React.useState<InstantBetTypeConfig[]>(INSTANT_BET_TYPES);
   const [editingType, setEditingType] = React.useState<InstantBetTypeConfig | null>(null);
   const [editRate, setEditRate] = React.useState<number>(0);
@@ -273,6 +288,27 @@ export function InstantOverviewPage() {
     }, 1000);
     return () => clearInterval(iv);
   }, [loadLiveData]);
+
+  // นาฬิกาดิจิตอลสด (Digital Clock) & นับถอยหลังรอบออกหวย 60 วินาที
+  React.useEffect(() => {
+    const updateClock = () => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString("th-TH", {
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })
+      );
+      const sec = now.getSeconds();
+      const rem = 60 - sec;
+      setSecondsToNext(rem === 60 ? 0 : rem);
+    };
+    updateClock();
+    const iv = setInterval(updateClock, 1000);
+    return () => clearInterval(iv);
+  }, []);
 
   // Live Supabase Sync for 9 Bet Types and Instant Settings
   React.useEffect(() => {
@@ -483,6 +519,188 @@ export function InstantOverviewPage() {
 
       {activeTab === "overview" ? (
         <>
+          {/* ─── Hero Showcase: ผลรางวัลงวดล่าสุด (เลข 6 หลักตรง & แตกรางวัลครบทุกระดับ) ─── */}
+          {(() => {
+            const latestDrawn = liveDraws.find((d) => d.result_6d && String(d.result_6d).length >= 6) || liveDraws[0] || null;
+            const res6d = latestDrawn?.result_6d ? String(latestDrawn.result_6d) : "";
+            const res2b = latestDrawn?.result_2bottom ? String(latestDrawn.result_2bottom) : (res6d.length >= 2 ? res6d.slice(-2) : "");
+            const p6 = res6d.length >= 6 ? res6d : null;
+            const p3front = p6 ? p6.slice(0, 3) : null;
+            const p3top = p6 ? p6.slice(-3) : null;
+            const p2top = p6 ? p6.slice(-2) : null;
+            const p2bottom = res2b || null;
+            const runTop = p3top ? Array.from(new Set(p3top.split(""))) : [];
+            const runBottom = p2bottom ? Array.from(new Set(p2bottom.split(""))) : [];
+
+            return (
+              <Panel className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white p-5 sm:p-6 text-neutral-900 shadow-xs relative">
+                {/* Header bar: Info & Minimalist Digital Clock */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-neutral-100 pb-4">
+                  {/* Left: Info & status badge */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                        <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                        ผลงวดล่าสุด #{latestDrawn?.draw_id || "—"}
+                      </span>
+                      <span className="text-xs text-neutral-500 font-mono">
+                        เวลาออกผล: {latestDrawn?.created_at ? new Date(latestDrawn.created_at).toLocaleTimeString("th-TH") : "—"} น.
+                      </span>
+                    </div>
+                    <span className="hidden md:inline-block text-neutral-300">|</span>
+                    <span className="text-xs text-neutral-500">
+                      ออกผลสุ่มอัตโนมัติทุก 1 นาที (Auto 60s)
+                    </span>
+                  </div>
+
+                  {/* Right: Minimalist Digital Clock & Countdown Timer */}
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    {/* นาฬิกาดิจิตอลมินิมอล (Live Digital Clock) */}
+                    <div className="inline-flex items-center gap-2.5 rounded-xl border border-neutral-800 bg-neutral-900 px-3.5 py-1.5 text-white shadow-xs">
+                      <div className="relative flex size-2 items-center justify-center">
+                        <span className="absolute size-2 rounded-full bg-emerald-400 animate-ping opacity-75" />
+                        <span className="relative size-1.5 rounded-full bg-emerald-400" />
+                      </div>
+                      <Clock className="size-3.5 text-neutral-400" />
+                      <div className="flex items-baseline gap-1 font-mono">
+                        <span className="text-base sm:text-lg font-bold tracking-widest tabular-nums text-emerald-400">
+                          {currentTime || "--:--:--"}
+                        </span>
+                        <span className="text-[10px] text-neutral-400 font-sans">น.</span>
+                      </div>
+                    </div>
+
+                    {/* ตัวนับถอยหลังรอบถัดไป */}
+                    <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-200/90 bg-emerald-50/80 px-3 py-1.5 text-emerald-900">
+                      <Timer className="size-3.5 text-emerald-600 animate-pulse" />
+                      <div className="flex items-baseline gap-1 text-xs">
+                        <span className="text-neutral-500 text-[11px]">งวดถัดไป:</span>
+                        <span className="font-mono font-bold text-emerald-700 tabular-nums">
+                          {String(secondsToNext).padStart(2, "0")}s
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Results Body */}
+                <div className="pt-5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+                  {/* รางวัลที่ 1 (เลข 6 หลักตรง) */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-neutral-700 flex items-center gap-1.5">
+                        <Trophy className="size-3.5 text-amber-500" />
+                        รางวัลที่ 1 (6 ตัวตรง)
+                      </span>
+                      <span className="rounded-md bg-amber-50 px-2 py-0.5 font-mono text-[10px] font-bold text-amber-700 ring-1 ring-inset ring-amber-200">
+                        จ่าย 15,000x
+                      </span>
+                    </div>
+
+                    {p6 ? (
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        {p6.split("").map((num, idx) => (
+                          <LottoBall key={idx} num={num} size="xl" />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 py-2">
+                        <span className="text-sm font-medium text-neutral-400">กำลังรอการออกผลสุ่มงวดถัดไป...</span>
+                      </div>
+                    )}
+                    <p className="text-[11px] text-neutral-400">
+                      ผลลัพธ์คำนวณอัตโนมัติแบบโปร่งใสตามรอบเวลาทุกนาที
+                    </p>
+                  </div>
+
+                  {/* การแตกรางวัลย่อย (สไตล์มินิมอล คลีนๆ) */}
+                  {p6 ? (
+                    <div className="space-y-2.5 rounded-xl border border-neutral-200/70 bg-neutral-50/70 p-3.5 min-w-[320px] lg:min-w-[480px]">
+                      <div className="flex items-center justify-between border-b border-neutral-200/60 pb-1.5">
+                        <span className="text-[11px] font-bold text-neutral-600">
+                          การแตกรางวัลย่อยจากผล 6 หลัก
+                        </span>
+                        <span className="text-[10px] text-neutral-400 font-mono">
+                          3 หลัก ➔ 2 หลัก ➔ วิ่ง
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {/* 3 ตัวหน้า */}
+                        <div className="rounded-lg bg-white p-2 text-center border border-neutral-200/60 shadow-2xs">
+                          <p className="text-[10px] text-purple-700 font-bold mb-1">3 ตัวหน้า (900x)</p>
+                          <div className="flex justify-center gap-0.5">
+                            {p3front?.split("").map((n, i) => (
+                              <LottoBall key={i} num={n} size="sm" variant="purple" />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 3 ตัวบน */}
+                        <div className="rounded-lg bg-white p-2 text-center border border-neutral-200/60 shadow-2xs">
+                          <p className="text-[10px] text-emerald-700 font-bold mb-1">3 ตัวบน (900x)</p>
+                          <div className="flex justify-center gap-0.5">
+                            {p3top?.split("").map((n, i) => (
+                              <LottoBall key={i} num={n} size="sm" variant="brand" />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 2 ตัวบน */}
+                        <div className="rounded-lg bg-white p-2 text-center border border-neutral-200/60 shadow-2xs">
+                          <p className="text-[10px] text-sky-700 font-bold mb-1">2 ตัวบน (90x)</p>
+                          <div className="flex justify-center gap-0.5">
+                            {p2top?.split("").map((n, i) => (
+                              <LottoBall key={i} num={n} size="sm" variant="brand" />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 2 ตัวล่าง */}
+                        <div className="rounded-lg bg-white p-2 text-center border border-neutral-200/60 shadow-2xs">
+                          <p className="text-[10px] text-amber-700 font-bold mb-1">2 ตัวล่าง (90x)</p>
+                          <div className="flex justify-center gap-0.5">
+                            {p2bottom ? (
+                              p2bottom.split("").map((n, i) => (
+                                <LottoBall key={i} num={n} size="sm" variant="amber" />
+                              ))
+                            ) : (
+                              <span className="text-xs font-mono text-neutral-400">—</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* วิ่งบน & วิ่งล่าง */}
+                      <div className="grid grid-cols-2 gap-2 pt-0.5">
+                        <div className="rounded-lg bg-white px-2.5 py-1.5 flex items-center justify-between border border-neutral-200/60">
+                          <span className="text-[10px] text-neutral-600 font-semibold">วิ่งบน (1 หลัก):</span>
+                          <div className="flex items-center gap-1">
+                            {runTop.map((n, i) => (
+                              <span key={i} className="inline-flex size-4.5 items-center justify-center rounded-full bg-emerald-600 font-mono text-[10px] font-black text-white">
+                                {n}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="rounded-lg bg-white px-2.5 py-1.5 flex items-center justify-between border border-neutral-200/60">
+                          <span className="text-[10px] text-neutral-600 font-semibold">วิ่งล่าง (1 หลัก):</span>
+                          <div className="flex items-center gap-1">
+                            {runBottom.map((n, i) => (
+                              <span key={i} className="inline-flex size-4.5 items-center justify-center rounded-full bg-amber-500 font-mono text-[10px] font-black text-white">
+                                {n}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </Panel>
+            );
+          })()}
+
           {/* KPI 6 cards */}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
             <StatCard icon={Zap} label="รอบวันนี้" value={fmtNum(s.total_draws_today)} sub="งวด" tone="amber" />
@@ -531,7 +749,7 @@ export function InstantOverviewPage() {
                     <Th>รหัสรอบ</Th>
                     <Th>เวลา</Th>
                     <Th>สถานะ</Th>
-                    <Th>ผล 3 ตัวบน / 2 ตัวล่าง</Th>
+                    <Th className="min-w-[280px]">ผลรางวัล 6 ตัวตรง & รางวัลย่อย</Th>
                     <Th className="text-right">โพย</Th>
                     <Th className="text-right">ยอดแทง</Th>
                     <Th className="text-right">ยอดจ่าย</Th>
@@ -544,8 +762,11 @@ export function InstantOverviewPage() {
                         ? new Date(d.created_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
                         : "—";
                       const statusVal = (d.status || "PENDING").toLowerCase();
-                      const threeTop = d.result_6d ? d.result_6d.slice(-3) : null;
-                      const twoBottom = d.result_2bottom || null;
+                      const full6 = d.result_6d && String(d.result_6d).length >= 6 ? String(d.result_6d) : null;
+                      const threeTop = full6 ? full6.slice(-3) : null;
+                      const twoTop = full6 ? full6.slice(-2) : null;
+                      const threeFront = full6 ? full6.slice(0, 3) : null;
+                      const twoBottom = d.result_2bottom || (full6 ? full6.slice(-2) : null);
 
                       return (
                         <tr key={d.id || d.draw_id} className="transition-colors hover:bg-neutral-50/70">
@@ -553,26 +774,41 @@ export function InstantOverviewPage() {
                           <Td className="whitespace-nowrap text-xs text-neutral-500">{timeStr}</Td>
                           <Td><StatusBadge status={statusVal as any} /></Td>
                           <Td>
-                            {threeTop ? (
-                              <div className="flex items-center gap-2 flex-wrap py-0.5">
-                                <div className="inline-flex items-center gap-1 rounded-lg bg-emerald-50/70 px-2 py-1 ring-1 ring-inset ring-emerald-200/60">
-                                  <span className="text-[10px] font-bold text-emerald-900">3บน</span>
+                            {full6 ? (
+                              <div className="space-y-1.5 py-1">
+                                {/* แถวบน: รางวัลที่ 1 แสดง 6 ลูกบอลครบทุกหลัก */}
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] font-bold text-neutral-400">6 หลัก:</span>
                                   <div className="flex items-center gap-0.5">
-                                    {threeTop.split("").map((digit: string, idx: number) => (
+                                    {full6.split("").map((digit: string, idx: number) => (
                                       <LottoBall key={idx} num={digit} size="sm" />
                                     ))}
                                   </div>
                                 </div>
-                                {twoBottom && (
-                                  <div className="inline-flex items-center gap-1 rounded-lg bg-amber-50/70 px-2 py-1 ring-1 ring-inset ring-amber-200/60">
-                                    <span className="text-[10px] font-bold text-amber-900">2ล่าง</span>
-                                    <div className="flex items-center gap-0.5">
-                                      {twoBottom.split("").map((digit: string, idx: number) => (
-                                        <LottoBall key={idx} num={digit} size="sm" variant="amber" />
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
+
+                                {/* แถวล่าง: รางวัลย่อยที่แตกออกมา (3บน, 2ล่าง, 2บน, 3หน้า) */}
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {threeTop && (
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 ring-1 ring-emerald-200">
+                                      3บน: <span className="font-mono text-emerald-950">{threeTop}</span>
+                                    </span>
+                                  )}
+                                  {twoBottom && (
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 ring-1 ring-amber-200">
+                                      2ล่าง: <span className="font-mono text-amber-950">{twoBottom}</span>
+                                    </span>
+                                  )}
+                                  {twoTop && (
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-700">
+                                      2บน: <span className="font-mono">{twoTop}</span>
+                                    </span>
+                                  )}
+                                  {threeFront && (
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-purple-50 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">
+                                      3หน้า: <span className="font-mono">{threeFront}</span>
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             ) : (
                               <span className="text-xs text-neutral-400 font-medium">รอออกผล</span>
