@@ -1733,13 +1733,24 @@ export async function POST(req: NextRequest) {
       }
 
       case "send_broadcast": {
-        const { title, body, type, audience, user_id } = payload;
+        const { title, body, type, channel, action_url, audience, user_id } = payload || {};
+        const normalizedType =
+          type === "warning" ? "WARNING" :
+          type === "success" ? "PROMOTION" : "SYSTEM";
+        const metaData = {
+          is_popup: channel === "popup",
+          channel: channel || "inapp",
+          action_url: action_url || null,
+          raw_type: type || "info",
+        };
+
         if (audience === "individual" && user_id) {
           const { data, error } = await supabaseAdmin.from("notifications").insert([{
             user_id,
-            type: type || "info",
+            type: normalizedType,
             title: title || "ประกาศจากระบบ",
             body: body || "",
+            data: metaData,
             is_read: false,
           }]).select();
           if (error) throw error;
@@ -1754,9 +1765,10 @@ export async function POST(req: NextRequest) {
 
           const rows = (members || []).map((m) => ({
             user_id: m.id,
-            type: type || "info",
+            type: normalizedType,
             title: title || "ประกาศจากระบบ",
             body: body || "",
+            data: metaData,
             is_read: false,
           }));
 

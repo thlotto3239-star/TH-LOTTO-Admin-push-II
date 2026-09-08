@@ -128,20 +128,22 @@ export function BroadcastPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "send_broadcast",
-          payload: {
-            title: title.trim(),
-            body: body.trim(),
-            type,
-            audience,
-            user_id: picked?.id,
-          },
-        }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        toast({ title: "ส่งประกาศเรียบร้อย", description: `${channelLabel} · ${TYPE_UI[type].label} · ถึง ${json.count || 1} คน` });
-        loadHistory();
+            action: "send_broadcast",
+            payload: {
+              title: title.trim(),
+              body: body.trim(),
+              type,
+              channel,
+              action_url: actionUrl.trim() || undefined,
+              audience,
+              user_id: picked?.id,
+            },
+          }),
+        });
+        const json = await res.json();
+        if (json.success) {
+          toast({ title: "ส่งประกาศเรียบร้อย", description: `${channelLabel} · ${TYPE_UI[type].label} · ถึง ${json.count || 1} คน` });
+          loadHistory();
       } else {
         toast({ title: "ส่งประกาศล้มเหลว", description: json.error, variant: "destructive" });
       }
