@@ -678,6 +678,16 @@ export async function GET(req: NextRequest) {
         });
       }
 
+      case "settings": {
+        const { data, error } = await supabaseAdmin.from("settings").select("key, value");
+        if (error) throw error;
+        const dict: Record<string, string> = {};
+        (data || []).forEach((row: any) => {
+          if (row.key) dict[row.key] = row.value ?? "";
+        });
+        return NextResponse.json({ success: true, data: dict });
+      }
+
       case "export": {
         const table = searchParams.get("table") || "profiles";
         const allowed = ["profiles", "bets", "transactions", "lottery_results", "settings", "promotions", "deposit_requests", "withdraw_requests", "banks", "announcements"];
@@ -1056,6 +1066,54 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, count: upsertRows.length });
       }
 
+      case "update_appearance": {
+        const p = payload || {};
+        const pairs: { key: string; value: string; updated_at: string }[] = [];
+        const nowIso = new Date().toISOString();
+
+        const add = (k: string, v: any) => {
+          if (v !== undefined && v !== null) {
+            pairs.push({ key: k, value: String(v), updated_at: nowIso });
+          }
+        };
+
+        add("site_name", p.site_name);
+        add("site_tagline", p.site_tagline);
+        add("site_badge", p.site_badge);
+        add("login_hero_heading", p.login_hero_heading);
+        add("login_feature_1", p.login_feature_1);
+        add("login_feature_2", p.login_feature_2);
+        add("login_feature_3", p.login_feature_3);
+        add("login_stat_1_val", p.login_stat_1_val);
+        add("login_stat_1_label", p.login_stat_1_label);
+        add("login_stat_2_val", p.login_stat_2_val);
+        add("login_stat_2_label", p.login_stat_2_label);
+        add("login_stat_3_val", p.login_stat_3_val);
+        add("login_stat_3_label", p.login_stat_3_label);
+        add("login_form_title", p.login_form_title);
+        add("login_form_subtitle", p.login_form_subtitle);
+        add("login_badge_1_title", p.login_badge_1_title);
+        add("login_badge_1_sub", p.login_badge_1_sub);
+        add("login_badge_2_title", p.login_badge_2_title);
+        add("login_badge_2_sub", p.login_badge_2_sub);
+        add("login_badge_3_title", p.login_badge_3_title);
+        add("login_badge_3_sub", p.login_badge_3_sub);
+        add("site_copyright", p.site_copyright);
+        add("site_logo_url", p.logo_url);
+        add("site_favicon_url", p.favicon_url);
+        add("login_bg_url", p.login_bg_url);
+        add("site_primary_color", p.primary_color);
+        add("theme_primary_color", p.primary_color);
+        add("theme_font", p.font || p.font_family);
+        add("theme_dark_mode", p.dark_mode ? "true" : "false");
+
+        if (pairs.length > 0) {
+          const { error } = await supabaseAdmin.from("settings").upsert(pairs, { onConflict: "key" });
+          if (error) throw error;
+        }
+        return NextResponse.json({ success: true, count: pairs.length });
+      }
+
       case "mark_notification_read": {
         const { id } = payload;
         const { data, error } = await supabaseAdmin
@@ -1358,12 +1416,22 @@ export async function POST(req: NextRequest) {
           seo_meta_keywords,
           seo_og_image_url,
           login_bg_url,
+          login_hero_heading,
+          login_feature_1,
+          login_feature_2,
+          login_feature_3,
+          login_stat_1_val,
+          login_stat_1_label,
+          login_stat_2_val,
+          login_stat_2_label,
+          login_stat_3_val,
+          login_stat_3_label,
         } = payload || {};
 
         const now = new Date().toISOString();
         const updates: { key: string; value: string; updated_at: string }[] = [];
 
-        // Brand Identity
+        // Brand Identity & Login Content
         if (site_name !== undefined) updates.push({ key: "site_name", value: String(site_name), updated_at: now });
         if (site_tagline !== undefined) updates.push({ key: "site_tagline", value: String(site_tagline), updated_at: now });
         if (site_short_name !== undefined) updates.push({ key: "site_short_name", value: String(site_short_name), updated_at: now });
@@ -1373,6 +1441,18 @@ export async function POST(req: NextRequest) {
         if (app_icon_url !== undefined) updates.push({ key: "site_app_icon_url", value: String(app_icon_url), updated_at: now });
         if (login_bg_url !== undefined) updates.push({ key: "login_bg_url", value: String(login_bg_url), updated_at: now });
         if (footer_copyright !== undefined) updates.push({ key: "footer_copyright", value: String(footer_copyright), updated_at: now });
+
+        // Login Page Texts & Stats
+        if (login_hero_heading !== undefined) updates.push({ key: "login_hero_heading", value: String(login_hero_heading), updated_at: now });
+        if (login_feature_1 !== undefined) updates.push({ key: "login_feature_1", value: String(login_feature_1), updated_at: now });
+        if (login_feature_2 !== undefined) updates.push({ key: "login_feature_2", value: String(login_feature_2), updated_at: now });
+        if (login_feature_3 !== undefined) updates.push({ key: "login_feature_3", value: String(login_feature_3), updated_at: now });
+        if (login_stat_1_val !== undefined) updates.push({ key: "login_stat_1_val", value: String(login_stat_1_val), updated_at: now });
+        if (login_stat_1_label !== undefined) updates.push({ key: "login_stat_1_label", value: String(login_stat_1_label), updated_at: now });
+        if (login_stat_2_val !== undefined) updates.push({ key: "login_stat_2_val", value: String(login_stat_2_val), updated_at: now });
+        if (login_stat_2_label !== undefined) updates.push({ key: "login_stat_2_label", value: String(login_stat_2_label), updated_at: now });
+        if (login_stat_3_val !== undefined) updates.push({ key: "login_stat_3_val", value: String(login_stat_3_val), updated_at: now });
+        if (login_stat_3_label !== undefined) updates.push({ key: "login_stat_3_label", value: String(login_stat_3_label), updated_at: now });
 
         // Design & Theming
         if (primary_color !== undefined) {
