@@ -21,6 +21,7 @@ export type PageId =
   | "settings"
   | "appearance"
   | "banks"
+  | "affiliate"
   | "broadcast"
   | "data-management"
   | "admins";
@@ -180,7 +181,8 @@ export const PAGE_META: Record<PageId, { title: string; group: string }> = {
   feeds: { title: "จัดการฟีด", group: "คอนเทนต์" },
   settings: { title: "ตั้งค่าระบบ", group: "ระบบ" },
   appearance: { title: "รูปลักษณ์", group: "ระบบ" },
-  banks: { title: "ธนาคาร", group: "ระบบ" },
+  banks: { title: "ธนาคาร & เกณฑ์การเงิน", group: "การเงิน" },
+  affiliate: { title: "ระบบแนะนำเพื่อน & คอมมิชชั่น", group: "สมาชิก" },
   broadcast: { title: "ส่งแจ้งเตือน", group: "ระบบ" },
   "data-management": { title: "สำรองและจัดการข้อมูล", group: "ระบบ" },
   admins: { title: "ผู้ดูแลระบบ", group: "ระบบ" },

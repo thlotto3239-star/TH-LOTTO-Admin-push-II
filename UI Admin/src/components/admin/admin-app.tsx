@@ -5,7 +5,7 @@ import {
   LayoutDashboard, ArrowDownToLine, ArrowUpFromLine, Users, Dices, BadgeCheck,
   Zap, Disc3, Megaphone, Wrench, UserCog, Bell, Menu, LogOut, ChevronDown, Search,
   Images, Newspaper, Rss, Palette, Landmark, RadioTower, DatabaseBackup,
-  ShieldAlert, Ticket, Check,
+  ShieldAlert, Ticket, Check, Share2,
 } from "lucide-react";
 import { useAdminNav, KNOWN_ADMINS, PAGE_META, type PageId } from "./store";
 import { Btn, Avatar } from "./primitives";
@@ -30,6 +30,7 @@ import { ArticlesPage } from "./pages/articles";
 import { FeedsPage } from "./pages/feeds";
 import { AppearancePage } from "./pages/appearance";
 import { BanksPage } from "./pages/banks";
+import { AffiliatePage } from "./pages/affiliate";
 import { BroadcastPage } from "./pages/broadcast";
 import { DataManagementPage } from "./pages/data-management";
 import {
@@ -51,11 +52,15 @@ const NAV: { group: string; items: { id: PageId; label: string; icon: React.Comp
     items: [
       { id: "deposits", label: "รายการฝากเงิน", icon: ArrowDownToLine, badge: (n) => n.dep },
       { id: "withdrawals", label: "รายการถอนเงิน", icon: ArrowUpFromLine, badge: (n) => n.wth },
+      { id: "banks", label: "ธนาคาร & เกณฑ์การเงิน", icon: Landmark },
     ],
   },
   {
     group: "สมาชิก",
-    items: [{ id: "members", label: "จัดการสมาชิก", icon: Users, badge: (n) => n.kyc }],
+    items: [
+      { id: "members", label: "จัดการสมาชิก", icon: Users, badge: (n) => n.kyc },
+      { id: "affiliate", label: "แนะนำเพื่อน & คอมมิชชั่น", icon: Share2 },
+    ],
   },
   {
     group: "หวย",
@@ -88,7 +93,6 @@ const NAV: { group: string; items: { id: PageId; label: string; icon: React.Comp
     items: [
       { id: "settings", label: "ตั้งค่าระบบ", icon: Wrench },
       { id: "appearance", label: "รูปลักษณ์", icon: Palette },
-      { id: "banks", label: "ธนาคาร", icon: Landmark },
       { id: "broadcast", label: "ส่งแจ้งเตือน", icon: RadioTower },
       { id: "data-management", label: "สำรองและจัดการข้อมูล", icon: DatabaseBackup },
       { id: "admins", label: "ผู้ดูแลระบบ", icon: UserCog },
@@ -327,10 +331,16 @@ function AdminProfileMenu({ onLogout }: { onLogout?: () => void }) {
 }
 
 export function AdminApp({ onLogout }: { onLogout?: () => void } = {}) {
-  const { page, currentAdmin } = useAdminNav();
+  const { page, currentAdmin, navigate } = useAdminNav();
   const { fetchCounts } = useAdminCounts();
   const [mobileNav, setMobileNav] = React.useState(false);
   const meta = PAGE_META[page];
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).__navigate = navigate;
+    }
+  }, [navigate]);
 
   React.useEffect(() => {
     fetchCounts();
@@ -387,6 +397,7 @@ export function AdminApp({ onLogout }: { onLogout?: () => void } = {}) {
       case "settings": return <SettingsPage />;
       case "appearance": return <AppearancePage />;
       case "banks": return <BanksPage />;
+      case "affiliate": return <AffiliatePage />;
       case "broadcast": return <BroadcastPage />;
       case "data-management": return <DataManagementPage />;
       case "admins": return <AdminsPage />;
