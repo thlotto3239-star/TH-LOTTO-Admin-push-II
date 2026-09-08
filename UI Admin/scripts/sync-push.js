@@ -42,12 +42,24 @@ for (const item of items) {
 }
 
 // Git commit & push
-console.log("📦 Staging, committing and pushing to TH-LOTTO-Admin-push-II...");
+console.log("📦 Staging, committing and pushing to deployment repos...");
 execSync(`git add -A`, { cwd: DEPLOY_DIR, stdio: "inherit" });
 try {
   execSync(`git commit -m "${commitMsg}"`, { cwd: DEPLOY_DIR, stdio: "inherit" });
+} catch (e) {
+  console.log("No new changes to commit.");
+}
+
+try {
   execSync(`git push origin main && git push origin main:master`, { cwd: DEPLOY_DIR, stdio: "inherit" });
   console.log("✅ Successfully deployed to GitHub TH-LOTTO-Admin-push-II!");
 } catch (e) {
-  console.log("Nothing to commit or already up to date.");
+  console.warn("Failed pushing to TH-LOTTO-Admin-push-II:", e.message);
+}
+
+try {
+  execSync(`git push push_v1 main --force && git push push_v1 main:master --force`, { cwd: DEPLOY_DIR, stdio: "inherit" });
+  console.log("✅ Successfully deployed to GitHub TH-LOTTO-Admin-push (Vercel Live)!");
+} catch (e) {
+  console.warn("Failed pushing to TH-LOTTO-Admin-push:", e.message);
 }
