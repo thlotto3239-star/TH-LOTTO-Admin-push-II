@@ -176,6 +176,10 @@ export function MemberDetailPage() {
     .filter((b) => b.status === "WON")
     .reduce((sum, b) => sum + Number(b.actual_payout || 0), 0);
 
+  const isOnline = profile.last_seen_at
+    ? Date.now() - new Date(profile.last_seen_at).getTime() < 5 * 60 * 1000
+    : false;
+
   const member: Member = {
     id: profile.id,
     member_id: profile.member_id || profile.id.slice(0, 8).toUpperCase(),
@@ -228,13 +232,20 @@ export function MemberDetailPage() {
               </div>
               <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 <StatusBadge status={member.status} />
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                  <span className="relative flex size-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+                {isOnline ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                    <span className="relative flex size-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+                    </span>
+                    ออนไลน์ขณะนี้
                   </span>
-                  ออนไลน์ขณะนี้
-                </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-600">
+                    <span className="size-2 rounded-full bg-neutral-400" />
+                    ออฟไลน์ {profile.last_seen_at ? `(${fmtD(profile.last_seen_at)})` : ""}
+                  </span>
+                )}
                 <span className="inline-flex items-center whitespace-nowrap rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-inset ring-amber-200">
                   {vipDisplay}
                 </span>
@@ -459,19 +470,28 @@ export function MemberDetailPage() {
         <TabsContent value="logins" className="mt-4 space-y-4">
           <OpenStreetMapCard
             data={{
-              ip: logins[0]?.ip_address || "182.232.84.112",
-              isOnline: true,
-              loginAt: logins[0] ? fmtD(logins[0].attempted_at) : "วันนี้ 02:15 น.",
-              ...parseDeviceFromUA(undefined, logins[0]?.ip_address || "182.232.84.112"),
+              ip: logins[0]?.ip_address || profile.last_login_ip || "127.0.0.1",
+              isOnline,
+              loginAt: logins[0] ? fmtD(logins[0].attempted_at) : (profile.last_login_at ? fmtD(profile.last_login_at) : "ยังไม่มีบันทึก"),
+              city: logins[0]?.city || profile.last_login_city || "กรุงเทพมหานคร",
+              region: logins[0]?.region || "",
+              country: logins[0]?.country || "ประเทศไทย",
+              lat: Number(logins[0]?.latitude) || 13.7563,
+              lon: Number(logins[0]?.longitude) || 100.5018,
+              isp: logins[0]?.isp || "เครือข่ายอินเทอร์เน็ตจริง",
+              deviceType: (logins[0]?.device_type as any) || "desktop",
+              deviceModel: logins[0]?.device_model || profile.last_login_device || "คอมพิวเตอร์ / โทรศัพท์มือถือ",
+              os: logins[0]?.os || "Windows / iOS",
+              browser: logins[0]?.browser || "Web Browser",
             }}
           />
 
           <Panel>
             <div className="border-b border-neutral-100 px-4 py-3 flex items-center justify-between">
               <p className="text-sm font-bold text-neutral-900">
-                ประวัติการล็อกอินและเซสชัน <span className="ml-1 text-[11px] font-medium text-neutral-400">({logins.length} รายการ)</span>
+                ประวัติการล็อกอินและเซสชันจริง <span className="ml-1 text-[11px] font-medium text-neutral-400">({logins.length} รายการ)</span>
               </p>
-              <span className="text-[11px] text-neutral-400">ตรวจสอบตำแหน่งและอุปกรณ์ที่ใช้</span>
+              <span className="text-[11px] text-neutral-400">บันทึกพิกัด IP, ISP และโมเดลอุปกรณ์ตามจริง</span>
             </div>
             {logins.length === 0 ? (
               <EmptyState title="ไม่มีประวัติการล็อกอิน" desc="ยังไม่มีบันทึก login_attempts ของเบอร์นี้" />
@@ -480,26 +500,36 @@ export function MemberDetailPage() {
                 <thead>
                   <tr>
                     <Th>วันเวลา</Th>
-                    <Th>อุปกรณ์ / บราวเซอร์</Th>
-                    <Th>IP Address / พิกัดเมือง</Th>
+                    <Th>อุปกรณ์ / โมเดลเครื่อง</Th>
+                    <Th>ระบบปฏิบัติการ & บราวเซอร์</Th>
+                    <Th>IP Address / พิกัดจริง</Th>
                     <Th>ผลลัพธ์</Th>
                   </tr>
                 </thead>
                 <tbody>
-                  {logins.map((l: any, idx: number) => {
-                    const dev = parseDeviceFromUA(undefined, l.ip_address || `182.232.${idx}.112`);
+                  {logins.map((l: any) => {
+                    const deviceLabel = l.device_model || (l.user_agent ? parseDeviceFromUA(l.user_agent).deviceModel : "ไม่ระบุอุปกรณ์");
+                    const osBrowser = l.os || l.browser ? `${l.os || ""} ${l.browser ? `(${l.browser})` : ""}`.trim() : (l.user_agent ? `${parseDeviceFromUA(l.user_agent).os} (${parseDeviceFromUA(l.user_agent).browser})` : "-");
+                    const cityLabel = l.city ? `${l.city}${l.country ? ` · ${l.country}` : ""}` : "ไม่ระบุพิกัด";
+
                     return (
                       <tr key={l.id} className="transition-colors hover:bg-neutral-50/70">
                         <Td className="whitespace-nowrap text-xs font-medium text-neutral-800">{fmtD(l.attempted_at)}</Td>
                         <Td className="whitespace-nowrap text-xs">
-                          <span className="font-semibold text-neutral-800">{dev.deviceModel}</span>
-                          <span className="ml-1 text-[11px] text-neutral-400">({dev.browser})</span>
+                          <span className="font-semibold text-neutral-800">{deviceLabel}</span>
+                          <span className="ml-1.5 text-[10px] uppercase font-bold text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">
+                            {l.device_type || "web"}
+                          </span>
+                        </Td>
+                        <Td className="whitespace-nowrap text-xs text-neutral-600">
+                          {osBrowser}
                         </Td>
                         <Td className="whitespace-nowrap text-xs">
-                          <span className="font-mono text-neutral-700">{l.ip_address || "182.232.84.112"}</span>
+                          <span className="font-mono text-neutral-800 font-semibold">{l.ip_address || "-"}</span>
                           <span className="ml-1.5 inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] text-neutral-600">
-                            📍 {dev.city}
+                            📍 {cityLabel}
                           </span>
+                          {l.isp && <p className="text-[10px] text-neutral-400 truncate max-w-[200px]">{l.isp}</p>}
                         </Td>
                         <Td>
                           {l.success ? (

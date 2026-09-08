@@ -285,10 +285,10 @@ export function MarketsPage() {
               "4TOP": 6000,
             };
 
-            const defaultLimits = existingMock?.limits || {
-              min_bet: 1,
-              max_bet: 20000,
-              max_per_number: 50000,
+            const defaultLimits = {
+              min_bet: Number(live.min_bet ?? existingMock?.limits?.min_bet ?? 1),
+              max_bet: Number(live.max_bet ?? existingMock?.limits?.max_bet ?? 20000),
+              max_per_number: Number(live.max_per_number ?? existingMock?.limits?.max_per_number ?? 50000),
             };
 
             const isMaekhong = live.category === "MAEKHONG" || live.code.startsWith("MK_");
@@ -360,6 +360,9 @@ export function MarketsPage() {
             is_active: updated.active,
             rates: updated.rates,
             limits: updated.limits,
+            min_bet: updated.limits.min_bet,
+            max_bet: updated.limits.max_bet,
+            max_per_number: updated.limits.max_per_number,
           },
         }),
       });

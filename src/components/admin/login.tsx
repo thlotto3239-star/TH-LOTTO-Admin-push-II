@@ -201,6 +201,16 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any)
           .eq("id", signInRes.data.user.id)
           .maybeSingle();
 
+        // บันทึก Session พร้อม Real GeoIP & Device Forensics
+        fetch("/api/admin/data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "record_login_attempt",
+            payload: { phone: standardPhone, user_id: signInRes.data.user.id, success: true },
+          }),
+        }).catch((err) => console.warn("Failed to record login attempt:", err));
+
         const adminName = prof?.full_name || "ผู้ดูแลระบบ";
         toast({
           title: "เข้าสู่ระบบสำเร็จ",
@@ -220,6 +230,17 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any)
           is_super: true,
           avatar_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/avatars/8cd9dc58-d2eb-4aed-a5bc-f4cd74cb3ee4/1780530738154.jpg",
         };
+
+        // บันทึก Session พร้อม Real GeoIP & Device Forensics สำหรับเจ้าของระบบ
+        fetch("/api/admin/data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "record_login_attempt",
+            payload: { phone: "0622306037", user_id: fallbackProf.id, success: true },
+          }),
+        }).catch((err) => console.warn("Failed to record login attempt:", err));
+
         toast({
           title: "เข้าสู่ระบบสำเร็จ",
           description: "ยินดีต้อนรับเจ้าของระบบ",
@@ -229,6 +250,16 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any)
       }
 
       if (signInRes.error) {
+        // บันทึก failed login attempt
+        fetch("/api/admin/data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "record_login_attempt",
+            payload: { phone: standardPhone, user_id: null, success: false },
+          }),
+        }).catch(() => {});
+
         toast({
           variant: "destructive",
           title: "เข้าสู่ระบบไม่สำเร็จ",

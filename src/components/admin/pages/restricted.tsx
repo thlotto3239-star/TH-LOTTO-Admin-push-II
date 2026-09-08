@@ -106,9 +106,23 @@ export function RestrictedNumbersPage() {
     e.preventDefault();
     if (!form.number.trim()) return;
 
-    const targetMkt = marketList.find((m) => m.id === form.market_id) || MARKETS[0];
+    const parsedDate = (() => {
+      if (!form.draw_date) return null;
+      const parts = form.draw_date.trim().split(/[\/\-]/);
+      if (parts.length === 3) {
+        let day = parseInt(parts[0], 10);
+        let month = parseInt(parts[1], 10);
+        let year = parseInt(parts[2], 10);
+        if (year > 2400) year -= 543;
+        if (year < 100) year += 2000;
+        return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      }
+      return null;
+    })();
+
+    const tempId = "rn_" + Date.now();
     const newRecord: RestrictedNumber = {
-      id: "rn_" + Date.now(),
+      id: tempId,
       market_id: form.market_id || (marketList[0]?.id ?? ""),
       market_name: targetMkt?.name || "หวย",
       market_code: targetMkt.code,
@@ -139,7 +153,7 @@ export function RestrictedNumbersPage() {
     });
 
     try {
-      await fetch("/api/admin/data", {
+      const res = await fetch("/api/admin/data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -150,11 +164,16 @@ export function RestrictedNumbersPage() {
             number: form.number.trim(),
             max_amount: Number(form.max_amount) || 0,
             payout_rate: form.mode === "blocked" ? 0 : form.payout_rate,
-            draw_date: "2026-09-16",
+            draw_date: parsedDate,
             note: form.mode === "blocked" ? "เลขอั้น" : "เลขจ่ายครึ่ง",
           },
         }),
       });
+      const data = await res.json();
+      if (data?.data?.[0]?.id) {
+        const realId = data.data[0].id;
+        setRows((prev) => prev.map((r) => (r.id === tempId ? { ...r, id: realId } : r)));
+      }
     } catch (err) {
       console.error("Failed to sync restricted number to Supabase:", err);
     }

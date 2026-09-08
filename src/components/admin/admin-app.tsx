@@ -327,7 +327,7 @@ function AdminProfileMenu({ onLogout }: { onLogout?: () => void }) {
 }
 
 export function AdminApp({ onLogout }: { onLogout?: () => void } = {}) {
-  const { page } = useAdminNav();
+  const { page, currentAdmin } = useAdminNav();
   const { fetchCounts } = useAdminCounts();
   const [mobileNav, setMobileNav] = React.useState(false);
   const meta = PAGE_META[page];
@@ -347,11 +347,25 @@ export function AdminApp({ onLogout }: { onLogout?: () => void } = {}) {
     syncResults();
     const syncTimer = setInterval(syncResults, 60000);
 
+    // Periodic heartbeat to keep presence accurate in profiles.last_seen_at
+    const sendHeartbeat = () => {
+      if (currentAdmin?.id) {
+        fetch("/api/admin/data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "heartbeat", payload: { user_id: currentAdmin.id } }),
+        }).catch(() => {});
+      }
+    };
+    sendHeartbeat();
+    const heartbeatTimer = setInterval(sendHeartbeat, 60000);
+
     return () => {
       clearInterval(timer);
       clearInterval(syncTimer);
+      clearInterval(heartbeatTimer);
     };
-  }, [fetchCounts]);
+  }, [fetchCounts, currentAdmin?.id]);
 
   const renderPage = () => {
     switch (page) {
