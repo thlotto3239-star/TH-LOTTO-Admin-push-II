@@ -56,12 +56,14 @@ export function PageHeader({
 export function Panel({
   className,
   children,
+  onClick,
 }: {
   className?: string;
   children: React.ReactNode;
+  onClick?: () => void;
 }) {
   return (
-    <div className={cn("rounded-2xl border border-neutral-200 bg-white", className)}>
+    <div onClick={onClick} className={cn("rounded-2xl border border-neutral-200 bg-white", className)}>
       {children}
     </div>
   );
