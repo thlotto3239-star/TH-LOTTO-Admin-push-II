@@ -53,24 +53,6 @@ export const KNOWN_ADMINS: CurrentAdminProfile[] = [
     is_super: true,
     avatar_url: null,
   },
-  {
-    id: "98fb9b29-0915-494e-9e43-8844771fc784",
-    full_name: "แอดมิน2",
-    phone: "0999999993",
-    admin_role: "admin",
-    is_super: false,
-    avatar_url: null,
-    permissions: ["members", "bets", "deposits", "withdrawals"],
-  },
-  {
-    id: "290daa61-3596-435f-b6db-67e549d514fe",
-    full_name: "armuxui สําหรับทดสอบระบบ",
-    phone: "armuxui2@gmail.com",
-    admin_role: "admin",
-    is_super: false,
-    avatar_url: null,
-    permissions: ["members", "bets", "deposits", "withdrawals"],
-  },
 ];
 
 interface AdminNavState {
