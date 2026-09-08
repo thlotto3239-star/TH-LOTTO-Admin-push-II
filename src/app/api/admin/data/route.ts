@@ -788,9 +788,18 @@ export async function POST(req: NextRequest) {
 
       case "upsert_restricted_number": {
         const { market_id, bet_type, number, max_amount, payout_rate, draw_date, note } = payload;
+        const validMarketId = market_id && market_id !== "ALL" && market_id !== "none" ? market_id : null;
         const { data, error } = await supabaseAdmin
           .from("restricted_numbers")
-          .insert([{ market_id, bet_type, number, max_amount, payout_rate, draw_date, note }])
+          .insert([{
+            market_id: validMarketId,
+            bet_type: bet_type || "2TOP",
+            number: String(number || ""),
+            max_amount: Number(max_amount ?? 0),
+            payout_rate: Number(payout_rate ?? 0),
+            draw_date: draw_date || null,
+            note: note || null,
+          }])
           .select();
         if (error) throw error;
         return NextResponse.json({ success: true, data });
