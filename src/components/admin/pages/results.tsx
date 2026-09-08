@@ -15,6 +15,7 @@ import {
   Filter,
   ArrowRight,
   TrendingUp,
+  Plus,
 } from "lucide-react";
 import {
   Panel,
@@ -27,7 +28,11 @@ import {
   StatCard,
   EmptyState,
   MarketLogo,
+  Field,
+  inputCls,
 } from "../primitives";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +52,212 @@ interface MarketItem {
   logo_url?: string | null;
 }
 
+function ManualDrawModal({
+  open,
+  onClose,
+  markets,
+  onSuccess,
+}: {
+  open: boolean;
+  onClose: () => void;
+  markets: MarketItem[];
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+  const [marketId, setMarketId] = React.useState(markets[0]?.id || "");
+  const [drawDate, setDrawDate] = React.useState(new Date().toISOString().slice(0, 10));
+  const [resultMain, setResultMain] = React.useState("");
+  const [result3top, setResult3top] = React.useState("");
+  const [result2top, setResult2top] = React.useState("");
+  const [result2bottom, setResult2bottom] = React.useState("");
+  const [result3front, setResult3front] = React.useState("");
+  const [result3bottom, setResult3bottom] = React.useState("");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!marketId && markets.length > 0) {
+      setMarketId(markets[0].id);
+    }
+  }, [marketId, markets]);
+
+  const handleMainChange = (val: string) => {
+    setResultMain(val);
+    const clean = val.replace(/\D/g, "");
+    if (clean.length >= 3) {
+      setResult3top(clean.slice(-3));
+      setResult2top(clean.slice(-2));
+    } else if (clean.length === 2) {
+      setResult2top(clean);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!marketId) {
+      toast({ title: "กรุณาเลือกตลาดหวย", variant: "destructive" });
+      return;
+    }
+    if (!result3top && !resultMain) {
+      toast({ title: "กรุณาระบุเลขรางวัล", variant: "destructive" });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "record_result",
+          payload: {
+            market_id: marketId,
+            draw_date: drawDate,
+            result_main: resultMain,
+            result_3top: result3top,
+            result_2top: result2top,
+            result_2bottom: result2bottom,
+            result_3front: result3front,
+            result_3bottom: result3bottom,
+          },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({
+          title: "บันทึกและตัดยอดรางวัลแล้ว",
+          description: `งวดวันที่ ${drawDate} คำนวณยอดได้เสียและโอนเข้ากระเป๋าสมาชิกสำเร็จ`,
+        });
+        onSuccess();
+        onClose();
+      } else {
+        toast({ title: "บันทึกผลล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "เชื่อมต่อล้มเหลว", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="rounded-3xl sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="size-5 text-brand-600" /> บันทึกผลรางวัลด้วยมือ (Manual Draw)
+          </DialogTitle>
+          <DialogDescription>
+            บันทึกผลรางวัลและตัดยอดโพยหวยทุกใบโดยอัตโนมัติ พร้อมโอนเงินรางวัลเข้ากระเป๋าสมาชิกทันที
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="เลือกตลาดหวย">
+              <Select value={marketId} onValueChange={setMarketId}>
+                <SelectTrigger className={inputCls}>
+                  <SelectValue placeholder="เลือกตลาดหวย" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 rounded-2xl">
+                  {markets.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name} ({m.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+
+            <Field label="งวดประจำวันที่">
+              <Input
+                type="date"
+                value={drawDate}
+                onChange={(e) => setDrawDate(e.target.value)}
+                className={inputCls}
+                required
+              />
+            </Field>
+          </div>
+
+          <Field label="เลขรางวัลหลัก / รางวัลที่ 1 (4 - 6 หลัก)">
+            <Input
+              value={resultMain}
+              onChange={(e) => handleMainChange(e.target.value)}
+              placeholder="เช่น 523904 หรือ 8921"
+              className={cn(inputCls, "font-mono text-base font-bold tracking-widest")}
+            />
+          </Field>
+
+          <div className="grid grid-cols-3 gap-2.5">
+            <Field label="3 ตัวบน">
+              <Input
+                value={result3top}
+                onChange={(e) => setResult3top(e.target.value)}
+                placeholder="เช่น 904"
+                maxLength={3}
+                className={cn(inputCls, "font-mono font-bold text-center")}
+                required
+              />
+            </Field>
+            <Field label="2 ตัวบน">
+              <Input
+                value={result2top}
+                onChange={(e) => setResult2top(e.target.value)}
+                placeholder="เช่น 04"
+                maxLength={2}
+                className={cn(inputCls, "font-mono font-bold text-center")}
+              />
+            </Field>
+            <Field label="2 ตัวล่าง">
+              <Input
+                value={result2bottom}
+                onChange={(e) => setResult2bottom(e.target.value)}
+                placeholder="เช่น 87"
+                maxLength={2}
+                className={cn(inputCls, "font-mono font-bold text-center")}
+                required
+              />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <Field label="3 ตัวหน้า (ถ้ามี)">
+              <Input
+                value={result3front}
+                onChange={(e) => setResult3front(e.target.value)}
+                placeholder="เช่น 245, 381"
+                className={cn(inputCls, "font-mono text-center")}
+              />
+            </Field>
+            <Field label="3 ตัวท้าย / ล่าง (ถ้ามี)">
+              <Input
+                value={result3bottom}
+                onChange={(e) => setResult3bottom(e.target.value)}
+                placeholder="เช่น 584, 912"
+                className={cn(inputCls, "font-mono text-center")}
+              />
+            </Field>
+          </div>
+
+          <DialogFooter className="gap-2 pt-2">
+            <Btn type="button" variant="outline" className="rounded-full" onClick={onClose}>
+              ยกเลิก
+            </Btn>
+            <Btn
+              type="submit"
+              disabled={isSubmitting}
+              className="rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold"
+            >
+              {isSubmitting ? <RefreshCw className="size-4 animate-spin mr-1.5" /> : <BadgeCheck className="size-4 mr-1.5" />}
+              บันทึกผล & ตัดยอดทันที
+            </Btn>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function ResultsPage() {
   const { toast } = useToast();
   const [results, setResults] = React.useState<any[]>([]);
@@ -54,6 +265,7 @@ export function ResultsPage() {
   const [schedules, setSchedules] = React.useState<DrawSchedule[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [syncing, setSyncing] = React.useState(false);
+  const [manualModalOpen, setManualModalOpen] = React.useState(false);
   const [activeCategory, setActiveCategory] = React.useState("ALL");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [liveFeedActive, setLiveFeedActive] = React.useState(true);
@@ -240,6 +452,15 @@ export function ResultsPage() {
           >
             <RefreshCw className={cn("size-3.5", syncing && "animate-spin")} />
             <span>{syncing ? "กำลังเชื่อมต่อ API..." : "ดึงผลสด ThaiLottoAPI ทันที"}</span>
+          </Btn>
+
+          {/* ปุ่มกรอกผลด้วยมือ */}
+          <Btn
+            onClick={() => setManualModalOpen(true)}
+            className="rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold flex items-center gap-1.5 shadow-sm h-9 px-4 text-xs"
+          >
+            <Plus className="size-3.5" />
+            <span>กรอกผลด้วยมือ</span>
           </Btn>
         </div>
       </PageHeader>
@@ -589,6 +810,13 @@ export function ResultsPage() {
           </tbody>
         </TableWrap>
       </Panel>
+
+      <ManualDrawModal
+        open={manualModalOpen}
+        onClose={() => setManualModalOpen(false)}
+        markets={markets}
+        onSuccess={() => loadData()}
+      />
     </div>
   );
 }

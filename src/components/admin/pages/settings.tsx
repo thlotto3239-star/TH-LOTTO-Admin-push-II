@@ -232,7 +232,13 @@ export function SettingsPage() {
 
       {/* KPI Mini-Dashboard (6 Pillars Overview) */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <Panel className={cn("p-4 border", site.site_enabled ? "bg-linear-to-br from-white to-emerald-50/30 border-emerald-100" : "bg-linear-to-br from-white to-rose-50/30 border-rose-100")}>
+        <Panel
+          className={cn(
+            "p-4 border cursor-pointer hover:shadow-md transition-all hover:scale-[1.02]",
+            site.site_enabled ? "bg-linear-to-br from-white to-emerald-50/30 border-emerald-100" : "bg-linear-to-br from-white to-rose-50/30 border-rose-100"
+          )}
+          onClick={() => setModal("site")}
+        >
           <p className="text-[11px] font-medium text-neutral-400">สถานะระบบหน้าเว็บ</p>
           <div className="mt-1.5 flex items-baseline justify-between">
             <p className={cn("text-base font-black tracking-tight", site.site_enabled ? "text-emerald-600" : "text-rose-600")}>
