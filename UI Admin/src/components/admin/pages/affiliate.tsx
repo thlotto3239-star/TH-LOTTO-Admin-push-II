@@ -187,7 +187,7 @@ export function AffiliatePage() {
         <Panel className="p-4 bg-linear-to-br from-white to-emerald-50/40 border-emerald-100">
           <p className="text-[11px] font-medium text-emerald-700">คอมมิชชั่นคงค้างในกระเป๋า</p>
           <div className="mt-1.5 flex items-baseline justify-between">
-            <p className="text-2xl font-black tracking-tight text-emerald-600">฿{fmtNum(stats.total_commission_balance)}</p>
+            <p className="text-2xl font-black tracking-tight text-emerald-600">฿{fmtNum(stats.total_commission_balance, 2)}</p>
             <span className="text-xs font-bold text-emerald-700">บาท</span>
           </div>
           <p className="mt-1 text-[11px] text-emerald-600/80 truncate">พร้อมให้สมาชิกรอโอนเข้ากระเป๋าหลัก</p>
@@ -261,9 +261,8 @@ export function AffiliatePage() {
               <div className="pt-4">
                 {topReferrers.length === 0 ? (
                   <EmptyState
-                    icon={Share2}
                     title="ยังไม่มีข้อมูลแม่ข่ายแนะนำเพื่อน"
-                    description="เมื่อสมาชิกเริ่มแชร์ลิงก์และมีเพื่อนสมัคร รายชื่อแม่ข่ายจะแสดงที่นี่โดยอัตโนมัติ"
+                    desc="เมื่อสมาชิกเริ่มแชร์ลิงก์และมีเพื่อนสมัคร รายชื่อแม่ข่ายจะแสดงที่นี่โดยอัตโนมัติ"
                   />
                 ) : (
                   <div className="overflow-x-auto">
@@ -301,7 +300,7 @@ export function AffiliatePage() {
 
                             <td className="py-3.5">
                               <div className="flex items-center gap-3">
-                                <Avatar name={r.full_name} src={r.avatar_url} size="sm" />
+                                <Avatar name={r.full_name} imageUrl={r.avatar_url} className="size-8" />
                                 <div>
                                   <p className="font-bold text-neutral-900">{r.full_name}</p>
                                   <p className="text-[11px] font-mono text-neutral-400">
@@ -322,7 +321,7 @@ export function AffiliatePage() {
                             </td>
 
                             <td className="py-3.5 text-right font-mono font-bold text-emerald-600">
-                              ฿{fmtNum(r.commission_balance)}
+                              ฿{fmtNum(r.commission_balance, 2)}
                             </td>
 
                             <td className="py-3.5 text-center">
@@ -348,9 +347,8 @@ export function AffiliatePage() {
               <div className="pt-4">
                 {filteredNetwork.length === 0 ? (
                   <EmptyState
-                    icon={Users}
                     title="ไม่พบรายชื่อลูกข่าย"
-                    description={searchQuery ? "ลองค้นหาด้วยคำค้นอื่น" : "ยังไม่มีสมาชิกที่สมัครผ่านลิงก์แนะนำ"}
+                    desc={searchQuery ? "ลองค้นหาด้วยคำค้นอื่น" : "ยังไม่มีสมาชิกที่สมัครผ่านลิงก์แนะนำ"}
                   />
                 ) : (
                   <div className="overflow-x-auto">
@@ -370,7 +368,7 @@ export function AffiliatePage() {
                           <tr key={m.id} className="hover:bg-neutral-50/80 transition-colors">
                             <td className="py-3">
                               <div className="flex items-center gap-2.5">
-                                <Avatar name={m.full_name} src={m.avatar_url} size="sm" />
+                                <Avatar name={m.full_name} imageUrl={m.avatar_url} className="size-8" />
                                 <div>
                                   <p className="font-bold text-neutral-900">{m.full_name}</p>
                                   <p className="text-[11px] font-mono text-neutral-400">
