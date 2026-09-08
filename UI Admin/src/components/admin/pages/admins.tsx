@@ -9,7 +9,7 @@ import { useAdminNav } from "../store";
 import { PERMISSION_KEYS, type AdminUser } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
-function AdminForm({ initial, onClose, onSave }: { initial: AdminUser; onClose: () => void; onSave: (a: AdminUser) => void }) {
+function AdminForm({ initial, onClose, onSave }: { initial: AdminUser; onClose: () => void; onSave: (a: AdminUser, password?: string) => void }) {
   const [f, setF] = React.useState<AdminUser>(initial);
   const [pw, setPw] = React.useState("");
   const isNew = !initial.id;
@@ -18,6 +18,19 @@ function AdminForm({ initial, onClose, onSave }: { initial: AdminUser; onClose: 
   const togglePerm = (key: string) => {
     if (isSuper) return;
     setF((p) => ({ ...p, permissions: p.permissions.includes(key) ? p.permissions.filter((k) => k !== key) : [...p.permissions, key] }));
+  };
+
+  const handleFormSubmit = () => {
+    if (!f.phone?.trim()) {
+      alert("กรุณาระบุเบอร์โทรศัพท์สำหรับเข้าใช้งาน");
+      return;
+    }
+    if (isNew && (!pw || pw.length < 6)) {
+      alert("กรุณากำหนดรหัสผ่านอย่างน้อย 6 ตัวอักษร");
+      return;
+    }
+    onSave(f, pw);
+    onClose();
   };
 
   return (
@@ -33,7 +46,7 @@ function AdminForm({ initial, onClose, onSave }: { initial: AdminUser; onClose: 
           <Field label="ชื่อ-นามสกุล"><Input value={f.full_name} onChange={(e) => setF({ ...f, full_name: e.target.value })} className={inputCls} /></Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="เบอร์โทร (ใช้ล็อกอิน)"><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} className={inputCls} /></Field>
-            <Field label={isNew ? "รหัสผ่าน" : "รหัสผ่าน (เว้นว่าง = ไม่เปลี่ยน)"}>
+            <Field label={isNew ? "รหัสผ่าน (อย่างน้อย 6 ตัว)" : "รหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)"}>
               <Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" className={inputCls} />
             </Field>
           </div>
@@ -56,9 +69,30 @@ function AdminForm({ initial, onClose, onSave }: { initial: AdminUser; onClose: 
           </Field>
 
           <div className="mt-1">
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-neutral-400">
-              สิทธิ์ที่เลือก <span className={cn("ml-1 font-bold", isSuper ? "text-neutral-400" : "text-brand-600")}>({f.permissions.length}/15)</span>
-            </p>
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-wide text-neutral-400">
+                สิทธิ์ที่เลือก <span className={cn("ml-1 font-bold", isSuper ? "text-neutral-400" : "text-brand-600")}>({isSuper ? 15 : f.permissions.length}/15)</span>
+              </p>
+              {!isSuper && (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setF((p) => ({ ...p, permissions: PERMISSION_KEYS.map((k) => k.key) }))}
+                    className="text-[11px] font-semibold text-brand-600 hover:underline"
+                  >
+                    เลือกทั้งหมด
+                  </button>
+                  <span className="text-neutral-300">·</span>
+                  <button
+                    type="button"
+                    onClick={() => setF((p) => ({ ...p, permissions: [] }))}
+                    className="text-[11px] font-semibold text-neutral-400 hover:underline"
+                  >
+                    ล้างทั้งหมด
+                  </button>
+                </div>
+              )}
+            </div>
             {isSuper ? (
               <p className="rounded-2xl bg-neutral-50 px-3.5 py-3 text-xs text-neutral-500">ผู้ดูแลสูงสุดมีสิทธิ์ทุกอย่างอัตโนมัติ และสามารถเพิ่ม/ลดสิทธิ์ของผู้ดูแลคนอื่นได้</p>
             ) : (
@@ -89,7 +123,72 @@ function AdminForm({ initial, onClose, onSave }: { initial: AdminUser; onClose: 
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Btn variant="outline" className="rounded-full" onClick={onClose}>ยกเลิก</Btn>
-          <Btn className="rounded-full bg-brand-600 hover:bg-brand-700" onClick={() => { onSave(f); onClose(); }}>บันทึก</Btn>
+          <Btn className="rounded-full bg-brand-600 hover:bg-brand-700" onClick={handleFormSubmit}>บันทึกข้อมูลจริง</Btn>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PasswordResetDialog({ admin, onClose, onSuccess }: { admin: AdminUser; onClose: () => void; onSuccess: () => void }) {
+  const [newPassword, setNewPassword] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
+  const { toast } = useToast();
+
+  const handleSave = async () => {
+    if (newPassword.length < 6) {
+      toast({ title: "รหัสผ่านสั้นเกินไป", description: "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 6 ตัวอักษร", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_admin_user",
+          payload: { id: admin.id, password: newPassword },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: "เปลี่ยนรหัสผ่านสำเร็จ", description: `อัปเดตรหัสผ่านใหม่สำหรับ ${admin.full_name} (${admin.phone}) ในระบบเรียบร้อยแล้ว` });
+        onSuccess();
+        onClose();
+      } else {
+        toast({ title: "เกิดข้อผิดพลาด", description: json.error, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "เชื่อมต่อล้มเหลว", description: e.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="rounded-3xl sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>รีเซ็ตรหัสผ่าน — {admin.full_name}</DialogTitle>
+          <DialogDescription>กำหนดรหัสผ่านใหม่สำหรับบัญชีแอดมินเบอร์ {admin.phone}</DialogDescription>
+        </DialogHeader>
+        <div className="py-2">
+          <Field label="รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)">
+            <Input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="กรอกรหัสผ่านใหม่ที่นี่..."
+              className={inputCls}
+            />
+          </Field>
+        </div>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Btn variant="outline" className="rounded-full" onClick={onClose} disabled={saving}>ยกเลิก</Btn>
+          <Btn className="rounded-full bg-brand-600 hover:bg-brand-700" onClick={handleSave} disabled={saving}>
+            {saving ? <Loader2 className="mr-1.5 size-4 animate-spin" /> : <KeyRound className="mr-1.5 size-4" />}
+            บันทึกรหัสผ่านใหม่
+          </Btn>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -102,29 +201,39 @@ export function AdminsPage() {
   const [rows, setRows] = React.useState<AdminUser[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [form, setForm] = React.useState<{ initial: AdminUser } | null>(null);
+  const [pwModal, setPwModal] = React.useState<AdminUser | null>(null);
   const [confirmDel, setConfirmDel] = React.useState<AdminUser | null>(null);
 
   const isSuperAdmin = currentAdmin?.admin_role === "super_admin" || currentAdmin?.is_super;
 
-  const emptyAdmin: AdminUser = { id: "", full_name: "", phone: "", role: "admin", status: "active", permissions: [], avatar_color: "#0d9488" };
+  const emptyAdmin: AdminUser = { id: "", full_name: "", phone: "", role: "admin", status: "active", permissions: ["deposits", "withdrawals", "members", "bets"], avatar_color: "#0d9488" };
 
   const fetchAdmins = React.useCallback(async () => {
     try {
       const res = await fetch("/api/admin/data?resource=admins");
       const json = await res.json();
       if (json.success && Array.isArray(json.data?.admins)) {
-        const mapped: AdminUser[] = json.data.admins.map((a: any) => ({
-          id: a.id,
-          full_name: a.full_name || "แอดมิน",
-          phone: a.phone || "-",
-          role: a.admin_role === "super_admin" ? "super" : "admin",
-          status: (a.status as AdminUser["status"]) || "active",
-          permissions: a.admin_role === "super_admin"
-            ? PERMISSION_KEYS.map((k) => k.key)
-            : ["members", "bets", "results", "deposits"],
-          avatar_color: a.admin_role === "super_admin" ? "#d97706" : "#0d9488",
-          avatar_url: a.avatar_url || null,
-        }));
+        const mapped: AdminUser[] = json.data.admins.map((a: any) => {
+          let perms: string[] = [];
+          if (a.admin_role === "super_admin") {
+            perms = PERMISSION_KEYS.map((k) => k.key);
+          } else if (Array.isArray(a.admin_permissions) && a.admin_permissions.length > 0) {
+            perms = a.admin_permissions.includes("*") ? PERMISSION_KEYS.map((k) => k.key) : a.admin_permissions;
+          } else {
+            perms = ["deposits", "withdrawals", "members", "bets"];
+          }
+
+          return {
+            id: a.id,
+            full_name: a.full_name || "แอดมิน",
+            phone: a.phone || "-",
+            role: (a.admin_role === "super_admin" ? "super" : "admin") as "super" | "admin",
+            status: (a.status as AdminUser["status"]) || "active",
+            permissions: perms,
+            avatar_color: a.admin_role === "super_admin" ? "#d97706" : "#0d9488",
+            avatar_url: a.avatar_url || null,
+          };
+        });
         setRows(mapped);
       }
     } catch (e) {
@@ -138,7 +247,7 @@ export function AdminsPage() {
     fetchAdmins();
   }, [fetchAdmins]);
 
-  const handleSaveAdmin = async (a: AdminUser) => {
+  const handleSaveAdmin = async (a: AdminUser, password?: string) => {
     if (!isSuperAdmin) {
       toast({
         title: "ไม่มีสิทธิ์ดำเนินการ",
@@ -154,13 +263,17 @@ export function AdminsPage() {
         ? {
             full_name: a.full_name,
             phone: a.phone,
+            password: password || undefined,
             admin_role: a.role === "super" ? "super_admin" : "admin",
+            permissions: a.role === "super" ? ["*"] : a.permissions,
           }
         : {
             id: a.id,
             full_name: a.full_name,
             phone: a.phone,
+            password: password && password.length >= 6 ? password : undefined,
             admin_role: a.role === "super" ? "super_admin" : "admin",
+            permissions: a.role === "super" ? ["*"] : a.permissions,
             status: a.status,
           };
 
@@ -172,8 +285,8 @@ export function AdminsPage() {
       const json = await res.json();
       if (json.success) {
         toast({
-          title: isNew ? "เพิ่มผู้ดูแลระบบแล้ว" : "บันทึกผู้ดูแลแล้ว",
-          description: `${a.full_name} · สิทธิ์ ${a.role === "super" ? "ทั้งหมด" : "ระดับแอดมิน"}`,
+          title: isNew ? "เพิ่มผู้ดูแลระบบสำเร็จ" : "บันทึกข้อมูลและสิทธิ์แอดมินแล้ว",
+          description: `${a.full_name} · สิทธิ์: ${a.role === "super" ? "ทุกสิทธิ์ (Super Admin)" : `${a.permissions.length} สิทธิ์ที่เลือก`}`,
         });
         fetchAdmins();
       } else {
@@ -184,17 +297,47 @@ export function AdminsPage() {
     }
   };
 
-  const resetPw = (a: AdminUser) => {
+  const handleRevokeAdmin = async (a: AdminUser) => {
     if (!isSuperAdmin) {
-      toast({ title: "ไม่มีสิทธิ์", description: "เฉพาะ Super Admin เท่านั้นที่รีเซ็ตรหัสผ่านได้", variant: "destructive" });
+      toast({ title: "ไม่มีสิทธิ์", description: "เฉพาะ Super Admin เท่านั้นที่สามารถถอดสิทธิ์แอดมินได้", variant: "destructive" });
       return;
     }
-    toast({ title: "ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว", description: `ระบบรีเซ็ตรหัสผ่านสำหรับ ${a.full_name} (${a.phone})` });
+    if (a.id === currentAdmin?.id) {
+      toast({ title: "ไม่สามารถดำเนินการได้", description: "ไม่สามารถถอดสิทธิ์บัญชีของตนเองได้", variant: "destructive" });
+      return;
+    }
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete_admin_user",
+          payload: { id: a.id },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({
+          title: "ถอดสิทธิ์ผู้ดูแลระบบแล้ว",
+          description: `${a.full_name} ถูกลดระดับกลับเป็นสมาชิกทั่วไปเรียบร้อยแล้ว`,
+        });
+        setConfirmDel(null);
+        fetchAdmins();
+      } else {
+        toast({ title: "เกิดข้อผิดพลาด", description: json.error, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "เชื่อมต่อล้มเหลว", description: e.message, variant: "destructive" });
+    }
   };
 
   const toggleSuspend = async (a: AdminUser) => {
     if (!isSuperAdmin) {
       toast({ title: "ไม่มีสิทธิ์", description: "เฉพาะ Super Admin เท่านั้นที่สามารถระงับแอดมินได้", variant: "destructive" });
+      return;
+    }
+    if (a.id === currentAdmin?.id) {
+      toast({ title: "ไม่สามารถดำเนินการได้", description: "ไม่สามารถระงับบัญชีของตนเองได้", variant: "destructive" });
       return;
     }
     const next = a.status === "active" ? "inactive" : "active";
@@ -329,18 +472,34 @@ export function AdminsPage() {
                   <Td className="text-right">
                     {isSuperAdmin ? (
                       <div className="flex items-center justify-end gap-1">
-                        <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" onClick={() => setForm({ initial: a })}><Pencil className="size-3.5" /> แก้ไข</Btn>
-                        <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" title="รีเซ็ตรหัสผ่าน" onClick={() => resetPw(a)}><KeyRound className="size-3.5" /> รหัสผ่าน</Btn>
+                        <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" onClick={() => setForm({ initial: a })}>
+                          <Pencil className="size-3.5" /> แก้ไข
+                        </Btn>
+                        <Btn variant="outline" size="sm" className="h-8 whitespace-nowrap rounded-full px-2.5" title="รีเซ็ตรหัสผ่าน" onClick={() => setPwModal(a)}>
+                          <KeyRound className="size-3.5" /> รหัสผ่าน
+                        </Btn>
                         <Btn
                           variant="outline"
                           size="sm"
                           className={cn("h-8 whitespace-nowrap rounded-full px-2.5", a.status === "active" ? "border-amber-200 text-amber-700 hover:bg-amber-50" : "border-brand-200 text-brand-700 hover:bg-brand-50")}
                           title={a.status === "active" ? "ระงับแอดมิน" : "ปลดระงับ"}
                           onClick={() => toggleSuspend(a)}
+                          disabled={a.id === currentAdmin?.id}
                         >
                           {a.status === "active" ? <Ban className="size-3.5" /> : <RotateCcw className="size-3.5" />}
                           {a.status === "active" ? "ระงับ" : "ปลด"}
                         </Btn>
+                        {a.id !== currentAdmin?.id ? (
+                          <Btn
+                            variant="outline"
+                            size="sm"
+                            className="h-8 whitespace-nowrap rounded-full px-2 text-rose-600 hover:border-rose-300 hover:bg-rose-50"
+                            title="ถอดสิทธิ์แอดมิน"
+                            onClick={() => setConfirmDel(a)}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Btn>
+                        ) : null}
                       </div>
                     ) : (
                       <div className="flex items-center justify-end">
@@ -359,6 +518,18 @@ export function AdminsPage() {
       </Panel>
 
       {form ? <AdminForm initial={form.initial} onClose={() => setForm(null)} onSave={handleSaveAdmin} /> : null}
+      {pwModal ? <PasswordResetDialog admin={pwModal} onClose={() => setPwModal(null)} onSuccess={fetchAdmins} /> : null}
+      {confirmDel ? (
+        <ConfirmDialog
+          open
+          title="ยืนยันการถอดสิทธิ์ผู้ดูแลระบบ"
+          desc={`ต้องการลดระดับสิทธิ์ของ ${confirmDel.full_name} (${confirmDel.phone}) กลับเป็นสมาชิกทั่วไปใช่หรือไม่? บัญชีนี้จะไม่สามารถเข้าแผงควบคุมแอดมินได้อีก`}
+          confirmLabel="ถอดสิทธิ์แอดมิน"
+          danger
+          onClose={() => setConfirmDel(null)}
+          onConfirm={() => handleRevokeAdmin(confirmDel)}
+        />
+      ) : null}
     </div>
   );
 }
