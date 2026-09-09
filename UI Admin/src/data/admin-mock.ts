@@ -908,6 +908,10 @@ export const APPEARANCE_SETTINGS = {
   font_family: "Prompt",
   default_mode: "dark",
   login_bg_url: "",
+  popup_enabled: true,
+  popup_title: "ยินดีต้อนรับสู่ TH LOTTO II",
+  popup_description: "สมาชิกใหม่ รับโบนัสฟรี 50% จากยอดฝากครั้งแรก!!",
+  popup_image_url: "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/popup/1785749698532.jpg",
 };
 
 export const PRIMARY_PALETTE = [

@@ -255,6 +255,10 @@ export function AppearancePage() {
             logo_url: dict.site_logo_url || dict.logo_url || APPEARANCE_SETTINGS.logo_url,
             favicon_url: dict.site_favicon_url || dict.favicon_url || APPEARANCE_SETTINGS.favicon_url,
             login_bg_url: dict.login_bg_url || APPEARANCE_SETTINGS.login_bg_url,
+            popup_enabled: dict.popup_enabled !== undefined ? (dict.popup_enabled === "true" || dict.popup_enabled === true) : APPEARANCE_SETTINGS.popup_enabled,
+            popup_title: dict.popup_title || APPEARANCE_SETTINGS.popup_title,
+            popup_description: dict.popup_description || APPEARANCE_SETTINGS.popup_description,
+            popup_image_url: dict.popup_image_url || APPEARANCE_SETTINGS.popup_image_url,
           };
           setS((prev) => ({ ...prev, ...loaded }));
           setInitial((prev) => ({ ...prev, ...loaded }));
@@ -307,6 +311,10 @@ export function AppearancePage() {
             logo_url: s.logo_url,
             favicon_url: s.favicon_url,
             login_bg_url: s.login_bg_url,
+            popup_enabled: s.popup_enabled,
+            popup_title: s.popup_title,
+            popup_description: s.popup_description,
+            popup_image_url: s.popup_image_url,
           },
         }),
       });
@@ -803,6 +811,62 @@ export function AppearancePage() {
               ))}
             </div>
           </Field>
+        </div>
+      </Panel>
+
+      {/* Group 6: ป๊อปอัปต้อนรับ & โปรโมชั่นหน้าแรก (Welcome & Promo Popup Modal) */}
+      <Panel className="p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-neutral-400">
+            <Sparkles className="size-4 text-amber-500" /> 6. ป๊อปอัปต้อนรับ & โปรโมชั่นหน้าแรก (Welcome & Promo Popup Modal)
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-neutral-600">
+              {s.popup_enabled ? "เปิดแสดงผลหน้าแรก" : "ปิดการแสดงผล"}
+            </span>
+            <button
+              type="button"
+              onClick={() => set("popup_enabled", !s.popup_enabled)}
+              className={cn(
+                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden",
+                s.popup_enabled ? "bg-emerald-500" : "bg-neutral-200"
+              )}
+            >
+              <span
+                className={cn(
+                  "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out",
+                  s.popup_enabled ? "translate-x-5" : "translate-x-0"
+                )}
+              />
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <Field label="หัวข้อป๊อปอัป (Popup Title)">
+            <Input
+              value={s.popup_title}
+              onChange={(e) => set("popup_title", e.target.value)}
+              placeholder="ยินดีต้อนรับสู่ TH LOTTO II"
+              className={inputCls}
+            />
+          </Field>
+
+          <Field label="รายละเอียดโปรโมชั่น / คำโปรย (Popup Description)">
+            <Input
+              value={s.popup_description}
+              onChange={(e) => set("popup_description", e.target.value)}
+              placeholder="สมาชิกใหม่ รับโบนัสฟรี 50% จากยอดฝากครั้งแรก!!"
+              className={inputCls}
+            />
+          </Field>
+
+          <ImageSlot
+            label="รูปภาพแบนเนอร์ป๊อปอัป (Popup Banner Image)"
+            hint="รองรับไฟล์ภาพ .png, .jpg, .webp อัปโหลดตรงจากคอมพิวเตอร์ หรือวางลิงก์ URL"
+            value={s.popup_image_url}
+            onPick={(v) => set("popup_image_url", v)}
+          />
         </div>
       </Panel>
     </div>
