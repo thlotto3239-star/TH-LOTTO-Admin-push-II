@@ -846,6 +846,58 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, data: data || [] });
       }
 
+      case "table-stats": {
+        const tableList = [
+          { name: "สมาชิกทั้งหมด", table: "profiles" },
+          { name: "โพยแทงหวย", table: "bets" },
+          { name: "ผลรางวัลหวย", table: "lottery_results" },
+          { name: "รอบออกรางวัล", table: "draw_schedules" },
+          { name: "ตลาดหวย", table: "lottery_markets" },
+          { name: "อัตราจ่ายรางวัล", table: "payout_rates" },
+          { name: "เลขอั้น/จ่ายครึ่ง", table: "restricted_numbers" },
+          { name: "ธุรกรรมการเงิน", table: "transactions" },
+          { name: "คำขอฝากเงิน", table: "deposit_requests" },
+          { name: "คำขอถอนเงิน", table: "withdraw_requests" },
+          { name: "บัญชีธนาคาร", table: "banks" },
+          { name: "กระเป๋าเงิน", table: "wallets" },
+          { name: "ประวัติเข้าสู่ระบบ", table: "login_attempts" },
+          { name: "หวยหนึ่งนาที (งวด)", table: "instant_draws" },
+          { name: "โพยหวยหนึ่งนาที", table: "instant_bets" },
+          { name: "วงล้อเสี่ยงโชค (หมุน)", table: "lucky_wheel_spins" },
+          { name: "ของรางวัลวงล้อ", table: "lucky_wheel_prizes" },
+          { name: "สไลเดอร์แบนเนอร์", table: "sliders" },
+          { name: "โปรโมชั่น", table: "promotions" },
+          { name: "บทความและข่าวสาร", table: "articles" },
+          { name: "ประกาศตัววิ่ง", table: "announcements" },
+          { name: "การแจ้งเตือน", table: "notifications" },
+          { name: "ตั้งค่าระบบ", table: "settings" },
+          { name: "ประวัติสำรองข้อมูล", table: "backup_logs" },
+        ];
+
+        const counts = await Promise.all(
+          tableList.map(async (t) => {
+            const { count } = await supabaseAdmin.from(t.table).select("*", { count: "exact", head: true });
+            return {
+              name: t.name,
+              table: t.table,
+              rows: count || 0,
+            };
+          })
+        );
+
+        return NextResponse.json({ success: true, data: counts });
+      }
+
+      case "backup-logs": {
+        const { data, error } = await supabaseAdmin
+          .from("backup_logs")
+          .select("*")
+          .order("backed_up_at", { ascending: false })
+          .limit(50);
+        if (error) throw error;
+        return NextResponse.json({ success: true, data: data || [] });
+      }
+
       default:
         return NextResponse.json({ success: false, error: "Invalid resource" }, { status: 400 });
     }
@@ -2043,6 +2095,23 @@ export async function POST(req: NextRequest) {
           })
           .eq("id", id)
           .select();
+        if (error) throw error;
+
+        return NextResponse.json({ success: true, data });
+      }
+
+      case "record_backup": {
+        const { backup_type, backup_date, backup_by } = payload || {};
+        const { data, error } = await supabaseAdmin
+          .from("backup_logs")
+          .insert({
+            backup_type: backup_type || "database",
+            backup_date: backup_date || new Date().toISOString().slice(0, 10),
+            backed_up_at: new Date().toISOString(),
+            backup_by: backup_by || null,
+          })
+          .select()
+          .single();
         if (error) throw error;
 
         return NextResponse.json({ success: true, data });

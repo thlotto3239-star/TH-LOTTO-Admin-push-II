@@ -26,7 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { type NewsFeed, MARKETS, mktShort } from "@/data/admin-mock";
+import { type NewsFeed, mktShort } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
 interface LiveMarket {
@@ -170,24 +170,21 @@ export function FeedsPage() {
       const mktRes = await fetch("/api/admin/data?resource=markets");
       const mktJson = await mktRes.json();
       if (mktJson.success && Array.isArray(mktJson.data)) {
-        const mapped = mktJson.data.map((m: any) => {
-          const fallback = MARKETS.find((x) => x.code === m.code);
-          return {
-            id: m.id,
-            name: m.name || fallback?.name || m.code,
-            code: m.code,
-            category: m.category || fallback?.kind || "OTHER",
-            color: fallback?.color || "#166534",
-            logo_url: m.logo_url ?? fallback?.logo_url ?? null,
-            image_url: m.image_url ?? fallback?.image_url ?? null,
-            draw_time: m.draw_time || fallback?.draw_time || "18:00",
-            close_minutes_before: m.close_minutes_before ?? fallback?.close_minutes ?? 20,
-            show_in_popular: Boolean(m.show_in_popular),
-            show_in_trending: Boolean(m.show_in_trending),
-            is_open: m.is_open ?? true,
-            is_active: m.is_active ?? true,
-          };
-        });
+        const mapped = mktJson.data.map((m: any) => ({
+          id: m.id,
+          name: m.name || m.code,
+          code: m.code,
+          category: m.category || "OTHER",
+          color: m.color || "#166534",
+          logo_url: m.logo_url ?? m.image_url ?? null,
+          image_url: m.image_url ?? m.logo_url ?? null,
+          draw_time: m.draw_time || "18:00",
+          close_minutes_before: m.close_minutes_before ?? 20,
+          show_in_popular: Boolean(m.show_in_popular),
+          show_in_trending: Boolean(m.show_in_trending),
+          is_open: m.is_open ?? true,
+          is_active: m.is_active ?? true,
+        }));
         setMarkets(mapped);
       }
 
