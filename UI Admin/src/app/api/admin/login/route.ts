@@ -6,14 +6,29 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const url = new URL("/api/admin/data", req.url);
+    const forwardHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+      "user-agent": req.headers.get("user-agent") || "",
+    };
+
+    const cfIp = req.headers.get("cf-connecting-ip");
+    if (cfIp) forwardHeaders["cf-connecting-ip"] = cfIp;
+
+    const trueIp = req.headers.get("true-client-ip");
+    if (trueIp) forwardHeaders["true-client-ip"] = trueIp;
+
+    const xClientIp = req.headers.get("x-client-ip");
+    if (xClientIp) forwardHeaders["x-client-ip"] = xClientIp;
+
+    const forwarded = req.headers.get("x-forwarded-for");
+    if (forwarded) forwardHeaders["x-forwarded-for"] = forwarded;
+
+    const realIp = req.headers.get("x-real-ip");
+    if (realIp) forwardHeaders["x-real-ip"] = realIp;
+
     const forwardRes = await fetch(url.toString(), {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-forwarded-for": req.headers.get("x-forwarded-for") || "",
-        "x-real-ip": req.headers.get("x-real-ip") || "",
-        "user-agent": req.headers.get("user-agent") || "",
-      },
+      headers: forwardHeaders,
       body: JSON.stringify({
         action: "admin_login",
         payload: body,

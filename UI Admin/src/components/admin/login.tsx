@@ -7,6 +7,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { prewarmAdminGeo, getAdminClientGeo } from "@/lib/client-geo";
 
 type Errors = { id?: string; pass?: string };
 
@@ -161,6 +162,10 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any)
   const [loading, setLoading] = React.useState(false);
   const [googleLoading, setGoogleLoading] = React.useState(false);
 
+  React.useEffect(() => {
+    prewarmAdminGeo();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading || googleLoading) return;
@@ -177,12 +182,15 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any)
 
     setLoading(true);
     try {
+      const clientGeo = await getAdminClientGeo().catch(() => null);
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           identifier: inputIdentifier,
           password: password.trim(),
+          client_ip: clientGeo?.ip,
+          client_geo: clientGeo,
         }),
       });
       const json = await res.json();
