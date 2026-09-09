@@ -396,26 +396,85 @@ export function extractEdgeGeo(req?: Request): Partial<GeoLocationInfo> | null {
 }
 
 export async function resolveIpGeo(ip?: string, clientReportedGeo?: Partial<GeoLocationInfo>, req?: Request): Promise<GeoLocationInfo> {
-  // If client provided high-precision GPS or localized geo, honor it!
-  if (clientReportedGeo?.city && !clientReportedGeo.city.includes("เครือข่ายภายใน") && !clientReportedGeo.city.includes("Local / Dev")) {
+  const cleanIp = (clientReportedGeo?.ip || ip || (req ? extractClientIp(req) : "") || "127.0.0.1").replace(/^::ffff:/, "").trim();
+
+  // 1. First & Highest Priority: Accurate client-reported public IP & province from browser lookup
+  if (clientReportedGeo?.city && 
+      !clientReportedGeo.city.includes("เครือข่ายภายใน") && 
+      !clientReportedGeo.city.includes("Localhost") && 
+      !clientReportedGeo.city.includes("Dev")) {
+    const rawCity = clientReportedGeo.city;
+    const translatedCity = translateThaiLocation(rawCity, clientReportedGeo.region);
+    const finalCity = rawCity.includes("(") ? rawCity : translatedCity;
     return {
-      ip: ip || clientReportedGeo.ip || "127.0.0.1",
-      city: clientReportedGeo.city,
-      region: clientReportedGeo.region || "",
+      ip: cleanIp,
+      city: finalCity,
+      region: clientReportedGeo.region || translatedCity,
       country: clientReportedGeo.country || "TH",
       lat: clientReportedGeo.lat || 13.7563,
       lon: clientReportedGeo.lon || 100.5018,
-      isp: clientReportedGeo.isp || "Device GPS / Client Geo",
+      isp: clientReportedGeo.isp || "ISP ประเทศไทย",
       isLocal: false,
     };
   }
 
-  // Check Edge Headers from Request
-  if (req) {
+  // 2. Direct Public IP Lookup via ipwho.is (Accurate Thailand GeoIP database)
+  if (!isLocalOrPrivateIp(cleanIp) && !isCloudOrProxyIp(cleanIp)) {
+    try {
+      const resWho = await fetch(`https://ipwho.is/${cleanIp}`, { signal: AbortSignal.timeout(2500) });
+      if (resWho.ok) {
+        const data = await resWho.json();
+        if (data && data.success !== false && data.ip) {
+          const cityTh = translateThaiLocation(data.city, data.region);
+          const rawIsp = data.connection?.isp || data.connection?.org || "";
+          const shortIsp = rawIsp.includes("AIS") || rawIsp.includes("Advanced Info") ? "AIS" :
+                           rawIsp.includes("True") || rawIsp.includes("TRUE") ? "TRUE" :
+                           rawIsp.includes("Triple T") || rawIsp.includes("3BB") ? "3BB" :
+                           rawIsp.includes("National Telecom") || rawIsp.includes("TOT") || rawIsp.includes("CAT") ? "NT" :
+                           rawIsp.includes("DTAC") || rawIsp.includes("Total Access") ? "DTAC" : "";
+          const finalCity = shortIsp ? `${cityTh} (${shortIsp})` : cityTh;
+          return {
+            ip: cleanIp,
+            city: finalCity,
+            region: data.region || cityTh,
+            country: data.country_code || data.country || "TH",
+            lat: Number(data.latitude) || 13.7563,
+            lon: Number(data.longitude) || 100.5018,
+            isp: rawIsp || "ISP ประเทศไทย",
+            isLocal: false,
+          };
+        }
+      }
+    } catch (_) {}
+
+    // Fallback: ipapi.co
+    try {
+      const resApi = await fetch(`https://ipapi.co/${cleanIp}/json/`, { signal: AbortSignal.timeout(2000) });
+      if (resApi.ok) {
+        const data = await resApi.json();
+        if (data && !data.error && data.ip) {
+          const cityTh = translateThaiLocation(data.city, data.region);
+          return {
+            ip: cleanIp,
+            city: cityTh,
+            region: data.region || cityTh,
+            country: data.country_code || data.country_name || "TH",
+            lat: Number(data.latitude) || 13.7563,
+            lon: Number(data.longitude) || 100.5018,
+            isp: data.org || "ISP ประเทศไทย",
+            isLocal: false,
+          };
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 3. Fallback: Edge Headers only if public IP is not local
+  if (req && !isLocalOrPrivateIp(cleanIp)) {
     const edgeGeo = extractEdgeGeo(req);
-    if (edgeGeo && edgeGeo.city) {
+    if (edgeGeo && edgeGeo.city && !edgeGeo.city.includes("Singapore")) {
       return {
-        ip: ip || "127.0.0.1",
+        ip: cleanIp,
         city: edgeGeo.city,
         region: edgeGeo.region || "",
         country: edgeGeo.country || "TH",
@@ -427,14 +486,12 @@ export async function resolveIpGeo(ip?: string, clientReportedGeo?: Partial<GeoL
     }
   }
 
-  const cleanIp = (ip || "127.0.0.1").replace(/^::ffff:/, "").trim();
-
-  // If local / dev environment
+  // 4. Local / Dev Environment
   if (isLocalOrPrivateIp(cleanIp)) {
     return {
       ip: cleanIp,
-      city: "กรุงเทพมหานคร (Localhost / Dev)",
-      region: "Bangkok",
+      city: "เครือข่ายภายใน (Localhost / Dev)",
+      region: "Localhost",
       country: "Thailand (TH)",
       lat: 13.7563,
       lon: 100.5018,
@@ -443,67 +500,11 @@ export async function resolveIpGeo(ip?: string, clientReportedGeo?: Partial<GeoL
     };
   }
 
-  // If known cloud proxy IP (e.g. AWS Virginia server proxy)
-  if (isCloudOrProxyIp(cleanIp)) {
-    return {
-      ip: cleanIp,
-      city: "กรุงเทพมหานคร (Cloud Proxy)",
-      region: "Bangkok",
-      country: "Thailand (TH)",
-      lat: 13.7563,
-      lon: 100.5018,
-      isp: "Cloud Application Proxy",
-      isLocal: false,
-    };
-  }
-
-  // 1. Try ipwho.is (HTTPS, highly accurate in Thailand)
-  try {
-    const resWho = await fetch(`https://ipwho.is/${cleanIp}`, { signal: AbortSignal.timeout(2500) });
-    if (resWho.ok) {
-      const data = await resWho.json();
-      if (data && data.success !== false) {
-        const cityTh = translateThaiLocation(data.city, data.region);
-        return {
-          ip: cleanIp,
-          city: cityTh,
-          region: data.region || "",
-          country: data.country_code || data.country || "TH",
-          lat: Number(data.latitude) || 13.7563,
-          lon: Number(data.longitude) || 100.5018,
-          isp: (data.connection?.isp || data.connection?.org || "ISP ไม่ระบุ"),
-          isLocal: false,
-        };
-      }
-    }
-  } catch (_) {}
-
-  // 2. Try ipapi.co fallback (HTTPS)
-  try {
-    const resApi = await fetch(`https://ipapi.co/${cleanIp}/json/`, { signal: AbortSignal.timeout(2000) });
-    if (resApi.ok) {
-      const data = await resApi.json();
-      if (data && !data.error) {
-        const cityTh = translateThaiLocation(data.city, data.region);
-        return {
-          ip: cleanIp,
-          city: cityTh,
-          region: data.region || "",
-          country: data.country_code || data.country_name || "TH",
-          lat: Number(data.latitude) || 13.7563,
-          lon: Number(data.longitude) || 100.5018,
-          isp: data.org || "ISP ไม่ระบุ",
-          isLocal: false,
-        };
-      }
-    }
-  } catch (_) {}
-
-  // Fallback
+  // 5. Final fallback
   return {
     ip: cleanIp,
-    city: "กรุงเทพมหานคร (IP เครือข่ายจริง)",
-    region: "Bangkok",
+    city: "ประเทศไทย (เครือข่ายอินเทอร์เน็ตจริง)",
+    region: "Thailand",
     country: "TH",
     lat: 13.7563,
     lon: 100.5018,
