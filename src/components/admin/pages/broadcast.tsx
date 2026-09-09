@@ -30,7 +30,7 @@ export const getTypeUI = (t?: string) => {
 
 export function BroadcastPage() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = React.useState<"compose" | "marquee">("compose");
+  const [activeTab, setActiveTab] = React.useState<"compose" | "marquee" | "popup">("compose");
   const [audience, setAudience] = React.useState<"all" | "individual">("all");
   const [channel, setChannel] = React.useState<"inapp" | "popup">("inapp");
   const [type, setType] = React.useState<BroadcastMsg["type"]>("info");
@@ -47,6 +47,59 @@ export function BroadcastPage() {
   // Marquee running ticker state
   const [marqueeList, setMarqueeList] = React.useState<{ id: string; text: string; is_active: boolean }[]>([]);
   const [newMarqueeText, setNewMarqueeText] = React.useState("");
+
+  // Welcome / Promo Popup Modal State (from settings table)
+  const [popupEnabled, setPopupEnabled] = React.useState(true);
+  const [popupTitle, setPopupTitle] = React.useState("ยินดีต้อนรับสมาชิกใหม่!");
+  const [popupDesc, setPopupDesc] = React.useState("สมาชิกใหม่ รับโบนัสฟรี 50% จากยอดฝากครั้งแรก!!");
+  const [popupImgUrl, setPopupImgUrl] = React.useState("https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/popup/1785749698532.jpg");
+  const [isSavingPopup, setIsSavingPopup] = React.useState(false);
+
+  const loadPopupSettings = React.useCallback(() => {
+    fetch("/api/admin/data?resource=settings")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data) {
+          const s = res.data;
+          setPopupEnabled(s.popup_enabled?.toUpperCase() === "TRUE" || s.popup_enabled === "true");
+          if (s.popup_title) setPopupTitle(s.popup_title.trim());
+          if (s.popup_description) setPopupDesc(s.popup_description.trim());
+          if (s.popup_image_url) setPopupImgUrl(s.popup_image_url.trim());
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const savePopupSettings = async () => {
+    setIsSavingPopup(true);
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "batch_update_settings",
+          payload: {
+            settings: {
+              popup_enabled: popupEnabled ? "TRUE" : "FALSE",
+              popup_title: popupTitle.trim(),
+              popup_description: popupDesc.trim(),
+              popup_image_url: popupImgUrl.trim(),
+            },
+          },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({ title: "บันทึกป๊อปอัปหน้าแรกสำเร็จ", description: "ข้อมูลถูกอัปเดตลงตาราง settings และแสดงบนหน้าเว็บผู้เล่นทันที" });
+      } else {
+        toast({ title: "บันทึกล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "บันทึกล้มเหลว", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSavingPopup(false);
+    }
+  };
 
   const loadHistory = React.useCallback(() => {
     fetch("/api/admin/data?resource=broadcast-history")
@@ -97,6 +150,7 @@ export function BroadcastPage() {
   React.useEffect(() => {
     loadHistory();
     loadMarquee();
+    loadPopupSettings();
     fetch("/api/admin/data?resource=members")
       .then((r) => r.json())
       .then((res) => {
@@ -111,7 +165,7 @@ export function BroadcastPage() {
         }
       })
       .catch(() => {});
-  }, [loadHistory, loadMarquee]);
+  }, [loadHistory, loadMarquee, loadPopupSettings]);
 
   const memberHits = memberQ.trim()
     ? (realMembers.length > 0 ? realMembers : MEMBERS)
@@ -232,6 +286,17 @@ export function BroadcastPage() {
             )}
           >
             <Megaphone className="size-3.5 text-brand-600" /> แถบตัววิ่งหน้าเว็บ ({marqueeList.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("popup")}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all",
+              activeTab === "popup"
+                ? "bg-white text-neutral-900 shadow-sm"
+                : "text-neutral-500 hover:text-neutral-800"
+            )}
+          >
+            <Sparkles className="size-3.5 text-amber-500" /> ป๊อปอัปต้อนรับหน้าแรก {popupEnabled ? "🟢" : "⚪"}
           </button>
         </div>
       </PageHeader>
@@ -537,7 +602,7 @@ export function BroadcastPage() {
             </div>
           </Panel>
         </div>
-      ) : (
+      ) : activeTab === "marquee" ? (
         /* MARQUEE RUNNING TICKER TAB */
         <Panel className="p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-100 pb-4">
@@ -604,7 +669,154 @@ export function BroadcastPage() {
             )}
           </div>
         </Panel>
-      )}
+      ) : activeTab === "popup" ? (
+        /* TAB 3: WELCOME & PROMO POPUP MODAL MANAGER */
+        <div className="grid gap-5 lg:grid-cols-12">
+          {/* LEFT: Live Phone Visualizer */}
+          <div className="min-w-0 lg:col-span-5 space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide flex items-center gap-1.5">
+                <Smartphone className="size-4 text-brand-600" /> พรีวิวป๊อปอัปหน้าแรกบนมือถือ
+              </span>
+              <span className={cn(
+                "text-[11px] font-bold px-2 py-0.5 rounded-full",
+                popupEnabled ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-neutral-100 text-neutral-500"
+              )}>
+                {popupEnabled ? "🟢 กำลังเปิดใช้งาน" : "⚪ ปิดใช้งานอยู่"}
+              </span>
+            </div>
+
+            <Panel className="relative overflow-hidden border-neutral-200/90 bg-neutral-900 text-white p-4 shadow-xl min-h-[500px] flex flex-col justify-between rounded-3xl">
+              {/* Phone Top Bar */}
+              <div className="flex items-center justify-between text-[11px] text-neutral-400 pb-3 border-b border-neutral-850">
+                <span>09:41</span>
+                <span className="font-semibold text-neutral-200">TH-LOTTO Home</span>
+                <span>5G · 100%</span>
+              </div>
+
+              {/* Popup Modal Mock in Mobile */}
+              <div className="my-auto py-3">
+                <div className="relative mx-auto max-w-xs overflow-hidden rounded-3xl bg-white text-neutral-900 shadow-2xl border border-neutral-200">
+                  {popupImgUrl ? (
+                    <div className="relative aspect-square w-full overflow-hidden bg-neutral-100">
+                      <img
+                        src={popupImgUrl}
+                        alt="Popup Banner"
+                        className="size-full object-cover"
+                        onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                      />
+                    </div>
+                  ) : null}
+
+                  <div className="p-4 text-center">
+                    <h4 className="text-sm font-black text-neutral-900 truncate">{popupTitle || "ยินดีต้อนรับสมาชิกใหม่!"}</h4>
+                    <p className="mt-1 text-xs text-neutral-500 leading-relaxed line-clamp-3">
+                      {popupDesc || "รายละเอียดโปรโมชั่นและโบนัสต้อนรับสมาชิก..."}
+                    </p>
+                    <div className="mt-3.5 flex gap-2">
+                      <button className="flex-1 rounded-full bg-brand-600 py-2 text-xs font-bold text-white shadow-md shadow-brand-500/20 hover:bg-brand-700">
+                        รับสิทธิ์ทันที
+                      </button>
+                      <button className="rounded-full bg-neutral-100 px-3 py-2 text-xs font-semibold text-neutral-600 hover:bg-neutral-200">
+                        ปิด
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center text-[10px] text-neutral-500 pt-2 border-t border-neutral-850">
+                จำลองหน้าจอ Home.jsx ที่สมาชิกทุกคนจะเห็นเมื่อเข้าสู่เว็บไซต์
+              </div>
+            </Panel>
+          </div>
+
+          {/* RIGHT: Edit Form & Live Controls */}
+          <Panel className="min-w-0 lg:col-span-7 p-6 space-y-5">
+            <div className="flex items-start justify-between border-b border-neutral-100 pb-4">
+              <div>
+                <h3 className="text-base font-bold text-neutral-900 flex items-center gap-2">
+                  <Sparkles className="size-5 text-amber-500" /> ตั้งค่าป๊อปอัปต้อนรับหน้าแรก (Welcome Popup)
+                </h3>
+                <p className="mt-0.5 text-xs text-neutral-500">
+                  กำหนดรูปภาพ หัวข้อ และรายละเอียดที่จะแสดงเป็น Modal โฆษณาอัตโนมัติเมื่อผู้เล่นเปิดหน้าเว็บ
+                </p>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer select-none rounded-full bg-neutral-50 px-3 py-1.5 border border-neutral-200 hover:bg-neutral-100 transition-all">
+                <span className="text-xs font-bold text-neutral-700">
+                  {popupEnabled ? "เปิดแสดงป๊อปอัป" : "ปิดป๊อปอัป"}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={popupEnabled}
+                  onChange={(e) => setPopupEnabled(e.target.checked)}
+                  className="size-4 accent-brand-600 rounded cursor-pointer"
+                />
+              </label>
+            </div>
+
+            <div className="space-y-4">
+              <Field label="หัวข้อป๊อปอัป (Popup Title)" required>
+                <input
+                  className={inputCls}
+                  placeholder="เช่น ยินดีต้อนรับสมาชิกใหม่! หรือ แจ้งโปรโมชั่นพิเศษ"
+                  value={popupTitle}
+                  onChange={(e) => setPopupTitle(e.target.value)}
+                />
+              </Field>
+
+              <Field label="รายละเอียด / สิทธิประโยชน์ (Popup Description)">
+                <textarea
+                  rows={3}
+                  className={cn(inputCls, "h-auto resize-none py-2.5 leading-relaxed")}
+                  placeholder="เช่น สมาชิกใหม่ รับโบนัสฟรี 50% จากยอดฝากครั้งแรก..."
+                  value={popupDesc}
+                  onChange={(e) => setPopupDesc(e.target.value)}
+                />
+              </Field>
+
+              <Field label="ลิงก์รูปภาพป๊อปอัป (Image URL)">
+                <input
+                  className={inputCls}
+                  placeholder="https://... หรือ Supabase Storage URL"
+                  value={popupImgUrl}
+                  onChange={(e) => setPopupImgUrl(e.target.value)}
+                />
+                <p className="mt-1.5 text-[11px] text-neutral-400 flex items-center gap-1.5">
+                  <Info className="size-3 text-neutral-400" /> แนะนำรูปสี่เหลี่ยมจัตุรัส (Aspect Ratio 1:1 เช่น 600x600px หรือ 800x800px)
+                </p>
+              </Field>
+
+              {/* Preset Image Quick Selection */}
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[11px] font-semibold text-neutral-500">รูปภาพป๊อปอัปในระบบ:</span>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPopupImgUrl("https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/popup/1785749698532.jpg")}
+                    className="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors font-medium flex items-center gap-1.5"
+                  >
+                    🖼️ ใช้รูปโปรโมชั่นสมาชิกใหม่ 50% (Default)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-neutral-100 flex items-center justify-between">
+              <span className="text-xs text-neutral-400">
+                ข้อมูลจะบันทึกลงตาราง <code className="text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded font-mono">settings</code> บน Supabase
+              </span>
+              <Btn
+                onClick={savePopupSettings}
+                disabled={isSavingPopup}
+                className="gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 shadow-md shadow-brand-500/20"
+              >
+                {isSavingPopup ? "กำลังบันทึก..." : "💾 บันทึกข้อมูลป๊อปอัปหน้าแรก"}
+              </Btn>
+            </div>
+          </Panel>
+        </div>
+      ) : null}
 
       {/* History Panel */}
       <Panel className="min-w-0">
