@@ -1258,6 +1258,31 @@ export async function POST(req: NextRequest) {
               console.error("Failed to log deposit transaction:", txErr);
             }
           }
+          try {
+            await supabaseAdmin.from("notifications").insert([{
+              user_id: dep.user_id,
+              type: "DEPOSIT",
+              title: "ฝากเงินสำเร็จ",
+              body: `ยอดเงินจำนวน ฿${Number(dep.amount).toLocaleString()} ได้รับการอนุมัติและเข้าสู่กระเป๋าเงินแล้ว`,
+              is_read: false,
+              created_at: new Date().toISOString(),
+            }]);
+          } catch (notifErr) {
+            console.error("Failed to insert customer deposit notification:", notifErr);
+          }
+        } else if (status === "REJECTED" && dep.status !== "REJECTED") {
+          try {
+            await supabaseAdmin.from("notifications").insert([{
+              user_id: dep.user_id,
+              type: "DEPOSIT",
+              title: "รายการฝากเงินไม่สำเร็จ",
+              body: `รายการฝากเงินจำนวน ฿${Number(dep.amount).toLocaleString()} ถูกปฏิเสธ: ${admin_note || "ข้อมูลสลิปไม่ถูกต้อง"}`,
+              is_read: false,
+              created_at: new Date().toISOString(),
+            }]);
+          } catch (notifErr) {
+            console.error("Failed to insert customer deposit reject notification:", notifErr);
+          }
         }
         return NextResponse.json({ success: true, data });
       }
@@ -1360,7 +1385,20 @@ export async function POST(req: NextRequest) {
           .select();
         if (error) throw error;
 
-        if (status === "REJECTED" && wReq.status === "PENDING") {
+        if (status === "APPROVED" && wReq.status !== "APPROVED") {
+          try {
+            await supabaseAdmin.from("notifications").insert([{
+              user_id: wReq.user_id,
+              type: "WITHDRAW",
+              title: "ถอนเงินสำเร็จ",
+              body: `คำขอถอนเงินจำนวน ฿${Number(wReq.amount).toLocaleString()} ได้รับการอนุมัติและโอนเข้าบัญชีเรียบร้อยแล้ว`,
+              is_read: false,
+              created_at: new Date().toISOString(),
+            }]);
+          } catch (notifErr) {
+            console.error("Failed to insert customer withdraw approve notification:", notifErr);
+          }
+        } else if (status === "REJECTED" && wReq.status === "PENDING") {
           const { data: wal } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", wReq.user_id).single();
           if (wal) {
             const newBal = Number(wal.balance) + Number(wReq.amount);
@@ -1378,6 +1416,18 @@ export async function POST(req: NextRequest) {
             } catch (txErr) {
               console.error("Failed to log refund transaction:", txErr);
             }
+          }
+          try {
+            await supabaseAdmin.from("notifications").insert([{
+              user_id: wReq.user_id,
+              type: "WITHDRAW",
+              title: "คำขอถอนเงินถูกปฏิเสธ (คืนเงินเข้ากระเป๋าแล้ว)",
+              body: `คำขอถอนเงินจำนวน ฿${Number(wReq.amount).toLocaleString()} ถูกปฏิเสธ: ${admin_note || "ข้อมูลบัญชีไม่ถูกต้อง"} โดยระบบได้คืนเงินเข้ากระเป๋าเรียบร้อยแล้ว`,
+              is_read: false,
+              created_at: new Date().toISOString(),
+            }]);
+          } catch (notifErr) {
+            console.error("Failed to insert customer withdraw reject notification:", notifErr);
           }
         }
         return NextResponse.json({ success: true, data });
