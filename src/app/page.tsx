@@ -3,8 +3,9 @@
 import * as React from "react";
 import { AdminApp } from "@/components/admin/admin-app";
 import { AdminLogin } from "@/components/admin/login";
-import { useAdminNav } from "@/components/admin/store";
+import { useAdminNav, KNOWN_ADMINS } from "@/components/admin/store";
 import { supabase } from "@/lib/supabase";
+import { getAdminClientGeo } from "@/lib/client-geo";
 
 const SESSION_KEY = "thlotto_admin_session";
 
@@ -52,29 +53,53 @@ export default function Page() {
       try {
         let { data: profile } = await supabase
           .from("profiles")
-          .select("id, full_name, is_admin, admin_role, admin_permissions, phone, avatar_url")
+          .select("id, full_name, is_admin, admin_role, admin_permissions, phone, avatar_url, is_super")
           .eq("id", sessionUser.id)
           .maybeSingle();
 
-        // หากเป็นเจ้าหน้าที่ที่กดเข้าผ่าน Google แล้วยังไม่มีข้อมูลใน profiles
+        // [FIX A-2] Security Gate: ตรวจสอบสิทธิ์ก่อนอนุญาตเข้า Admin Panel
+        // ผู้ใช้ต้อง: (1) มี profile ที่ is_admin=true อยู่แล้ว หรือ (2) อยู่ใน KNOWN_ADMINS list
+        const isKnownAdmin = KNOWN_ADMINS.some(ka => ka.id === sessionUser.id);
+
         if (!profile) {
-          const newStaff = {
-            id: sessionUser.id,
-            full_name: sessionUser.user_metadata?.full_name || sessionUser.email?.split("@")[0] || "เจ้าหน้าที่ใหม่",
-            phone: sessionUser.phone || sessionUser.email || "-",
-            is_admin: true,
-            admin_role: "staff",
-            admin_permissions: [],
-            status: "active",
-          };
-          const { data: created } = await supabase.from("profiles").insert(newStaff).select().maybeSingle();
-          profile = created || newStaff;
+          // ไม่มี profile ในระบบเลย
+          if (isKnownAdmin) {
+            // เป็น Known Admin → สร้าง profile ให้
+            const knownInfo = KNOWN_ADMINS.find(ka => ka.id === sessionUser.id)!;
+            const newStaff = {
+              id: sessionUser.id,
+              full_name: knownInfo.full_name || sessionUser.user_metadata?.full_name || sessionUser.email?.split("@")[0] || "ผู้ดูแลระบบ",
+              phone: knownInfo.phone || sessionUser.phone || sessionUser.email || "-",
+              is_admin: true,
+              admin_role: knownInfo.admin_role || "staff",
+              admin_permissions: [],
+              status: "active",
+            };
+            const { data: created } = await supabase.from("profiles").insert(newStaff).select().maybeSingle();
+            profile = created || newStaff;
+          } else {
+            // ❌ ไม่ใช่ Admin — ปฏิเสธและ sign out
+            console.warn("Unauthorized admin access attempt:", sessionUser.email);
+            setUnauthorizedError("บัญชีนี้ไม่มีสิทธิ์เข้าถึงแผงควบคุม กรุณาติดต่อ Super Admin เพื่อขอสิทธิ์");
+            await supabase.auth.signOut();
+            return;
+          }
         } else if (profile.is_admin !== true && !["admin", "super_admin"].includes(profile.admin_role || "")) {
-          // หากเป็นโปรไฟล์เดิมที่ยังไม่ได้เปิดสิทธิ์แอดมิน ให้เปิดสถานะเป็น staff แบบจำกัดสิทธิ์ (รอ Super Admin มอบหมาย)
-          await supabase.from("profiles").update({ is_admin: true, admin_role: "staff", admin_permissions: [] }).eq("id", profile.id);
-          profile.is_admin = true;
-          profile.admin_role = "staff";
-          profile.admin_permissions = [];
+          // มี profile แต่ยังไม่ได้เปิดสิทธิ์ admin
+          if (isKnownAdmin) {
+            // เป็น Known Admin → อัพเกรดสิทธิ์ให้
+            const knownInfo = KNOWN_ADMINS.find(ka => ka.id === sessionUser.id)!;
+            await supabase.from("profiles").update({ is_admin: true, admin_role: knownInfo.admin_role || "staff", admin_permissions: [] }).eq("id", profile.id);
+            profile.is_admin = true;
+            profile.admin_role = knownInfo.admin_role || "staff";
+            profile.admin_permissions = [];
+          } else {
+            // ❌ ไม่ใช่ Admin — ปฏิเสธและ sign out
+            console.warn("Unauthorized admin access attempt (existing profile):", profile.phone, sessionUser.email);
+            setUnauthorizedError("บัญชีนี้ไม่มีสิทธิ์เข้าถึงแผงควบคุม กรุณาติดต่อ Super Admin เพื่อขอสิทธิ์");
+            await supabase.auth.signOut();
+            return;
+          }
         }
 
         const adminName = profile?.full_name || sessionUser.email?.split("@")[0] || "ผู้ดูแลระบบ";
@@ -83,9 +108,28 @@ export default function Page() {
         setUnauthorizedError(null);
         try {
           localStorage.setItem(SESSION_KEY, adminName);
+          localStorage.setItem("thlotto_admin_profile", JSON.stringify(profile));
         } catch {
           // ignore
         }
+
+        // บันทึกประวัติและพิกัดการเข้าสู่ระบบสำหรับ Google OAuth session
+        getAdminClientGeo().then((clientGeo) => {
+          fetch("/api/admin/data", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "record_login_attempt",
+              payload: {
+                phone: profile?.phone || sessionUser.email || "Google OAuth",
+                user_id: sessionUser.id,
+                success: true,
+                client_ip: clientGeo?.ip,
+                client_geo: clientGeo,
+              },
+            }),
+          }).catch((e) => console.warn("Failed to record OAuth login forensic session:", e));
+        }).catch(() => {});
       } catch (err) {
         console.error("Auth verification error:", err);
       }

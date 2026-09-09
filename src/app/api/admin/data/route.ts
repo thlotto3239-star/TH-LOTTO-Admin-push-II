@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase";
-import { parseUserAgent, resolveIpGeo } from "@/lib/geo-device";
+import { parseUserAgent, resolveIpGeo, extractClientIp } from "@/lib/geo-device";
 
 const supabaseAnon = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ygopnjbvccenryejqmlw.supabase.co",
@@ -948,12 +948,12 @@ export async function POST(req: NextRequest) {
         }
 
         // Forensics & logging preparation
-        const forwarded = req.headers.get("x-forwarded-for");
-        const realIp = req.headers.get("x-real-ip");
-        const rawIp = forwarded ? forwarded.split(",")[0].trim() : (realIp || "127.0.0.1");
+        const clientReportedIp = payload.client_ip;
+        const clientReportedGeo = payload.client_geo;
+        const rawIp = extractClientIp(req, clientReportedIp);
         const ua = req.headers.get("user-agent") || "";
         const dev = parseUserAgent(ua);
-        const geo = await resolveIpGeo(rawIp);
+        const geo = await resolveIpGeo(rawIp, clientReportedGeo, req);
 
         // Verification Strategy
         let authenticated = false;
@@ -1178,13 +1178,11 @@ export async function POST(req: NextRequest) {
       }
 
       case "record_login_attempt": {
-        const { phone, user_id, success } = payload;
-        const forwarded = req.headers.get("x-forwarded-for");
-        const realIp = req.headers.get("x-real-ip");
-        const rawIp = forwarded ? forwarded.split(",")[0].trim() : (realIp || "127.0.0.1");
+        const { phone, user_id, success, client_ip, client_geo } = payload;
+        const rawIp = extractClientIp(req, client_ip);
         const ua = req.headers.get("user-agent") || "";
         const dev = parseUserAgent(ua);
-        const geo = await resolveIpGeo(rawIp);
+        const geo = await resolveIpGeo(rawIp, client_geo, req);
 
         const { data, error } = await supabaseAdmin.rpc("record_login_session", {
           p_phone: phone || null,
@@ -1220,71 +1218,34 @@ export async function POST(req: NextRequest) {
 
       case "update_deposit": {
         const { id, status, admin_note } = payload;
-        const { data: dep, error: depErr } = await supabaseAdmin
-          .from("deposit_requests")
-          .select("user_id, amount, status")
-          .eq("id", id)
-          .single();
-        if (depErr) throw depErr;
-
-        const { data, error } = await supabaseAdmin
-          .from("deposit_requests")
-          .update({
-            status,
-            admin_note,
-            approved_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", id)
-          .select();
-        if (error) throw error;
-
-        if (status === "APPROVED" && dep.status !== "APPROVED") {
-          const { data: w } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", dep.user_id).single();
-          if (w) {
-            const newBal = Number(w.balance) + Number(dep.amount);
-            await supabaseAdmin.from("wallets").update({ balance: newBal, updated_at: new Date().toISOString() }).eq("user_id", dep.user_id);
-            try {
-              await supabaseAdmin.from("transactions").insert([{
-                user_id: dep.user_id,
-                type: "DEPOSIT",
-                amount: Number(dep.amount),
-                status: "COMPLETED",
-                reference_id: id,
-                note: admin_note || "ฝากเงินสำเร็จ (อนุมัติผ่านแผงควบคุม)",
-                balance_after: newBal,
-              }]);
-            } catch (txErr) {
-              console.error("Failed to log deposit transaction:", txErr);
-            }
-          }
-          try {
-            await supabaseAdmin.from("notifications").insert([{
-              user_id: dep.user_id,
-              type: "DEPOSIT",
-              title: "ฝากเงินสำเร็จ",
-              body: `ยอดเงินจำนวน ฿${Number(dep.amount).toLocaleString()} ได้รับการอนุมัติและเข้าสู่กระเป๋าเงินแล้ว`,
-              is_read: false,
-              created_at: new Date().toISOString(),
-            }]);
-          } catch (notifErr) {
-            console.error("Failed to insert customer deposit notification:", notifErr);
-          }
-        } else if (status === "REJECTED" && dep.status !== "REJECTED") {
-          try {
-            await supabaseAdmin.from("notifications").insert([{
-              user_id: dep.user_id,
-              type: "DEPOSIT",
-              title: "รายการฝากเงินไม่สำเร็จ",
-              body: `รายการฝากเงินจำนวน ฿${Number(dep.amount).toLocaleString()} ถูกปฏิเสธ: ${admin_note || "ข้อมูลสลิปไม่ถูกต้อง"}`,
-              is_read: false,
-              created_at: new Date().toISOString(),
-            }]);
-          } catch (notifErr) {
-            console.error("Failed to insert customer deposit reject notification:", notifErr);
-          }
+        if (status === "APPROVED") {
+          const { data: rpcRes, error: rpcErr } = await supabaseAdmin.rpc("admin_service_approve_deposit", {
+            p_request_id: id,
+            p_admin_note: admin_note || "อนุมัติผ่านแผงควบคุม",
+          });
+          if (rpcErr) throw rpcErr;
+          return NextResponse.json({ success: true, data: rpcRes });
+        } else if (status === "REJECTED") {
+          const { data: rpcRes, error: rpcErr } = await supabaseAdmin.rpc("admin_service_reject_deposit", {
+            p_request_id: id,
+            p_admin_note: admin_note || "ข้อมูลสลิปไม่ถูกต้อง",
+          });
+          if (rpcErr) throw rpcErr;
+          return NextResponse.json({ success: true, data: rpcRes });
+        } else {
+          // Handle other status updates (e.g. CANCELLED or PENDING reset)
+          const { data, error } = await supabaseAdmin
+            .from("deposit_requests")
+            .update({
+              status,
+              admin_note,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", id)
+            .select();
+          if (error) throw error;
+          return NextResponse.json({ success: true, data });
         }
-        return NextResponse.json({ success: true, data });
       }
 
       case "update_member": {
@@ -1309,32 +1270,13 @@ export async function POST(req: NextRequest) {
 
       case "adjust_wallet": {
         const { user_id, delta, note } = payload;
-        const { data: w, error: wErr } = await supabaseAdmin
-          .from("wallets")
-          .select("balance")
-          .eq("user_id", user_id)
-          .single();
-        if (wErr) throw wErr;
-        const newBal = Math.max(0, Number(w.balance) + Number(delta));
-        const { data, error } = await supabaseAdmin
-          .from("wallets")
-          .update({ balance: newBal, updated_at: new Date().toISOString() })
-          .eq("user_id", user_id)
-          .select();
-        if (error) throw error;
-        try {
-          await supabaseAdmin.from("transactions").insert([{
-            user_id,
-            type: delta > 0 ? "ADMIN_ADJUST_ADD" : "ADMIN_ADJUST_SUB",
-            amount: Math.abs(delta),
-            status: "COMPLETED",
-            note: note || (delta > 0 ? "เพิ่มยอดกระเป๋าโดยแอดมิน" : "ลดยอดกระเป๋าโดยแอดมิน"),
-            balance_after: newBal,
-          }]);
-        } catch (txErr) {
-          console.error("Failed to log wallet adjustment transaction:", txErr);
-        }
-        return NextResponse.json({ success: true, data, balance: newBal });
+        const { data: rpcRes, error: rpcErr } = await supabaseAdmin.rpc("admin_service_adjust_wallet", {
+          p_user_id: user_id,
+          p_delta: Number(delta),
+          p_note: note || (delta > 0 ? "เพิ่มยอดกระเป๋าโดยแอดมิน" : "ลดยอดกระเป๋าโดยแอดมิน"),
+        });
+        if (rpcErr) throw rpcErr;
+        return NextResponse.json({ success: true, balance: rpcRes?.balance, data: rpcRes });
       }
 
       case "record_result": {
@@ -1366,71 +1308,33 @@ export async function POST(req: NextRequest) {
 
       case "update_withdrawal": {
         const { id, status, admin_note } = payload;
-        const { data: wReq, error: wErr } = await supabaseAdmin
-          .from("withdraw_requests")
-          .select("*")
-          .eq("id", id)
-          .single();
-        if (wErr) throw wErr;
-
-        const { data, error } = await supabaseAdmin
-          .from("withdraw_requests")
-          .update({
-            status,
-            admin_note,
-            approved_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", id)
-          .select();
-        if (error) throw error;
-
-        if (status === "APPROVED" && wReq.status !== "APPROVED") {
-          try {
-            await supabaseAdmin.from("notifications").insert([{
-              user_id: wReq.user_id,
-              type: "WITHDRAW",
-              title: "ถอนเงินสำเร็จ",
-              body: `คำขอถอนเงินจำนวน ฿${Number(wReq.amount).toLocaleString()} ได้รับการอนุมัติและโอนเข้าบัญชีเรียบร้อยแล้ว`,
-              is_read: false,
-              created_at: new Date().toISOString(),
-            }]);
-          } catch (notifErr) {
-            console.error("Failed to insert customer withdraw approve notification:", notifErr);
-          }
-        } else if (status === "REJECTED" && wReq.status === "PENDING") {
-          const { data: wal } = await supabaseAdmin.from("wallets").select("balance").eq("user_id", wReq.user_id).single();
-          if (wal) {
-            const newBal = Number(wal.balance) + Number(wReq.amount);
-            await supabaseAdmin.from("wallets").update({ balance: newBal }).eq("user_id", wReq.user_id);
-            try {
-              await supabaseAdmin.from("transactions").insert([{
-                user_id: wReq.user_id,
-                type: "REFUND_WITHDRAW",
-                amount: Number(wReq.amount),
-                status: "COMPLETED",
-                reference_id: id,
-                note: admin_note || "คืนเงินจากการปฏิเสธคำขอถอน",
-                balance_after: newBal,
-              }]);
-            } catch (txErr) {
-              console.error("Failed to log refund transaction:", txErr);
-            }
-          }
-          try {
-            await supabaseAdmin.from("notifications").insert([{
-              user_id: wReq.user_id,
-              type: "WITHDRAW",
-              title: "คำขอถอนเงินถูกปฏิเสธ (คืนเงินเข้ากระเป๋าแล้ว)",
-              body: `คำขอถอนเงินจำนวน ฿${Number(wReq.amount).toLocaleString()} ถูกปฏิเสธ: ${admin_note || "ข้อมูลบัญชีไม่ถูกต้อง"} โดยระบบได้คืนเงินเข้ากระเป๋าเรียบร้อยแล้ว`,
-              is_read: false,
-              created_at: new Date().toISOString(),
-            }]);
-          } catch (notifErr) {
-            console.error("Failed to insert customer withdraw reject notification:", notifErr);
-          }
+        if (status === "APPROVED") {
+          const { data: rpcRes, error: rpcErr } = await supabaseAdmin.rpc("admin_service_approve_withdraw", {
+            p_request_id: id,
+            p_admin_note: admin_note || "อนุมัติผ่านแผงควบคุม",
+          });
+          if (rpcErr) throw rpcErr;
+          return NextResponse.json({ success: true, data: rpcRes });
+        } else if (status === "REJECTED") {
+          const { data: rpcRes, error: rpcErr } = await supabaseAdmin.rpc("admin_service_reject_withdraw", {
+            p_request_id: id,
+            p_admin_note: admin_note || "ข้อมูลบัญชีไม่ถูกต้อง",
+          });
+          if (rpcErr) throw rpcErr;
+          return NextResponse.json({ success: true, data: rpcRes });
+        } else {
+          const { data, error } = await supabaseAdmin
+            .from("withdraw_requests")
+            .update({
+              status,
+              admin_note,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", id)
+            .select();
+          if (error) throw error;
+          return NextResponse.json({ success: true, data });
         }
-        return NextResponse.json({ success: true, data });
       }
 
       case "cancel_bet": {
