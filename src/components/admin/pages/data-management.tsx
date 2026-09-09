@@ -63,9 +63,31 @@ export function DataManagementPage() {
       });
   }, []);
 
+  const fetchBackupLogs = React.useCallback(() => {
+    fetch("/api/admin/data?resource=backup-logs")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          setBackups(
+            res.data.map((b: any) => ({
+              id: b.id,
+              type: (b.backup_type as any) || "database",
+              scope: b.backup_type === "database" ? "สำรองทั้งระบบ (Full Snapshot)" : `ส่งออกข้อมูล (${b.backup_type})`,
+              file_size: "บันทึกลงระบบ",
+              rows_exported: 0,
+              by: "ผู้ดูแลระบบ",
+              at: b.backed_up_at ? new Date(b.backed_up_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) : "—",
+            }))
+          );
+        }
+      })
+      .catch((e) => console.error("Could not load live backup logs:", e));
+  }, []);
+
   React.useEffect(() => {
     fetchLiveStats();
-  }, [fetchLiveStats]);
+    fetchBackupLogs();
+  }, [fetchLiveStats, fetchBackupLogs]);
 
   const exportSets = React.useMemo(() => {
     const getCount = (tbl: string) => tables.find((t) => t.table === tbl)?.rows ?? 0;
@@ -140,11 +162,23 @@ export function DataManagementPage() {
           scope: `${name} (${table})`,
           file_size: sizeStr,
           rows_exported: rowCount,
-          by: "เจ้าของเว็บ",
+          by: "ผู้ดูแลระบบ",
           at: new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }),
         },
         ...p,
       ]);
+
+      fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "record_backup",
+          payload: {
+            backup_type: format,
+            backup_date: new Date().toISOString().slice(0, 10),
+          },
+        }),
+      }).catch((e) => console.warn("Could not save backup log to DB:", e));
     } catch (err: any) {
       toast({ title: "ส่งออกล้มเหลว", description: err.message, variant: "destructive" });
     }
@@ -194,12 +228,24 @@ export function DataManagementPage() {
           scope: "สำรองทั้งระบบ (Full Snapshot)",
           file_size: sizeStr,
           rows_exported: exportedCount || totalRows,
-          by: "เจ้าของเว็บ",
+          by: "ผู้ดูแลระบบ",
           at: new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }),
         },
         ...p,
       ]);
       toast({ title: "สำรองฐานข้อมูลสำเร็จ", description: `ดาวน์โหลดไฟล์สำรองเรียบร้อย (${sizeStr})` });
+
+      fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "record_backup",
+          payload: {
+            backup_type: "database",
+            backup_date: new Date().toISOString().slice(0, 10),
+          },
+        }),
+      }).catch((e) => console.warn("Could not save backup log to DB:", e));
     } catch (err: any) {
       toast({ title: "สำรองล้มเหลว", description: err.message, variant: "destructive" });
     }

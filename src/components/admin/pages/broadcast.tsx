@@ -10,7 +10,7 @@ import {
   TableWrap, Th, Td, SearchInput, EmptyState, Avatar
 } from "../primitives";
 import { useToast } from "@/hooks/use-toast";
-import { BROADCAST_HISTORY, MEMBERS, fmtNum, type BroadcastMsg } from "@/data/admin-mock";
+import { fmtNum, type BroadcastMsg } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
 const TYPE_UI: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; chip: string; dot: string; border: string }> = {
@@ -168,7 +168,7 @@ export function BroadcastPage() {
   }, [loadHistory, loadMarquee, loadPopupSettings]);
 
   const memberHits = memberQ.trim()
-    ? (realMembers.length > 0 ? realMembers : MEMBERS)
+    ? realMembers
         .filter((m) => m.full_name.includes(memberQ.trim()) || m.phone.includes(memberQ.trim()))
         .slice(0, 5)
     : [];

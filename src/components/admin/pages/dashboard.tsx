@@ -10,7 +10,7 @@ import {
 } from "recharts";
 import { Panel, StatCard, StatusBadge, Avatar, BankBadge, RealtimeDot, EmptyState, MarketLogo } from "../primitives";
 import {
-  MARKETS, fmtTHB, fmtNum, fmtDT, mktShort,
+  fmtTHB, fmtNum, fmtDT, mktShort,
   type FeedItem,
 } from "@/data/admin-mock";
 import { formatBetTypeThai } from "./bets";
@@ -57,10 +57,7 @@ function FeedRow({ item }: { item: FeedItem }) {
   }
 
   if (item.kind === "bet") {
-    const mkt = MARKETS.find(
-      (m) => m.code === item.market_code || m.name === item.market
-    );
-    const logoUrl = item.market_logo || mkt?.logo_url;
+    const logoUrl = item.market_logo;
     const betTypeThai = formatBetTypeThai(item.bet_type ?? "");
 
     return (
@@ -156,9 +153,6 @@ export function DashboardPage() {
           setLiveStats(json.data);
 
           const betsFeed: FeedItem[] = (json.data.recentBets || []).map((b: any) => {
-            const mkt = MARKETS.find(
-              (m) => m.id === b.market_id || m.code === b.lottery_markets?.code || m.name === b.lottery_markets?.name
-            );
             const statusUpper = (b.status || "PENDING").toUpperCase();
             const mappedStatus = statusUpper === "WON" ? "won" : statusUpper === "LOST" ? "lost" : "pending";
 
