@@ -264,6 +264,72 @@ $$;
 
 ---
 
+### 3.3 สัญญาข้อมูล ล็อตโต้ 15 นาที (TH-LOTTO 15M / LIW Engine)
+
+#### 1. วิดีโอสตรีมถ่ายทอดสด (Live Video Embed)
+- **แหล่งที่มา:** `https://liwlottery.com/embed`
+- **โครงสร้าง Iframe:**
+  ```html
+  <iframe
+    src="https://liwlottery.com/embed"
+    title="LIW Lottery live video"
+    width="640"
+    height="400"
+    style="border:0;border-radius:16px;overflow:hidden;max-width:100%;aspect-ratio:16/9"
+    allow="autoplay *; fullscreen *; encrypted-media *"
+    loading="eager"
+  ></iframe>
+  ```
+
+#### 2. API ผลรางวัลย้อนหลัง (Results History API - 96 รอบ/วัน)
+- **Endpoint:** `GET https://liwlottery.com/api/results/history?limit={limit}&offset={offset}`
+- **พารามิเตอร์:**
+  - `limit`: จำนวนรายการ (1 ถึง 96 รอบต่อวัน)
+  - `offset`: ลำดับเริ่มต้น
+- **รูปแบบ Response Data (JSON):**
+  ```json
+  {
+    "ok": true,
+    "started": true,
+    "days": 7,
+    "total": 672,
+    "vault": 2799,
+    "limit": 24,
+    "offset": 0,
+    "count": 24,
+    "results": [
+      {
+        "no": 2392,
+        "three": "140",
+        "two_top": "40",
+        "two_bottom": "31",
+        "keno": [
+          { "id": "k5", "balls": [8, 64, 40, 11, 17] },
+          { "id": "k10", "balls": [6, 46, 4, 53, 2, 29, 79, 74, 23, 15] },
+          { "id": "k20", "balls": [69, 58, 57, 42, 65, 19, 55, 32, 36, 3] },
+          { "id": "k30", "balls": [10, 25, 28, 5, 66, 39, 73, 14, 76, 16] },
+          { "id": "k40", "balls": [24, 20, 61, 37, 70, 34, 44, 21, 22, 45] },
+          { "id": "k50", "balls": [49, 13, 50, 80, 30, 18, 62, 27, 68, 12] }
+        ],
+        "image": "https://liwlottery.com/media/...",
+        "video": "https://liwlottery.com/media/...",
+        "at": 1788921900000,
+        "clock": "09:45",
+        "date": "9 ก.ย. 2569",
+        "time": "9 ก.ย. 2569 09:45 น."
+      }
+    ]
+  }
+  ```
+- **การแปลงข้อมูลลงระบบ THLOTTO:**
+  - `result.three` ➔ `lottery_results.result_3top` (3 ตัวบน)
+  - `result.two_top` ➔ `lottery_results.result_2top` (2 ตัวบน)
+  - `result.two_bottom` ➔ `lottery_results.result_2bottom` (2 ตัวล่าง)
+  - `result.no` ➔ เลขรอบ (`round_key`) หรือแสดงผลกำกับรอบ 1–96
+  - `result.video` ➔ ลิงก์คลิปตรวจผลย้อนหลัง
+
+---
+
 ## 4. เมทริกซ์ประเภทตัวเลขตามชนิดหวย (Lottery Betting Capabilities)
 
 | หมวดหมู่ตลาดหวย | ตัวอย่างตลาด | ประเภทแทงที่รองรับในระบบ | จำนวนหลักสูงสุด |

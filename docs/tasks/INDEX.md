@@ -14,6 +14,7 @@
 | [TASK-003](file:///c:/Users/armyn/Downloads/THLOTTO-II/docs/tasks/TASK-003-OMNICHANNEL-BRAND.md) | **Part 3: Omnichannel Hub & Brand Studio (`broadcast.tsx`, `appearance.tsx`)** | P1 (Feature) | `[x] COMPLETED` |
 | [TASK-004](file:///c:/Users/armyn/Downloads/THLOTTO-II/docs/tasks/TASK-004-FINANCIAL-SETTLEMENT.md) | **Part 4: Financial Transactions & Settlement Engine (`deposits.tsx`, `bets.tsx`)** | P0 (Critical) | `[x] COMPLETED` |
 | [TASK-005](file:///c:/Users/armyn/Downloads/THLOTTO-II/docs/tasks/TASK-005-GOVERNANCE-SETTINGS.md) | **Part 5: Core Governance & Maintenance Hub (`settings.tsx`, `route.ts`)** | P1 (Feature) | `[x] COMPLETED` |
+| [TASK-006](file:///c:/Users/armyn/Downloads/THLOTTO-II/docs/tasks/TASK-006-LOTTO15M-REAL-DATA-SYNC.md) | **Part 6: Lotto 15M Live Stream & 96-Round Results Sync (`Lotto15MLiveStudio.jsx`)** | P0 (Critical) | `[x] COMPLETED` |
 
 ---
 
