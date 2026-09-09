@@ -1453,6 +1453,10 @@ export async function POST(req: NextRequest) {
         add("theme_primary_color", p.primary_color);
         add("theme_font", p.font || p.font_family);
         add("theme_dark_mode", p.dark_mode ? "true" : "false");
+        add("popup_enabled", p.popup_enabled !== undefined ? String(p.popup_enabled) : undefined);
+        add("popup_title", p.popup_title);
+        add("popup_description", p.popup_description);
+        add("popup_image_url", p.popup_image_url);
 
         if (pairs.length > 0) {
           const { error } = await supabaseAdmin.from("settings").upsert(pairs, { onConflict: "key" });
