@@ -381,22 +381,22 @@ export function AppearancePage() {
       <Panel className="overflow-hidden p-0 border border-neutral-300 rounded-3xl shadow-xl bg-neutral-900/5">
         {/* Desktop Browser Window Titlebar */}
         <div className="flex items-center justify-between border-b border-neutral-200 bg-white/90 px-4 py-2.5 backdrop-blur-md">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             <span className="size-2.5 rounded-full bg-rose-400" />
             <span className="size-2.5 rounded-full bg-amber-400" />
             <span className="size-2.5 rounded-full bg-emerald-400" />
           </div>
 
-          <div className="flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-1 text-[11px] text-neutral-500 max-w-[280px] w-full justify-center">
-            <Lock className="size-2.5 text-emerald-600" />
-            <span className="truncate font-mono">http://localhost:5173/login</span>
+          <div className="flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3.5 py-1 text-[11px] text-neutral-600 max-w-sm w-full justify-center shadow-xs mx-2">
+            <Lock className="size-3 text-emerald-600 shrink-0" />
+            <span className="truncate font-mono text-emerald-800 font-medium">https://th-lotto-plus.vercel.app/login</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => {
-                if (iframeRef.current) iframeRef.current.src = "http://localhost:5173/login?preview=true";
+                if (iframeRef.current) iframeRef.current.src = "https://th-lotto-plus.vercel.app/login?preview=true";
               }}
               title="รีเฟรชหน้าพรีวิว"
               className="p-1 text-neutral-400 hover:text-neutral-700 rounded-md hover:bg-neutral-100 transition-colors"
@@ -404,10 +404,10 @@ export function AppearancePage() {
               <RefreshCw className="size-3" />
             </button>
             <a
-              href="http://localhost:5173/login"
+              href="https://th-lotto-plus.vercel.app/login"
               target="_blank"
               rel="noreferrer"
-              title="เปิดในแท็บใหม่"
+              title="เปิดหน้าเว็บจริงในแท็บใหม่"
               className="p-1 text-neutral-400 hover:text-brand-600 rounded-md hover:bg-neutral-100 transition-colors"
             >
               <ExternalLink className="size-3" />
@@ -431,7 +431,7 @@ export function AppearancePage() {
                 </div>
                 <iframe
                   ref={iframeRef}
-                  src="http://localhost:5173/login?preview=true"
+                  src="https://th-lotto-plus.vercel.app/login?preview=true"
                   title="Customer Login Live Preview (Mobile)"
                   className="w-full flex-1 border-0"
                   onLoad={postToIframe}
@@ -455,7 +455,7 @@ export function AppearancePage() {
               >
                 <iframe
                   ref={iframeRef}
-                  src="http://localhost:5173/login?preview=true"
+                  src="https://th-lotto-plus.vercel.app/login?preview=true"
                   title="Customer Login Live Preview (PC Desktop)"
                   className="w-full h-full border-0"
                   onLoad={postToIframe}
