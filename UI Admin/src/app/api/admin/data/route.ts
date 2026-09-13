@@ -155,12 +155,40 @@ export async function GET(req: NextRequest) {
       }
 
       case "markets": {
-        const { data, error } = await supabaseAdmin
-          .from("lottery_markets")
-          .select("*")
-          .order("display_order", { ascending: true, nullsFirst: false });
-        if (error) throw error;
-        return NextResponse.json({ success: true, data });
+        const [
+          { data: markets, error: mErr },
+          { data: rates, error: rErr },
+        ] = await Promise.all([
+          supabaseAdmin
+            .from("lottery_markets")
+            .select("*")
+            .order("id", { ascending: true }),
+          supabaseAdmin
+            .from("payout_rates")
+            .select("market, bet_type, rate"),
+        ]);
+        if (mErr) throw mErr;
+        if (rErr) throw rErr;
+
+        const rateMap: Record<string, Record<string, number>> = {};
+        (rates || []).forEach((r: any) => {
+          if (!rateMap[r.market]) rateMap[r.market] = {};
+          rateMap[r.market][r.bet_type] = Number(r.rate);
+        });
+
+        const merged = (markets || []).map((m: any) => {
+          const mktCode = m.id || m.code;
+          return {
+            ...m,
+            code: mktCode,
+            logo_url: m.icon_url || m.logo_url,
+            image_url: m.icon_url || m.image_url,
+            close_minutes_before: m.close_before_minutes ?? m.close_minutes_before ?? 15,
+            rates: rateMap[mktCode] || {},
+          };
+        });
+
+        return NextResponse.json({ success: true, data: merged });
       }
 
       case "instant-bet-types": {
@@ -1142,22 +1170,17 @@ export async function POST(req: NextRequest) {
 
         const updateData: any = {};
         if (name !== undefined) updateData.name = name;
-        if (close_minutes_before !== undefined) updateData.close_minutes_before = close_minutes_before;
-        if (stream_url !== undefined) updateData.stream_url = stream_url;
-        if (logo_url !== undefined) updateData.logo_url = logo_url;
-        if (draw_days !== undefined) updateData.draw_days = draw_days;
-        if (draw_day_of_month !== undefined) updateData.draw_day_of_month = draw_day_of_month;
+        if (close_minutes_before !== undefined) updateData.close_before_minutes = close_minutes_before;
+        if (logo_url !== undefined) updateData.icon_url = logo_url;
         if (draw_time !== undefined) updateData.draw_time = draw_time;
-        if (show_in_popular !== undefined) updateData.show_in_popular = show_in_popular;
-        if (show_in_trending !== undefined) updateData.show_in_trending = show_in_trending;
-        if (is_open !== undefined) updateData.is_open = is_open;
         if (is_active !== undefined) updateData.is_active = is_active;
+        else if (is_open !== undefined) updateData.is_active = is_open;
         if (min_bet !== undefined) updateData.min_bet = Number(min_bet);
         else if (limits?.min_bet !== undefined) updateData.min_bet = Number(limits.min_bet);
         if (max_bet !== undefined) updateData.max_bet = Number(max_bet);
         else if (limits?.max_bet !== undefined) updateData.max_bet = Number(limits.max_bet);
-        if (max_per_number !== undefined) updateData.max_per_number = Number(max_per_number);
-        else if (limits?.max_per_number !== undefined) updateData.max_per_number = Number(limits.max_per_number);
+        if (max_per_number !== undefined) updateData.max_bet_per_number = Number(max_per_number);
+        else if (limits?.max_per_number !== undefined) updateData.max_bet_per_number = Number(limits.max_per_number);
 
         const { data, error } = await supabaseAdmin
           .from("lottery_markets")
@@ -1168,7 +1191,7 @@ export async function POST(req: NextRequest) {
 
         // If payout rates provided, update payout_rates table
         if (rates && typeof rates === "object") {
-          const mktCode = code || (data && data[0] ? data[0].code : null);
+          const mktCode = id || code || (data && data[0] ? data[0].id : null);
           if (mktCode) {
             const upsertRows = Object.entries(rates).map(([bt, rateVal]) => ({
               market: mktCode,

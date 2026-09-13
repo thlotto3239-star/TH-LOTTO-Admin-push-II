@@ -273,7 +273,7 @@ export function MarketsPage() {
           const liveMarkets: Market[] = res.data.map((live: any) => {
             const existingMock = MARKETS.find((m) => m.code === live.code || m.id === live.id);
 
-            const defaultRates: Record<BetType, number> = existingMock?.rates || {
+            const fallbackRates: Record<BetType, number> = {
               "3TOP": 900,
               "3TODE": 150,
               "2TOP": 95,
@@ -283,6 +283,12 @@ export function MarketsPage() {
               "3FRONT": 450,
               "3BOTTOM": 450,
               "4TOP": 6000,
+            };
+
+            // Ground-truth rates directly from live database `payout_rates`
+            const liveRates: Record<BetType, number> = {
+              ...fallbackRates,
+              ...(live.rates || {}),
             };
 
             const defaultLimits = {
@@ -317,7 +323,7 @@ export function MarketsPage() {
               youtube_url: live.stream_url || "",
               logo_url: live.logo_url || live.image_url,
               image_url: live.image_url || live.logo_url,
-              rates: defaultRates,
+              rates: liveRates,
               limits: defaultLimits,
               kind: isGov ? "GOVERNMENT" : "CUSTOM",
             } as Market;
@@ -331,15 +337,15 @@ export function MarketsPage() {
   }, []);
 
   const handleSaveMarket = async (updated: Market) => {
+    const previousRows = rows;
     setRows((prev) => prev.map((r) => (r.code === updated.code ? updated : r)));
     setEdit(null);
-    toast({ title: "บันทึกข้อมูลตลาดแล้ว", description: `${updated.name} (${updated.code}) อัปเดตเรียบร้อย` });
 
     try {
       const regularDays = updated.draw_days.filter((d) => d !== 16);
       const dayOfMonth = updated.draw_days.includes(16) ? [16] : null;
 
-      await fetch("/api/admin/data", {
+      const res = await fetch("/api/admin/data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -366,8 +372,21 @@ export function MarketsPage() {
           },
         }),
       });
-    } catch (e) {
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to update market");
+      }
+
+      toast({ title: "บันทึกข้อมูลตลาดแล้ว", description: `${updated.name} (${updated.code}) อัปเดตเรียบร้อย` });
+    } catch (e: any) {
       console.error("Failed to sync market to Supabase:", e);
+      setRows(previousRows);
+      toast({
+        title: "เกิดข้อผิดพลาดในการบันทึก",
+        description: e.message || "ไม่สามารถบันทึกข้อมูลลงฐานข้อมูลได้",
+        variant: "destructive",
+      });
     }
   };
 
