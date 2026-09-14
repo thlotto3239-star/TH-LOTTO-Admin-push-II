@@ -111,6 +111,14 @@ export function BanksPage() {
               display_order: idx + 1,
             }))
           );
+        } else {
+          setDisplays(
+            BANKS.map((b, idx) => ({
+              code: b.code.toLowerCase(),
+              is_active: true,
+              display_order: idx + 1,
+            }))
+          );
         }
 
         if (res.success && Array.isArray(res.data?.company_bank_accounts) && res.data.company_bank_accounts.length > 0) {

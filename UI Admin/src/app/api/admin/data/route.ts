@@ -538,12 +538,31 @@ export async function GET(req: NextRequest) {
           supabaseAdmin.from("lucky_wheel_prizes").select("*").order("slot_index", { ascending: true }),
           supabaseAdmin.from("lucky_wheel_spins").select("cost, prize_amount, spun_at"),
           supabaseAdmin.from("settings").select("*"),
-          supabaseAdmin.from("company_bank_accounts").select("*").order("id", { ascending: true }),
+          supabaseAdmin.from("company_bank_accounts").select("*").catch(() => ({ data: null })),
         ]);
 
         const spinsCount = (wheelSpins || []).length;
         const spinsCost = (wheelSpins || []).reduce((sum, s) => sum + Number(s.cost || 0), 0);
         const spinsPrizes = (wheelSpins || []).reduce((sum, s) => sum + Number(s.prize_amount || 0), 0);
+
+        const settingsDict: Record<string, string> = {};
+        (settings || []).forEach((s: any) => {
+          if (s.key) settingsDict[s.key] = s.value;
+        });
+
+        const synthCompanyBanks = (companyBanks && companyBanks.length > 0)
+          ? companyBanks
+          : (settingsDict.company_bank_account_number || settingsDict.bank_account_number)
+          ? [{
+              id: "company-bank-1",
+              bank_code: settingsDict.company_bank_code || "KBANK",
+              account_number: settingsDict.company_bank_account_number || settingsDict.bank_account_number || "",
+              account_name: settingsDict.company_bank_account_name || settingsDict.bank_account_name || "บริษัท ทีเอช ล็อตโต้ จำกัด",
+              branch: "สำนักงานใหญ่",
+              qr_code_url: settingsDict.bank_qr_url || "",
+              is_active: true,
+            }]
+          : [];
 
         return NextResponse.json({
           success: true,
@@ -553,7 +572,7 @@ export async function GET(req: NextRequest) {
             articles: articles || [],
             announcements: announcements || [],
             banks: banks || [],
-            company_bank_accounts: companyBanks || [],
+            company_bank_accounts: synthCompanyBanks,
             wheelPrizes: wheelPrizes || [],
             wheelSpinsStats: {
               spins: spinsCount,
