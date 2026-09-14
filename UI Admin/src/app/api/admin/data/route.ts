@@ -1664,9 +1664,20 @@ export async function POST(req: NextRequest) {
           }
         };
 
+        // Brand Identity & Site Meta
         add("site_name", p.site_name);
         add("site_tagline", p.site_tagline);
+        add("site_short_name", p.site_short_name);
         add("site_badge", p.site_badge);
+        add("site_logo_url", p.logo_url ?? p.site_logo_url);
+        add("site_logo_dark_url", p.logo_dark_url ?? p.site_logo_dark_url);
+        add("site_favicon_url", p.favicon_url ?? p.site_favicon_url);
+        add("site_app_icon_url", p.app_icon_url ?? p.site_app_icon_url);
+        add("site_copyright", p.site_copyright ?? p.footer_copyright);
+        add("footer_copyright", p.footer_copyright ?? p.site_copyright);
+
+        // Login Screen Visuals & Copy
+        add("login_bg_url", p.login_bg_url);
         add("login_hero_heading", p.login_hero_heading);
         add("login_feature_1", p.login_feature_1);
         add("login_feature_2", p.login_feature_2);
@@ -1685,15 +1696,33 @@ export async function POST(req: NextRequest) {
         add("login_badge_2_sub", p.login_badge_2_sub);
         add("login_badge_3_title", p.login_badge_3_title);
         add("login_badge_3_sub", p.login_badge_3_sub);
-        add("site_copyright", p.site_copyright);
-        add("site_logo_url", p.logo_url);
-        add("site_favicon_url", p.favicon_url);
-        add("login_bg_url", p.login_bg_url);
-        add("site_primary_color", p.primary_color);
-        add("theme_primary_color", p.primary_color);
-        add("theme_font", p.font || p.font_family);
-        add("theme_dark_mode", p.dark_mode ? "true" : "false");
-        add("popup_enabled", p.popup_enabled !== undefined ? String(p.popup_enabled) : undefined);
+
+        // Colors & Typography
+        if (p.primary_color !== undefined) {
+          add("site_primary_color", p.primary_color);
+          add("theme_primary_color", p.primary_color);
+        }
+        if (p.secondary_color !== undefined) add("theme_secondary_color", p.secondary_color);
+        if (p.font !== undefined || p.font_family !== undefined) add("theme_font", p.font || p.font_family);
+        if (p.ui_radius !== undefined) add("theme_ui_radius", p.ui_radius);
+        if (p.dark_mode !== undefined) add("theme_dark_mode", p.dark_mode ? "true" : "false");
+
+        // Social & Support Channels
+        add("contact_line_id", p.line_id);
+        add("contact_line_url", p.line_url);
+        add("contact_facebook_url", p.facebook_url);
+        add("contact_telegram_url", p.telegram_url);
+        add("contact_phone", p.phone);
+        if (p.livechat_enabled !== undefined) add("contact_livechat_enabled", String(p.livechat_enabled));
+
+        // SEO
+        add("seo_meta_title", p.seo_meta_title);
+        add("seo_meta_description", p.seo_meta_description);
+        add("seo_meta_keywords", p.seo_meta_keywords);
+        add("seo_og_image_url", p.seo_og_image_url);
+
+        // Home Popup Notification
+        if (p.popup_enabled !== undefined) add("popup_enabled", String(p.popup_enabled));
         add("popup_title", p.popup_title);
         add("popup_description", p.popup_description);
         add("popup_image_url", p.popup_image_url);
@@ -1978,126 +2007,6 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ success: true, count: rows.length });
         }
       }
-
-      case "batch_update_settings": {
-        const { settings: settingsObj } = payload || {};
-        if (!settingsObj || typeof settingsObj !== "object") {
-          return NextResponse.json({ success: false, error: "Invalid settings payload" }, { status: 400 });
-        }
-        const now = new Date().toISOString();
-        const updates: { key: string; value: string; updated_at: string }[] = [];
-        for (const [k, v] of Object.entries(settingsObj)) {
-          if (k) {
-            updates.push({ key: k, value: String(v ?? ""), updated_at: now });
-            if (k === "theme_primary_color") {
-              updates.push({ key: "site_primary_color", value: String(v ?? ""), updated_at: now });
-            } else if (k === "site_primary_color") {
-              updates.push({ key: "theme_primary_color", value: String(v ?? ""), updated_at: now });
-            }
-          }
-        }
-        if (updates.length > 0) {
-          const { error } = await supabaseAdmin.from("settings").upsert(updates, { onConflict: "key" });
-          if (error) throw error;
-        }
-        return NextResponse.json({ success: true, count: updates.length });
-      }
-
-      case "update_appearance": {
-        const {
-          site_name,
-          site_tagline,
-          site_short_name,
-          primary_color,
-          secondary_color,
-          font,
-          ui_radius,
-          dark_mode,
-          logo_url,
-          logo_dark_url,
-          favicon_url,
-          app_icon_url,
-          footer_copyright,
-          line_id,
-          line_url,
-          facebook_url,
-          telegram_url,
-          phone,
-          livechat_enabled,
-          seo_meta_title,
-          seo_meta_description,
-          seo_meta_keywords,
-          seo_og_image_url,
-          login_bg_url,
-          login_hero_heading,
-          login_feature_1,
-          login_feature_2,
-          login_feature_3,
-          login_stat_1_val,
-          login_stat_1_label,
-          login_stat_2_val,
-          login_stat_2_label,
-          login_stat_3_val,
-          login_stat_3_label,
-        } = payload || {};
-
-        const now = new Date().toISOString();
-        const updates: { key: string; value: string; updated_at: string }[] = [];
-
-        // Brand Identity & Login Content
-        if (site_name !== undefined) updates.push({ key: "site_name", value: String(site_name), updated_at: now });
-        if (site_tagline !== undefined) updates.push({ key: "site_tagline", value: String(site_tagline), updated_at: now });
-        if (site_short_name !== undefined) updates.push({ key: "site_short_name", value: String(site_short_name), updated_at: now });
-        if (logo_url !== undefined) updates.push({ key: "site_logo_url", value: String(logo_url), updated_at: now });
-        if (logo_dark_url !== undefined) updates.push({ key: "site_logo_dark_url", value: String(logo_dark_url), updated_at: now });
-        if (favicon_url !== undefined) updates.push({ key: "site_favicon_url", value: String(favicon_url), updated_at: now });
-        if (app_icon_url !== undefined) updates.push({ key: "site_app_icon_url", value: String(app_icon_url), updated_at: now });
-        if (login_bg_url !== undefined) updates.push({ key: "login_bg_url", value: String(login_bg_url), updated_at: now });
-        if (footer_copyright !== undefined) updates.push({ key: "footer_copyright", value: String(footer_copyright), updated_at: now });
-
-        // Login Page Texts & Stats
-        if (login_hero_heading !== undefined) updates.push({ key: "login_hero_heading", value: String(login_hero_heading), updated_at: now });
-        if (login_feature_1 !== undefined) updates.push({ key: "login_feature_1", value: String(login_feature_1), updated_at: now });
-        if (login_feature_2 !== undefined) updates.push({ key: "login_feature_2", value: String(login_feature_2), updated_at: now });
-        if (login_feature_3 !== undefined) updates.push({ key: "login_feature_3", value: String(login_feature_3), updated_at: now });
-        if (login_stat_1_val !== undefined) updates.push({ key: "login_stat_1_val", value: String(login_stat_1_val), updated_at: now });
-        if (login_stat_1_label !== undefined) updates.push({ key: "login_stat_1_label", value: String(login_stat_1_label), updated_at: now });
-        if (login_stat_2_val !== undefined) updates.push({ key: "login_stat_2_val", value: String(login_stat_2_val), updated_at: now });
-        if (login_stat_2_label !== undefined) updates.push({ key: "login_stat_2_label", value: String(login_stat_2_label), updated_at: now });
-        if (login_stat_3_val !== undefined) updates.push({ key: "login_stat_3_val", value: String(login_stat_3_val), updated_at: now });
-        if (login_stat_3_label !== undefined) updates.push({ key: "login_stat_3_label", value: String(login_stat_3_label), updated_at: now });
-
-        // Design & Theming
-        if (primary_color !== undefined) {
-          updates.push({ key: "theme_primary_color", value: String(primary_color), updated_at: now });
-          updates.push({ key: "site_primary_color", value: String(primary_color), updated_at: now });
-        }
-        if (secondary_color !== undefined) updates.push({ key: "theme_secondary_color", value: String(secondary_color), updated_at: now });
-        if (font !== undefined) updates.push({ key: "theme_font", value: String(font), updated_at: now });
-        if (ui_radius !== undefined) updates.push({ key: "theme_ui_radius", value: String(ui_radius), updated_at: now });
-        if (dark_mode !== undefined) updates.push({ key: "theme_dark_mode", value: String(dark_mode), updated_at: now });
-
-        // Social & Channels
-        if (line_id !== undefined) updates.push({ key: "contact_line_id", value: String(line_id), updated_at: now });
-        if (line_url !== undefined) updates.push({ key: "contact_line_url", value: String(line_url), updated_at: now });
-        if (facebook_url !== undefined) updates.push({ key: "contact_facebook_url", value: String(facebook_url), updated_at: now });
-        if (telegram_url !== undefined) updates.push({ key: "contact_telegram_url", value: String(telegram_url), updated_at: now });
-        if (phone !== undefined) updates.push({ key: "contact_phone", value: String(phone), updated_at: now });
-        if (livechat_enabled !== undefined) updates.push({ key: "contact_livechat_enabled", value: String(livechat_enabled), updated_at: now });
-
-        // SEO & Metadata
-        if (seo_meta_title !== undefined) updates.push({ key: "seo_meta_title", value: String(seo_meta_title), updated_at: now });
-        if (seo_meta_description !== undefined) updates.push({ key: "seo_meta_description", value: String(seo_meta_description), updated_at: now });
-        if (seo_meta_keywords !== undefined) updates.push({ key: "seo_meta_keywords", value: String(seo_meta_keywords), updated_at: now });
-        if (seo_og_image_url !== undefined) updates.push({ key: "seo_og_image_url", value: String(seo_og_image_url), updated_at: now });
-
-        if (updates.length > 0) {
-          const { error } = await supabaseAdmin.from("settings").upsert(updates, { onConflict: "key" });
-          if (error) throw error;
-        }
-        return NextResponse.json({ success: true, count: updates.length });
-      }
-
       case "create_admin_user": {
         const { full_name, phone, password, admin_role, permissions } = payload || {};
         const inputId = String(phone || "").trim();
