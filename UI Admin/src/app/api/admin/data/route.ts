@@ -1290,18 +1290,15 @@ export async function POST(req: NextRequest) {
           .select();
         if (error) throw error;
 
-        // If payout rates provided, update payout_rates table
+        // If payout rates provided, update payout_rates table using standardized market code
         if (rates && typeof rates === "object") {
-          const mktCode = code || (data && data[0] ? data[0].code : null);
-          const mktId = id || (data && data[0] ? data[0].id : null);
-
-          const targetMarkets = Array.from(new Set([mktCode, mktId, String(mktId)].filter(Boolean)));
-          for (const targetMkt of targetMarkets) {
+          const mktCode = (code || (data && data[0] ? data[0].code : null) || id);
+          if (mktCode) {
             for (const [bt, rateVal] of Object.entries(rates)) {
               if (rateVal !== undefined && rateVal !== null) {
                 await supabaseAdmin
                   .from("payout_rates")
-                  .upsert([{ market: targetMkt, bet_type: bt, rate: Number(rateVal) }], { onConflict: "market,bet_type" });
+                  .upsert([{ market: mktCode, bet_type: bt, rate: Number(rateVal) }], { onConflict: "market,bet_type" });
               }
             }
           }
