@@ -5,7 +5,7 @@ import {
   LayoutDashboard, ArrowDownToLine, ArrowUpFromLine, Users, Dices, BadgeCheck,
   Zap, Disc3, Megaphone, Wrench, UserCog, Bell, Menu, LogOut, ChevronDown, Search,
   Images, Newspaper, Rss, Palette, Landmark, RadioTower, DatabaseBackup,
-  ShieldAlert, Ticket, Check, Share2, Sparkles,
+  ShieldAlert, Ticket, Check, Share2, Sparkles, Sliders, Settings2,
 } from "lucide-react";
 import { useAdminNav, KNOWN_ADMINS, PAGE_META, type PageId } from "./store";
 import { Btn, Avatar } from "./primitives";
@@ -64,17 +64,21 @@ const NAV: { group: string; items: { id: PageId; label: string; icon: React.Comp
     ],
   },
   {
-    group: "หวย",
+    group: "หวยหลัก & 15 นาที",
     items: [
-      { id: "markets", label: "ตลาดหวย", icon: Dices },
+      { id: "markets", label: "ตลาดหวย (37 ตลาด & 15M)", icon: Dices },
       { id: "restricted", label: "จัดการเลขอั้น", icon: ShieldAlert },
       { id: "bets", label: "รายการแทงหวย", icon: Ticket },
       { id: "results", label: "ออกผลรางวัล", icon: BadgeCheck, badge: (n) => n.res },
     ],
   },
   {
-    group: "หวยหนึ่งนาที",
-    items: [{ id: "instant-overview", label: "ภาพรวมหนึ่งนาที", icon: Zap }],
+    group: "หวย 1 นาที (Instant Lotto 60s)",
+    items: [
+      { id: "instant-overview", label: "ภาพรวม & ออกรางวัล", icon: Zap },
+      { id: "instant-rates", label: "อัตราจ่าย 9 รูปแบบ", icon: Sliders },
+      { id: "instant-settings", label: "ตั้งค่าหวย 1 นาที", icon: Settings2 },
+    ],
   },
   {
     group: "เกม",
@@ -121,6 +125,7 @@ export function isPagePermitted(pageId: PageId, currentAdmin: any): boolean {
   const perms: string[] = currentAdmin.permissions || [];
   if (pageId === "dashboard") return true;
   if (pageId === "member-detail") return perms.includes("members");
+  if (pageId.startsWith("instant-")) return perms.includes("instant") || perms.includes("markets") || perms.includes("all");
   if (perms.includes(pageId)) return true;
   if (DEFAULT_STAFF_PAGES.includes(pageId) && perms.length === 0) {
     return true;
@@ -442,7 +447,9 @@ export function AdminApp({ onLogout }: { onLogout?: () => void } = {}) {
       case "restricted": return <RestrictedNumbersPage />;
       case "bets": return <BetsPage />;
       case "results": return <ResultsPage />;
-      case "instant-overview": return <InstantOverviewPage />;
+      case "instant-overview": return <InstantOverviewPage initialTab="overview" />;
+      case "instant-rates": return <InstantOverviewPage initialTab="rates" />;
+      case "instant-settings": return <InstantOverviewPage initialTab="settings" />;
       case "wheel": return <WheelPage />;
       case "promotions": return <PromotionsPage />;
       case "sliders": return <SlidersPage />;

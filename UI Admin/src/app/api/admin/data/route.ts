@@ -955,6 +955,77 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, data: data || [] });
       }
 
+      case "instant-stats": {
+        const todayYmd = new Date().toISOString().slice(0, 10);
+        const [
+          { count: totalDrawsToday },
+          { data: todayBets },
+          { data: recentSettledDraws }
+        ] = await Promise.all([
+          supabaseAdmin.from("instant_draws").select("*", { count: "exact", head: true }).gte("created_at", todayYmd),
+          supabaseAdmin.from("instant_bets").select("amount, winnings, status, created_at").gte("created_at", todayYmd),
+          supabaseAdmin.from("instant_draws").select("result_6d, result_2bottom, draw_id, created_at, status").order("created_at", { ascending: false }).limit(20)
+        ]);
+
+        const totalBetAmount = (todayBets || []).reduce((acc, b) => acc + Number(b.amount || 0), 0);
+        const totalPayout = (todayBets || []).filter((b: any) => b.status === "WON").reduce((acc, b) => acc + Number(b.winnings || 0), 0);
+        const totalBetsCount = (todayBets || []).length;
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            total_draws_today: totalDrawsToday || 1440,
+            total_bets_today: totalBetsCount,
+            total_bet_amount_today: totalBetAmount,
+            total_payout_today: totalPayout,
+            active_players_today: 0,
+            recent_draws: recentSettledDraws || [],
+            hourly: []
+          }
+        });
+      }
+
+      case "instant-draws": {
+        const limit = Number(searchParams.get("limit")) || 20;
+        const { data, error } = await supabaseAdmin
+          .from("instant_draws")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(limit);
+        if (error) throw error;
+        return NextResponse.json({ success: true, data: data || [] });
+      }
+
+      case "instant-bets": {
+        const limit = Number(searchParams.get("limit")) || 20;
+        const { data, error } = await supabaseAdmin
+          .from("instant_bets")
+          .select(`
+            *,
+            profiles (full_name, member_id, phone, avatar_url)
+          `)
+          .order("created_at", { ascending: false })
+          .limit(limit);
+        if (error) {
+          const { data: rawBets } = await supabaseAdmin
+            .from("instant_bets")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(limit);
+          return NextResponse.json({ success: true, data: rawBets || [] });
+        }
+        return NextResponse.json({ success: true, data: data || [] });
+      }
+
+      case "instant-bet-types": {
+        const { data, error } = await supabaseAdmin
+          .from("instant_bet_types")
+          .select("*")
+          .order("display_order", { ascending: true });
+        if (error) throw error;
+        return NextResponse.json({ success: true, data: data || [] });
+      }
+
       default:
         return NextResponse.json({ success: false, error: "Invalid resource" }, { status: 400 });
     }
@@ -1706,6 +1777,18 @@ export async function POST(req: NextRequest) {
         add("popup_image_url", p.popup_image_url);
         add("popup_version", Date.now().toString());
 
+        // Instant Lottery Settings & Branding
+        add("instant_name", p.instant_name);
+        add("instant_logo_url", p.instant_logo_url);
+        if (p.instant_maintenance_mode !== undefined) add("instant_maintenance_mode", String(p.instant_maintenance_mode));
+        if (p.instant_draw_interval !== undefined) add("instant_draw_interval", String(p.instant_draw_interval));
+        if (p.instant_win_rate !== undefined) add("instant_win_rate", String(p.instant_win_rate));
+        if (p.instant_max_bets_per_minute !== undefined) add("instant_max_bets_per_minute", String(p.instant_max_bets_per_minute));
+        if (p.instant_show_popular !== undefined) add("instant_show_popular", String(p.instant_show_popular));
+        if (p.instant_show_trending !== undefined) add("instant_show_trending", String(p.instant_show_trending));
+        if (p.instant_auto_settle !== undefined) add("instant_auto_settle", String(p.instant_auto_settle));
+        if (p.auto_cleanup_instant !== undefined) add("auto_cleanup_instant", String(p.auto_cleanup_instant));
+
         if (pairs.length > 0) {
           const { error } = await supabaseAdmin.from("settings").upsert(pairs, { onConflict: "key" });
           if (error) throw error;
@@ -2190,6 +2273,42 @@ export async function POST(req: NextRequest) {
           .single();
         if (error) throw error;
 
+        return NextResponse.json({ success: true, data });
+      }
+
+      case "update_instant_bet_type": {
+        const { id, rate, is_active, min_digits, max_digits, is_positioned, name } = payload || {};
+        if (!id) {
+          return NextResponse.json({ success: false, error: "Missing bet type id" }, { status: 400 });
+        }
+        const updateData: any = {};
+        if (rate !== undefined) updateData.rate = Number(rate);
+        if (is_active !== undefined) updateData.is_active = Boolean(is_active);
+        if (min_digits !== undefined) updateData.min_digits = Number(min_digits);
+        if (max_digits !== undefined) updateData.max_digits = Number(max_digits);
+        if (is_positioned !== undefined) updateData.is_positioned = Boolean(is_positioned);
+        if (name !== undefined) updateData.name = name;
+
+        const { data, error } = await supabaseAdmin
+          .from("instant_bet_types")
+          .update(updateData)
+          .eq("id", id)
+          .select();
+        if (error) throw error;
+        return NextResponse.json({ success: true, data });
+      }
+
+      case "toggle_instant_bet_type": {
+        const { id, is_active } = payload || {};
+        if (!id) {
+          return NextResponse.json({ success: false, error: "Missing bet type id" }, { status: 400 });
+        }
+        const { data, error } = await supabaseAdmin
+          .from("instant_bet_types")
+          .update({ is_active: Boolean(is_active) })
+          .eq("id", id)
+          .select();
+        if (error) throw error;
         return NextResponse.json({ success: true, data });
       }
 

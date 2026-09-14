@@ -13,6 +13,8 @@ export type PageId =
   | "bets"
   | "results"
   | "instant-overview"
+  | "instant-rates"
+  | "instant-settings"
   | "wheel"
   | "sliders"
   | "popup"
@@ -166,7 +168,9 @@ export const PAGE_META: Record<PageId, { title: string; group: string }> = {
   restricted: { title: "จัดการเลขอั้น", group: "หวย" },
   bets: { title: "รายการแทงหวย", group: "หวย" },
   results: { title: "ออกผลรางวัล", group: "หวย" },
-  "instant-overview": { title: "หวยหนึ่งนาที — ภาพรวม", group: "หวยหนึ่งนาที" },
+  "instant-overview": { title: "หวย 1 นาที — ภาพรวม & ออกรางวัล", group: "หวย 1 นาที" },
+  "instant-rates": { title: "หวย 1 นาที — อัตราจ่าย 9 รูปแบบ", group: "หวย 1 นาที" },
+  "instant-settings": { title: "หวย 1 นาที — ตั้งค่าระบบ", group: "หวย 1 นาที" },
   wheel: { title: "วงล้อโชคดี", group: "เกม" },
   sliders: { title: "สไลเดอร์", group: "คอนเทนต์" },
   popup: { title: "ป๊อปอัปหน้าแรก", group: "คอนเทนต์" },

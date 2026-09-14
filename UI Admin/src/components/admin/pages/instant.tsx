@@ -7,6 +7,7 @@ import { Panel, StatCard, StatusBadge, Avatar, PageHeader, RealtimeDot, TableWra
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { INSTANT_BET_TYPES, InstantBetTypeConfig, fmtTHB, fmtNum } from "@/data/admin-mock";
+import { useAdminNav } from "../store";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -214,8 +215,23 @@ function InstantStatusBadge({ status, winnings }: { status: string; winnings?: n
   return <span className="text-xs text-neutral-500">{status}</span>;
 }
 
-export function InstantOverviewPage() {
-  const [activeTab, setActiveTab] = React.useState<"overview" | "rates" | "settings">("overview");
+export function InstantOverviewPage({ initialTab = "overview" }: { initialTab?: "overview" | "rates" | "settings" }) {
+  const [activeTab, setActiveTab] = React.useState<"overview" | "rates" | "settings">(initialTab);
+  const { navigate } = useAdminNav();
+
+  React.useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  const handleTabChange = (tab: "overview" | "rates" | "settings") => {
+    setActiveTab(tab);
+    if (tab === "overview") navigate("instant-overview");
+    else if (tab === "rates") navigate("instant-rates");
+    else if (tab === "settings") navigate("instant-settings");
+  };
+
   const [tick, setTick] = React.useState(30);
   const [refreshedAt, setRefreshedAt] = React.useState("--:--:--");
   const [currentTime, setCurrentTime] = React.useState<string>("");
@@ -480,7 +496,7 @@ export function InstantOverviewPage() {
       {/* Main Tab Switcher */}
       <div className="flex border-b border-neutral-200">
         <button
-          onClick={() => setActiveTab("overview")}
+          onClick={() => handleTabChange("overview")}
           className={cn(
             "flex items-center gap-2 border-b-2 px-5 py-2.5 text-sm font-bold transition-all",
             activeTab === "overview"
@@ -491,7 +507,7 @@ export function InstantOverviewPage() {
           <Zap className="size-4" /> ภาพรวมสถิติและมอนิเตอร์สด
         </button>
         <button
-          onClick={() => setActiveTab("rates")}
+          onClick={() => handleTabChange("rates")}
           className={cn(
             "flex items-center gap-2 border-b-2 px-5 py-2.5 text-sm font-bold transition-all",
             activeTab === "rates"
@@ -505,7 +521,7 @@ export function InstantOverviewPage() {
           </span>
         </button>
         <button
-          onClick={() => setActiveTab("settings")}
+          onClick={() => handleTabChange("settings")}
           className={cn(
             "flex items-center gap-2 border-b-2 px-5 py-2.5 text-sm font-bold transition-all",
             activeTab === "settings"
