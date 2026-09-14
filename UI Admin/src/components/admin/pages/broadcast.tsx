@@ -776,16 +776,49 @@ export function BroadcastPage() {
                 />
               </Field>
 
-              <Field label="ลิงก์รูปภาพป๊อปอัป (Image URL)">
-                <input
-                  className={inputCls}
-                  placeholder="https://... หรือ Supabase Storage URL"
-                  value={popupImgUrl}
-                  onChange={(e) => setPopupImgUrl(e.target.value)}
-                />
-                <p className="mt-1.5 text-[11px] text-neutral-400 flex items-center gap-1.5">
-                  <Info className="size-3 text-neutral-400" /> แนะนำรูปสี่เหลี่ยมจัตุรัส (Aspect Ratio 1:1 เช่น 600x600px หรือ 800x800px)
-                </p>
+              <Field label="รูปภาพแบนเนอร์ป๊อปอัป (Popup Image)">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 shadow-xs hover:bg-neutral-50 hover:border-brand-500 active:scale-95 transition-all">
+                      <span>📤 อัปโหลดภาพจากคอมพิวเตอร์</span>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/gif"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const fd = new FormData();
+                            fd.append("file", file);
+                            fd.append("bucket", "sliders");
+                            const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+                            const json = await res.json();
+                            if (json.success && json.url) {
+                              setPopupImgUrl(json.url);
+                              toast({ title: "อัปโหลดรูปป๊อปอัปสำเร็จ", description: file.name });
+                            } else {
+                              toast({ title: "อัปโหลดล้มเหลว", description: json.error, variant: "destructive" });
+                            }
+                          } catch (err: any) {
+                            toast({ title: "เกิดข้อผิดพลาด", description: err.message, variant: "destructive" });
+                          }
+                        }}
+                      />
+                    </label>
+                    <span className="text-[11px] text-neutral-400">หรือระบุ URL</span>
+                  </div>
+
+                  <input
+                    className={inputCls}
+                    placeholder="https://... หรือ Supabase Storage URL"
+                    value={popupImgUrl}
+                    onChange={(e) => setPopupImgUrl(e.target.value)}
+                  />
+                  <p className="mt-1 text-[11px] text-neutral-400 flex items-center gap-1.5">
+                    <Info className="size-3 text-neutral-400" /> แนะนำรูปสี่เหลี่ยมจัตุรัสหรือผืนผ้า ( Aspect Ratio 1:1 หรือ 16:9 )
+                  </p>
+                </div>
               </Field>
 
               {/* Preset Image Quick Selection */}
