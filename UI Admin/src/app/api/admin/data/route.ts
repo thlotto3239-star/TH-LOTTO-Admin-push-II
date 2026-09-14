@@ -314,6 +314,14 @@ export async function GET(req: NextRequest) {
         });
       }
 
+      case "settings": {
+        const { data, error } = await supabaseAdmin
+          .from("settings")
+          .select("*");
+        if (error) throw error;
+        return NextResponse.json({ success: true, data: data || [] });
+      }
+
       case "restricted-numbers": {
         const { data, error } = await supabaseAdmin
           .from("restricted_numbers")

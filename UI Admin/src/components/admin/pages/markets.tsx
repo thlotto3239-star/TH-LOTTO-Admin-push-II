@@ -462,27 +462,27 @@ export function MarketsPage() {
           {filtered.map((m) => (
             <MarketCard
               key={m.id}
-            m={m}
-            onEdit={() => setEdit(m)}
-            onToggle={(v) => {
-              setRows((p) => p.map((r) => (r.id === m.id ? { ...r, active: v } : r)));
-              toast({ title: v ? "เปิดใช้งานตลาดแล้ว" : "ปิดตลาดแล้ว", description: m.name });
-              fetch("/api/admin/data", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  action: "update_market",
-                  payload: {
-                    id: m.id,
-                    is_open: v,
-                    is_active: v,
-                  },
-                }),
-              }).catch((err) => console.error("Failed to toggle market:", err));
-            }}
-          />
-        ))}
-      </div>
+              m={m}
+              onEdit={() => setEdit(m)}
+              onToggle={(v) => {
+                setRows((p) => p.map((r) => (r.id === m.id ? { ...r, active: v } : r)));
+                toast({ title: v ? "เปิดใช้งานตลาดแล้ว" : "ปิดตลาดแล้ว", description: m.name });
+                fetch("/api/admin/data", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    action: "update_market",
+                    payload: {
+                      id: m.id,
+                      is_open: v,
+                      is_active: v,
+                    },
+                  }),
+                }).catch((err) => console.error("Failed to toggle market:", err));
+              }}
+            />
+          ))}
+        </div>
       )}
       {edit ? <EditMarketModal m={edit} onClose={() => setEdit(null)} onSave={handleSaveMarket} /> : null}
     </div>

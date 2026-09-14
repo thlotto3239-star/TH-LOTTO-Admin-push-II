@@ -49,23 +49,15 @@ export function PopupPage() {
   const loadData = React.useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/admin/data?resource=settings");
+      const res = await fetch("/api/admin/data?resource=popup");
       const json = await res.json();
-      if (json.success && Array.isArray(json.data)) {
-        const map: Record<string, string> = {};
-        json.data.forEach((s: any) => {
-          if (s.key) map[s.key] = s.value;
-        });
-
-        const enabledVal = String(map.popup_enabled || "").toUpperCase();
-        const isEnabled = enabledVal === "TRUE" || enabledVal === "1" || enabledVal === "YES";
-
+      if (json.success && json.data) {
         const config: PopupConfig = {
-          popup_enabled: isEnabled,
-          popup_title: map.popup_title || "",
-          popup_description: map.popup_description || "",
-          popup_image_url: map.popup_image_url || "",
-          popup_version: map.popup_version || "",
+          popup_enabled: Boolean(json.data.popup_enabled),
+          popup_title: json.data.popup_title || "",
+          popup_description: json.data.popup_description || "",
+          popup_image_url: json.data.popup_image_url || "",
+          popup_version: json.data.popup_version || "",
         };
 
         setDbData(config);
@@ -477,19 +469,19 @@ export function PopupPage() {
                     {form.popup_description || "สมาชิกใหม่ รับโบนัสฟรี 50% จากยอดฝากครั้งแรก!!"}
                   </p>
 
-                  {/* Buttons */}
+                  {/* Buttons matching Customer UI Home.jsx 1:1 */}
                   <div className="flex gap-2 pt-3">
                     <button
                       type="button"
-                      className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl active:scale-95 transition text-center shadow-xs"
+                      className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl active:scale-95 transition text-center shadow-xs"
                     >
                       ปิด
                     </button>
                     <button
                       type="button"
-                      className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl active:scale-95 transition text-center"
+                      className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-500 text-sm font-bold rounded-xl active:scale-95 transition text-center"
                     >
-                      ไม่ต้องแสดงอีกวันนี้
+                      ไม่แสดงอีก
                     </button>
                   </div>
                 </div>
