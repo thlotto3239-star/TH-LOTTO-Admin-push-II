@@ -255,10 +255,10 @@ export function AppearancePage() {
             logo_url: dict.site_logo_url || dict.logo_url || APPEARANCE_SETTINGS.logo_url,
             favicon_url: dict.site_favicon_url || dict.favicon_url || APPEARANCE_SETTINGS.favicon_url,
             login_bg_url: dict.login_bg_url || APPEARANCE_SETTINGS.login_bg_url,
-            popup_enabled: dict.popup_enabled !== undefined ? (dict.popup_enabled === "true" || dict.popup_enabled === true) : APPEARANCE_SETTINGS.popup_enabled,
-            popup_title: dict.popup_title || APPEARANCE_SETTINGS.popup_title,
-            popup_description: dict.popup_description || APPEARANCE_SETTINGS.popup_description,
-            popup_image_url: dict.popup_image_url || APPEARANCE_SETTINGS.popup_image_url,
+            popup_enabled: dict.popup_enabled !== undefined ? ["TRUE", "1", "YES"].includes(String(dict.popup_enabled).toUpperCase()) : APPEARANCE_SETTINGS.popup_enabled,
+            popup_title: dict.popup_title !== undefined ? String(dict.popup_title) : APPEARANCE_SETTINGS.popup_title,
+            popup_description: dict.popup_description !== undefined ? String(dict.popup_description) : APPEARANCE_SETTINGS.popup_description,
+            popup_image_url: dict.popup_image_url !== undefined ? String(dict.popup_image_url) : APPEARANCE_SETTINGS.popup_image_url,
           };
           setS((prev) => ({ ...prev, ...loaded }));
           setInitial((prev) => ({ ...prev, ...loaded }));

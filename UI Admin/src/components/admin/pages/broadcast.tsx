@@ -68,11 +68,11 @@ export function BroadcastPage() {
       .then((res) => {
         if (res.success && res.data) {
           const s = res.data;
-          const isEnabled = (s.popup_enabled || "").toUpperCase() === "TRUE" || s.popup_enabled === "true" || s.popup_enabled === "1";
-          const titleVal = s.popup_title !== undefined ? String(s.popup_title).trim() : "ยินดีต้อนรับสมาชิกใหม่!";
-          const descVal = s.popup_description !== undefined ? String(s.popup_description).trim() : "สมาชิกใหม่ รับโบนัสฟรี 50% จากยอดฝากครั้งแรก!!";
-          const imgVal = s.popup_image_url !== undefined ? String(s.popup_image_url).trim() : "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/popup/1785749698532.jpg";
-          const verVal = s.popup_version || "ยังไม่มีเวอร์ชันบันทึก";
+          const isEnabled = ["TRUE", "1", "YES"].includes(String(s.popup_enabled || "").toUpperCase());
+          const titleVal = s.popup_title !== undefined ? String(s.popup_title) : "";
+          const descVal = s.popup_description !== undefined ? String(s.popup_description) : "";
+          const imgVal = s.popup_image_url !== undefined ? String(s.popup_image_url) : "";
+          const verVal = s.popup_version ? String(s.popup_version) : "ยังไม่มีเวอร์ชันบันทึก";
 
           setPopupEnabled(isEnabled);
           setPopupTitle(titleVal);
