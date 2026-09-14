@@ -726,29 +726,44 @@ export function BroadcastPage() {
 
               {/* Popup Modal Mock in Mobile */}
               <div className="my-auto py-3">
-                <div className="relative mx-auto max-w-xs overflow-hidden rounded-3xl bg-white text-neutral-900 shadow-2xl border border-neutral-200">
+                <div className="relative mx-auto max-w-xs overflow-hidden rounded-2xl bg-white text-neutral-900 shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95">
                   {popupImgUrl ? (
-                    <div className="relative aspect-square w-full overflow-hidden bg-neutral-100">
+                    <div className="relative aspect-square w-full overflow-hidden bg-neutral-900 flex items-center justify-center">
                       <img
                         src={popupImgUrl}
                         alt="Popup Banner"
-                        className="size-full object-cover"
+                        className="w-full h-full object-cover"
                         onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
                       />
+                      {!popupEnabled && (
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center">
+                          <span className="rounded-full bg-neutral-900/90 px-3 py-1 text-xs font-bold text-amber-300 border border-amber-500/30">
+                            ⚪ ปิดการแสดงผลอยู่
+                          </span>
+                        </div>
+                      )}
                     </div>
                   ) : null}
 
-                  <div className="p-4 text-center">
-                    <h4 className="text-sm font-black text-neutral-900 truncate">{popupTitle || "ยินดีต้อนรับสมาชิกใหม่!"}</h4>
-                    <p className="mt-1 text-xs text-neutral-500 leading-relaxed line-clamp-3">
-                      {popupDesc || "รายละเอียดโปรโมชั่นและโบนัสต้อนรับสมาชิก..."}
+                  <div className="p-5 space-y-2 text-left">
+                    <h3 className="font-bold text-slate-800 text-base truncate">
+                      {popupTitle || "ยินดีต้อนรับสู่ TH LOTTO II"}
+                    </h3>
+                    <p className="text-slate-500 text-sm line-clamp-3 leading-relaxed">
+                      {popupDesc || "สมาชิกใหม่ รับโบนัสฟรี 50% จากยอดฝากครั้งแรก!!"}
                     </p>
-                    <div className="mt-3.5 flex gap-2">
-                      <button className="flex-1 rounded-full bg-brand-600 py-2 text-xs font-bold text-white shadow-md shadow-brand-500/20 hover:bg-brand-700">
-                        รับสิทธิ์ทันที
-                      </button>
-                      <button className="rounded-full bg-neutral-100 px-3 py-2 text-xs font-semibold text-neutral-600 hover:bg-neutral-200">
+                    <div className="flex gap-2 pt-3">
+                      <button
+                        type="button"
+                        className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl active:scale-95 transition text-center shadow-xs"
+                      >
                         ปิด
+                      </button>
+                      <button
+                        type="button"
+                        className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-500 text-sm font-bold rounded-xl active:scale-95 transition text-center"
+                      >
+                        ไม่แสดงอีก
                       </button>
                     </div>
                   </div>

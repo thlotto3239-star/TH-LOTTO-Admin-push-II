@@ -899,44 +899,57 @@ export function AppearancePage() {
             onPick={(v) => set("popup_image_url", v)}
           />
 
-          {/* Live Visual Card Preview of the Current Active Popup */}
+          {/* Live Visual Card Preview of the Current Active Popup matching Customer UI exactly */}
           <div className="mt-4 border-t border-neutral-100 pt-4 space-y-2">
             <p className="text-xs font-bold text-neutral-500 uppercase tracking-wide flex items-center gap-1.5">
-              <Eye className="size-4 text-brand-600" /> ตัวอย่างพรีวิวป๊อปอัปที่จะเด้งแสดงบนหน้าผู้เล่นจริง (Live Player Popup Preview)
+              <Eye className="size-4 text-brand-600" /> ตัวอย่างป๊อปอัปจริงบนหน้าจอผู้เล่น (Live Customer Popup Preview)
             </p>
-            <div className="mx-auto max-w-sm overflow-hidden rounded-3xl bg-white text-neutral-900 shadow-xl border border-neutral-200 p-1">
-              <div className="relative overflow-hidden rounded-2xl bg-neutral-900 text-white p-3.5 text-center">
-                {s.popup_image_url ? (
-                  <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-neutral-800 mb-3 border border-white/10">
-                    <img
-                      src={s.popup_image_url}
-                      alt="Popup Banner"
-                      className="size-full object-cover"
-                      onError={(e) => { e.currentTarget.style.display = "none"; }}
-                    />
-                  </div>
-                ) : (
-                  <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-neutral-800/80 mb-3 border border-dashed border-neutral-700 flex items-center justify-center text-xs text-neutral-400">
-                    ไม่มีภาพป๊อปอัป (แสดงเฉพาะข้อความ)
-                  </div>
-                )}
-                <span className={cn(
-                  "inline-block mb-2 rounded-full px-2.5 py-0.5 text-[10px] font-bold",
-                  s.popup_enabled ? "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/30" : "bg-neutral-800 text-neutral-400"
-                )}>
-                  {s.popup_enabled ? "🟢 กำลังเปิดแสดงผลบนหน้าผู้เล่น" : "⚪ ปิดการแสดงผล"}
-                </span>
-                <h4 className="text-sm font-black text-white truncate">{s.popup_title || "ยินดีต้อนรับสมาชิกใหม่!"}</h4>
-                <p className="mt-1 text-xs text-neutral-300 leading-relaxed line-clamp-3">
+            <div className="mx-auto max-w-xs overflow-hidden rounded-2xl bg-white shadow-2xl border border-neutral-200/80 animate-in fade-in zoom-in-95">
+              {s.popup_image_url ? (
+                <div className="relative w-full aspect-square overflow-hidden bg-neutral-900 flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={s.popup_image_url}
+                    alt="ป๊อปอัปโฆษณา"
+                    className="w-full h-full object-cover"
+                  />
+                  {!s.popup_enabled && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center">
+                      <span className="rounded-full bg-neutral-900/90 px-3 py-1 text-xs font-bold text-amber-300 border border-amber-500/30">
+                        ⚪ ปิดการแสดงผลอยู่
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="w-full aspect-square bg-gradient-to-br from-emerald-800 via-emerald-900 to-neutral-950 flex flex-col items-center justify-center p-4 text-white text-center">
+                  <ImageIcon className="size-12 text-white/40 mb-2" />
+                  <p className="text-xs font-bold">ไม่มีรูปภาพป๊อปอัป</p>
+                  <p className="text-[11px] text-white/60">จะแสดงเฉพาะหัวข้อและข้อความ</p>
+                </div>
+              )}
+              <div className="p-5 space-y-2 text-left">
+                <div className="flex items-center justify-between gap-1">
+                  <h3 className="font-bold text-slate-800 text-base truncate">
+                    {s.popup_title || "ยินดีต้อนรับสู่ TH LOTTO II"}
+                  </h3>
+                </div>
+                <p className="text-slate-500 text-sm line-clamp-3 leading-relaxed">
                   {s.popup_description || "สมาชิกใหม่ รับโบนัสฟรี 50% จากยอดฝากครั้งแรก!!"}
                 </p>
-                <div className="mt-3 flex items-center justify-center gap-2">
-                  <span className="rounded-full bg-brand-600 px-4 py-1.5 text-xs font-bold text-white shadow-md shadow-brand-500/20">
-                    รับสิทธิ์ทันที
-                  </span>
-                  <span className="rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-400">
-                    ปิดหน้าต่าง
-                  </span>
+                <div className="flex gap-2 pt-3">
+                  <button
+                    type="button"
+                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl active:scale-95 transition text-center shadow-xs"
+                  >
+                    ปิด
+                  </button>
+                  <button
+                    type="button"
+                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-500 text-sm font-bold rounded-xl active:scale-95 transition text-center"
+                  >
+                    ไม่แสดงอีก
+                  </button>
                 </div>
               </div>
             </div>
