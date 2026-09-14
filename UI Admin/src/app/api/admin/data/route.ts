@@ -1213,17 +1213,33 @@ export async function POST(req: NextRequest) {
 
         const updateData: any = {};
         if (name !== undefined) updateData.name = name;
-        if (close_minutes_before !== undefined) updateData.close_before_minutes = close_minutes_before;
-        if (logo_url !== undefined) updateData.icon_url = logo_url;
+        if (code !== undefined) updateData.code = code;
+        if (close_minutes_before !== undefined) updateData.close_minutes_before = Number(close_minutes_before);
+        if (logo_url !== undefined) {
+          updateData.logo_url = logo_url;
+          updateData.image_url = logo_url;
+        }
+        if (stream_url !== undefined) updateData.stream_url = stream_url;
+        if (draw_days !== undefined && Array.isArray(draw_days)) updateData.draw_days = draw_days;
+        if (draw_day_of_month !== undefined) updateData.draw_day_of_month = draw_day_of_month;
         if (draw_time !== undefined) updateData.draw_time = draw_time;
-        if (is_active !== undefined) updateData.is_active = is_active;
-        else if (is_open !== undefined) updateData.is_active = is_open;
-        if (min_bet !== undefined) updateData.min_bet = Number(min_bet);
-        else if (limits?.min_bet !== undefined) updateData.min_bet = Number(limits.min_bet);
-        if (max_bet !== undefined) updateData.max_bet = Number(max_bet);
-        else if (limits?.max_bet !== undefined) updateData.max_bet = Number(limits.max_bet);
-        if (max_per_number !== undefined) updateData.max_bet_per_number = Number(max_per_number);
-        else if (limits?.max_per_number !== undefined) updateData.max_bet_per_number = Number(limits.max_per_number);
+        if (show_in_popular !== undefined) updateData.show_in_popular = Boolean(show_in_popular);
+        if (show_in_trending !== undefined) updateData.show_in_trending = Boolean(show_in_trending);
+
+        const activeBool = is_active !== undefined ? Boolean(is_active) : is_open !== undefined ? Boolean(is_open) : undefined;
+        if (activeBool !== undefined) {
+          updateData.is_active = activeBool;
+          updateData.is_open = activeBool;
+        }
+
+        const minB = min_bet !== undefined ? Number(min_bet) : limits?.min_bet !== undefined ? Number(limits.min_bet) : undefined;
+        if (minB !== undefined) updateData.min_bet = minB;
+
+        const maxB = max_bet !== undefined ? Number(max_bet) : limits?.max_bet !== undefined ? Number(limits.max_bet) : undefined;
+        if (maxB !== undefined) updateData.max_bet = maxB;
+
+        const maxPerNum = max_per_number !== undefined ? Number(max_per_number) : limits?.max_per_number !== undefined ? Number(limits.max_per_number) : undefined;
+        if (maxPerNum !== undefined) updateData.max_per_number = maxPerNum;
 
         const { data, error } = await supabaseAdmin
           .from("lottery_markets")
@@ -1232,27 +1248,19 @@ export async function POST(req: NextRequest) {
           .select();
         if (error) throw error;
 
-        // If payout rates provided, update payout_rates table and lottery_markets payout_3top
+        // If payout rates provided, update payout_rates table
         if (rates && typeof rates === "object") {
           const mktCode = code || (data && data[0] ? data[0].code : null);
           const mktId = id || (data && data[0] ? data[0].id : null);
 
-          // 1. Keep payout_3top in lottery_markets table updated
-          if (rates["3TOP"] !== undefined && mktId) {
-            await supabaseAdmin
-              .from("lottery_markets")
-              .update({ payout_3top: Number(rates["3TOP"]) })
-              .eq("id", mktId);
-          }
-
-          // 2. Upsert rows for both market code and market ID
           const targetMarkets = Array.from(new Set([mktCode, mktId, String(mktId)].filter(Boolean)));
           for (const targetMkt of targetMarkets) {
             for (const [bt, rateVal] of Object.entries(rates)) {
-              await supabaseAdmin
-                .from("payout_rates")
-                .upsert([{ market: targetMkt, bet_type: bt, rate: Number(rateVal) }], { onConflict: "market,bet_type" })
-                .select();
+              if (rateVal !== undefined && rateVal !== null) {
+                await supabaseAdmin
+                  .from("payout_rates")
+                  .upsert([{ market: targetMkt, bet_type: bt, rate: Number(rateVal) }], { onConflict: "market,bet_type" });
+              }
             }
           }
         }

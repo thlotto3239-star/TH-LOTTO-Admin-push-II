@@ -842,6 +842,37 @@ export function AppearancePage() {
           </div>
         </div>
 
+        {/* Active Stored Data in Database */}
+        {initial ? (
+          <div className="rounded-2xl border border-amber-200/80 bg-amber-50/60 p-3.5 text-xs space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                📌 ข้อมูลป๊อปอัปเดิมในระบบที่เปิดใช้งานอยู่ปัจจุบัน (Saved Values in DB)
+              </span>
+              <span className={cn(
+                "rounded-full px-2.5 py-0.5 text-[10px] font-bold",
+                initial.popup_enabled ? "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300" : "bg-neutral-200 text-neutral-600"
+              )}>
+                {initial.popup_enabled ? "🟢 เปิดใช้งานอยู่ใน DB" : "⚪ ปิดใช้งานใน DB"}
+              </span>
+            </div>
+            <div className="grid gap-1.5 text-amber-950/90 pl-1 font-sans">
+              <p><span className="font-semibold text-amber-800">หัวข้อเดิม:</span> {initial.popup_title || "ไม่ได้ระบุ"}</p>
+              <p><span className="font-semibold text-amber-800">รายละเอียดเดิม:</span> {initial.popup_description || "ไม่ได้ระบุ"}</p>
+              {initial.popup_image_url ? (
+                <div className="flex items-center gap-2 pt-0.5">
+                  <span className="font-semibold text-amber-800">รูปภาพเดิม:</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={initial.popup_image_url} alt="รูปเดิม" className="size-8 rounded object-cover border border-amber-300" />
+                  <a href={initial.popup_image_url} target="_blank" rel="noreferrer" className="truncate text-[11px] underline text-brand-700 hover:text-brand-800">
+                    {initial.popup_image_url}
+                  </a>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         <div className="space-y-3">
           <Field label="หัวข้อป๊อปอัป (Popup Title)">
             <Input
@@ -881,7 +912,7 @@ export function AppearancePage() {
                       src={s.popup_image_url}
                       alt="Popup Banner"
                       className="size-full object-cover"
-                      onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
                     />
                   </div>
                 ) : (

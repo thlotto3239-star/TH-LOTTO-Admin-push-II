@@ -54,6 +54,13 @@ export function BroadcastPage() {
   const [popupDesc, setPopupDesc] = React.useState("สมาชิกใหม่ รับโบนัสฟรี 50% จากยอดฝากครั้งแรก!!");
   const [popupImgUrl, setPopupImgUrl] = React.useState("https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/popup/1785749698532.jpg");
   const [isSavingPopup, setIsSavingPopup] = React.useState(false);
+  const [savedPopup, setSavedPopup] = React.useState<{
+    enabled: boolean;
+    title: string;
+    desc: string;
+    imgUrl: string;
+    version: string;
+  } | null>(null);
 
   const loadPopupSettings = React.useCallback(() => {
     fetch("/api/admin/data?resource=settings")
@@ -61,10 +68,24 @@ export function BroadcastPage() {
       .then((res) => {
         if (res.success && res.data) {
           const s = res.data;
-          setPopupEnabled(s.popup_enabled?.toUpperCase() === "TRUE" || s.popup_enabled === "true");
-          if (s.popup_title) setPopupTitle(s.popup_title.trim());
-          if (s.popup_description) setPopupDesc(s.popup_description.trim());
-          if (s.popup_image_url) setPopupImgUrl(s.popup_image_url.trim());
+          const isEnabled = (s.popup_enabled || "").toUpperCase() === "TRUE" || s.popup_enabled === "true" || s.popup_enabled === "1";
+          const titleVal = s.popup_title !== undefined ? String(s.popup_title).trim() : "ยินดีต้อนรับสมาชิกใหม่!";
+          const descVal = s.popup_description !== undefined ? String(s.popup_description).trim() : "สมาชิกใหม่ รับโบนัสฟรี 50% จากยอดฝากครั้งแรก!!";
+          const imgVal = s.popup_image_url !== undefined ? String(s.popup_image_url).trim() : "https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/popup/1785749698532.jpg";
+          const verVal = s.popup_version || "ยังไม่มีเวอร์ชันบันทึก";
+
+          setPopupEnabled(isEnabled);
+          setPopupTitle(titleVal);
+          setPopupDesc(descVal);
+          setPopupImgUrl(imgVal);
+
+          setSavedPopup({
+            enabled: isEnabled,
+            title: titleVal,
+            desc: descVal,
+            imgUrl: imgVal,
+            version: verVal,
+          });
         }
       })
       .catch(() => {});
@@ -72,6 +93,7 @@ export function BroadcastPage() {
 
   const savePopupSettings = async () => {
     setIsSavingPopup(true);
+    const versionTs = Date.now().toString();
     try {
       const res = await fetch("/api/admin/data", {
         method: "POST",
@@ -84,13 +106,20 @@ export function BroadcastPage() {
               popup_title: popupTitle.trim(),
               popup_description: popupDesc.trim(),
               popup_image_url: popupImgUrl.trim(),
-              popup_version: Date.now().toString(),
+              popup_version: versionTs,
             },
           },
         }),
       });
       const json = await res.json();
       if (json.success) {
+        setSavedPopup({
+          enabled: popupEnabled,
+          title: popupTitle.trim(),
+          desc: popupDesc.trim(),
+          imgUrl: popupImgUrl.trim(),
+          version: versionTs,
+        });
         toast({ title: "บันทึกป๊อปอัปหน้าแรกสำเร็จ", description: "ข้อมูลถูกอัปเดตลงตาราง settings และแสดงบนหน้าเว็บผู้เล่นทันที" });
       } else {
         toast({ title: "บันทึกล้มเหลว", description: json.error, variant: "destructive" });
@@ -755,6 +784,36 @@ export function BroadcastPage() {
                 />
               </label>
             </div>
+            {/* Active Stored Data in Database */}
+            {savedPopup ? (
+              <div className="rounded-2xl border border-amber-200/80 bg-amber-50/60 p-3.5 text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                    📌 ข้อมูลป๊อปอัปเดิมในระบบที่เปิดใช้งานอยู่ปัจจุบัน (Saved Values in DB)
+                  </span>
+                  <span className={cn(
+                    "rounded-full px-2.5 py-0.5 text-[10px] font-bold",
+                    savedPopup.enabled ? "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300" : "bg-neutral-200 text-neutral-600"
+                  )}>
+                    {savedPopup.enabled ? "🟢 เปิดใช้งานอยู่ใน DB" : "⚪ ปิดใช้งานใน DB"}
+                  </span>
+                </div>
+                <div className="grid gap-1.5 text-amber-950/90 pl-1 font-sans">
+                  <p><span className="font-semibold text-amber-800">หัวข้อเดิม:</span> {savedPopup.title || "ไม่ได้ระบุ"}</p>
+                  <p><span className="font-semibold text-amber-800">รายละเอียดเดิม:</span> {savedPopup.desc || "ไม่ได้ระบุ"}</p>
+                  {savedPopup.imgUrl ? (
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <span className="font-semibold text-amber-800">รูปภาพเดิม:</span>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={savedPopup.imgUrl} alt="รูปเดิม" className="size-8 rounded object-cover border border-amber-300" />
+                      <a href={savedPopup.imgUrl} target="_blank" rel="noreferrer" className="truncate text-[11px] underline text-brand-700 hover:text-brand-800">
+                        {savedPopup.imgUrl}
+                      </a>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
 
             <div className="space-y-4">
               <Field label="หัวข้อป๊อปอัป (Popup Title)" required>

@@ -322,7 +322,10 @@ export function MarketsPage() {
               hot: live.show_in_trending ?? false,
               close_minutes: live.close_minutes_before ?? 5,
               draw_time: live.draw_time ? live.draw_time.slice(0, 5) : "18:00",
-              draw_days: live.draw_days || [1, 2, 3, 4, 5, 6, 7],
+              draw_days: [
+                ...(Array.isArray(live.draw_days) ? live.draw_days : [1, 2, 3, 4, 5, 6, 7]),
+                ...(Array.isArray(live.draw_day_of_month) ? live.draw_day_of_month : []),
+              ],
               youtube_url: live.stream_url || "",
               logo_url: live.logo_url || live.image_url,
               image_url: live.image_url || live.logo_url,
