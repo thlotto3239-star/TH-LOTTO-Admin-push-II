@@ -367,15 +367,22 @@ export const TOP10_BETTORS = [
 ];
 
 // ── Lottery Markets (lottery_markets + market_bet_rates) ────────────────────
-export type BetType = "4TOP" | "3TOP" | "3TODE" | "3FRONT" | "3BOTTOM" | "2TOP" | "2BOTTOM" | "RUN_UP" | "RUN_DOWN";
+export type BetType = "6DIGIT" | "4TOP" | "3TOP" | "3TODE" | "3FRONT" | "3BOTTOM" | "2TOP" | "2BOTTOM" | "RUN_UP" | "RUN_DOWN";
 
 export const BET_TYPE_LABEL: Record<BetType, string> = {
-  "4TOP": "4ตัวบน", "3TOP": "3ตัวบน", "3TODE": "3โต๊ด", "3FRONT": "3ตัวหน้า",
-  "3BOTTOM": "3ตัวล่าง", "2TOP": "2ตัวบน", "2BOTTOM": "2ตัวล่าง",
-  RUN_UP: "วิ่งบน", RUN_DOWN: "วิ่งล่าง",
+  "6DIGIT": "6ตัวตรง",
+  "4TOP": "4ตัวบน",
+  "3TOP": "3ตัวบน",
+  "3TODE": "3โต๊ด",
+  "3FRONT": "3ตัวหน้า",
+  "3BOTTOM": "3ตัวล่าง",
+  "2TOP": "2ตัวบน",
+  "2BOTTOM": "2ตัวล่าง",
+  RUN_UP: "วิ่งบน",
+  RUN_DOWN: "วิ่งล่าง",
 };
 
-export const BET_TYPES: BetType[] = ["4TOP", "3TOP", "3TODE", "3FRONT", "3BOTTOM", "2TOP", "2BOTTOM", "RUN_UP", "RUN_DOWN"];
+export const BET_TYPES: BetType[] = ["6DIGIT", "4TOP", "3TOP", "3TODE", "3FRONT", "3BOTTOM", "2TOP", "2BOTTOM", "RUN_UP", "RUN_DOWN"];
 
 export type MarketKind = "GOVERNMENT" | "OTHER";
 
@@ -391,6 +398,7 @@ export interface Market {
   popular: boolean;
   hot: boolean;
   active: boolean;
+  has_6digit?: boolean;
   youtube_url: string | null;
   logo_url?: string | null;
   image_url?: string | null;
@@ -398,8 +406,8 @@ export interface Market {
   limits: { min_bet: number; max_bet: number; max_per_number: number };
 }
 
-const gRates: Record<BetType, number> = { "4TOP": 80, "3TOP": 700, "3TODE": 180, "3FRONT": 700, "3BOTTOM": 700, "2TOP": 92, "2BOTTOM": 92, RUN_UP: 3.2, RUN_DOWN: 3.2 };
-const sRates: Record<BetType, number> = { "4TOP": 85, "3TOP": 720, "3TODE": 190, "3FRONT": 720, "3BOTTOM": 720, "2TOP": 95, "2BOTTOM": 95, RUN_UP: 3.4, RUN_DOWN: 3.4 };
+const gRates: Record<BetType, number> = { "6DIGIT": 2000000, "4TOP": 11000, "3TOP": 1100, "3TODE": 170, "3FRONT": 460, "3BOTTOM": 460, "2TOP": 100, "2BOTTOM": 100, RUN_UP: 3.2, RUN_DOWN: 4.2 };
+const sRates: Record<BetType, number> = { "6DIGIT": 0, "4TOP": 6000, "3TOP": 900, "3TODE": 150, "3FRONT": 450, "3BOTTOM": 450, "2TOP": 95, "2BOTTOM": 95, RUN_UP: 3.2, RUN_DOWN: 4.2 };
 
 // ย่อ code สำหรับโลโก้วงกลม (เช่น TH_GOV → GOV, HANGSENG_AFTERNOON → HSG)
 // ย่อ code สำหรับโลโก้วงกลม 21 ตลาด

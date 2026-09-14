@@ -97,15 +97,56 @@ function MarketCard({ m, onEdit, onToggle }: { m: Market; onEdit: () => void; on
         </div>
       </div>
 
-      <div className="mt-4 rounded-2xl bg-neutral-50 p-3.5">
+      {/* Digit Category Badges */}
+      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+        {Number(m.rates["6DIGIT"] ?? 0) > 0 && (
+          <span className="rounded-lg bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-700 border border-amber-200">
+            🏆 6 หลัก
+          </span>
+        )}
+        {Number(m.rates["4TOP"] ?? 0) > 0 && (
+          <span className="rounded-lg bg-purple-50 px-2 py-0.5 text-[10px] font-extrabold text-purple-700 border border-purple-200">
+            🎯 4 หลัก
+          </span>
+        )}
+        {(Number(m.rates["3TOP"] ?? 0) > 0 || Number(m.rates["3TODE"] ?? 0) > 0) && (
+          <span className="rounded-lg bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700 border border-emerald-200">
+            ⭐ 3 หลัก
+          </span>
+        )}
+        {(Number(m.rates["2TOP"] ?? 0) > 0 || Number(m.rates["2BOTTOM"] ?? 0) > 0) && (
+          <span className="rounded-lg bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold text-blue-700 border border-blue-200">
+            🎲 2 หลัก
+          </span>
+        )}
+        {(Number(m.rates["RUN_UP"] ?? 0) > 0 || Number(m.rates["RUN_DOWN"] ?? 0) > 0) && (
+          <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 border border-slate-200">
+            🏃 วิ่ง
+          </span>
+        )}
+      </div>
+
+      <div className="mt-3 rounded-2xl bg-neutral-50 p-3">
         <p className="mb-2 text-xs font-bold uppercase tracking-wide text-neutral-400">อัตราจ่าย (ต่อ 1 บาท)</p>
         <div className="grid grid-cols-3 gap-1.5 text-center">
-          {BET_TYPES.map((bt) => (
-            <div key={bt} className="rounded-xl bg-white px-1 py-1.5 ring-1 ring-inset ring-neutral-100">
-              <p className="truncate text-[10px] text-neutral-400">{BET_TYPE_LABEL[bt]}</p>
-              <p className="text-sm font-bold text-neutral-900">×{m.rates[bt]}</p>
-            </div>
-          ))}
+          {BET_TYPES.map((bt) => {
+            const r = Number(m.rates[bt] ?? 0);
+            const isOpen = r > 0;
+            return (
+              <div
+                key={bt}
+                className={cn(
+                  "rounded-xl px-1 py-1.5 ring-1 ring-inset transition-all",
+                  isOpen ? "bg-white ring-neutral-100 shadow-2xs" : "bg-neutral-100/50 ring-neutral-200/50 opacity-60"
+                )}
+              >
+                <p className="truncate text-[10px] font-medium text-neutral-400">{BET_TYPE_LABEL[bt]}</p>
+                <p className={cn("text-xs font-black", isOpen ? "text-neutral-900" : "text-neutral-400 font-normal")}>
+                  {isOpen ? `×${r.toLocaleString()}` : "ปิดรับ"}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -128,21 +169,125 @@ function EditMarketModal({ m, onClose, onSave }: { m: Market; onClose: () => voi
   const set = <K extends keyof Market>(k: K, v: Market[K]) => setForm((p) => ({ ...p, [k]: v }));
   const setRate = (bt: BetType, v: number) => setForm((p) => ({ ...p, rates: { ...p.rates, [bt]: v } }));
 
+  const toggleBet = (bt: BetType, defaultVal: number) => {
+    setForm((p) => {
+      const cur = Number(p.rates[bt] ?? 0);
+      return {
+        ...p,
+        rates: { ...p.rates, [bt]: cur > 0 ? 0 : defaultVal },
+      };
+    });
+  };
+
+  const applyPreset = (preset: "GOV" | "4D" | "STOCK") => {
+    if (preset === "GOV") {
+      setForm((p) => ({
+        ...p,
+        rates: {
+          ...p.rates,
+          "6DIGIT": 2000000,
+          "4TOP": 11000,
+          "3TOP": 1100,
+          "3TODE": 170,
+          "3FRONT": 460,
+          "3BOTTOM": 460,
+          "2TOP": 100,
+          "2BOTTOM": 100,
+          RUN_UP: 3.2,
+          RUN_DOWN: 4.2,
+        },
+      }));
+      toast({ title: "ใช้ Preset หวยรัฐบาล", description: "เปิดครบ 6 หลัก, 4 หลัก, 3 หลัก, 2 หลัก, วิ่ง" });
+    } else if (preset === "4D") {
+      setForm((p) => ({
+        ...p,
+        rates: {
+          ...p.rates,
+          "6DIGIT": 0,
+          "4TOP": 6000,
+          "3TOP": 900,
+          "3TODE": 150,
+          "3FRONT": 0,
+          "3BOTTOM": 0,
+          "2TOP": 95,
+          "2BOTTOM": 95,
+          RUN_UP: 3.2,
+          RUN_DOWN: 4.2,
+        },
+      }));
+      toast({ title: "ใช้ Preset หวย 4 หลัก (ลาว/ฮานอย/มาเลย์)", description: "เปิด 4 หลัก, 3 หลัก, 2 หลัก, วิ่ง (ปิด 6 หลัก)" });
+    } else if (preset === "STOCK") {
+      setForm((p) => ({
+        ...p,
+        rates: {
+          ...p.rates,
+          "6DIGIT": 0,
+          "4TOP": 0,
+          "3TOP": 850,
+          "3TODE": 120,
+          "3FRONT": 0,
+          "3BOTTOM": 0,
+          "2TOP": 92,
+          "2BOTTOM": 92,
+          RUN_UP: 3.2,
+          RUN_DOWN: 4.2,
+        },
+      }));
+      toast({ title: "ใช้ Preset หวยหุ้น 3 หลัก", description: "เปิด 3 หลัก, 2 หลัก, วิ่ง (ปิด 6 หลัก และ 4 หลัก)" });
+    }
+  };
+
   const toggleDay = (d: number) =>
     setForm((p) => ({ ...p, draw_days: p.draw_days.includes(d) ? p.draw_days.filter((x) => x !== d) : [...p.draw_days, d].sort((a, b) => a - b) }));
 
+  const digitGroups = [
+    {
+      title: "🏆 กลุ่ม 6 หลัก",
+      items: [{ bt: "6DIGIT" as BetType, defaultVal: 2000000, hint: "เช่น หวยรัฐบาลไทย" }],
+    },
+    {
+      title: "🎯 กลุ่ม 4 หลัก",
+      items: [{ bt: "4TOP" as BetType, defaultVal: 6000, hint: "เช่น หวยลาว, ฮานอย, มาเลย์" }],
+    },
+    {
+      title: "⭐ กลุ่ม 3 หลัก",
+      items: [
+        { bt: "3TOP" as BetType, defaultVal: 900, hint: "3 ตัวบน" },
+        { bt: "3TODE" as BetType, defaultVal: 150, hint: "3 ตัวโต๊ด" },
+        { bt: "3FRONT" as BetType, defaultVal: 450, hint: "3 ตัวหน้า (รัฐบาล/ลาว)" },
+        { bt: "3BOTTOM" as BetType, defaultVal: 450, hint: "3 ตัวล่าง (รัฐบาล/ลาว)" },
+      ],
+    },
+    {
+      title: "🎲 กลุ่ม 2 หลัก",
+      items: [
+        { bt: "2TOP" as BetType, defaultVal: 95, hint: "2 ตัวบน" },
+        { bt: "2BOTTOM" as BetType, defaultVal: 95, hint: "2 ตัวล่าง" },
+      ],
+    },
+    {
+      title: "🏃 กลุ่มเลขวิ่ง (1 หลัก)",
+      items: [
+        { bt: "RUN_UP" as BetType, defaultVal: 3.2, hint: "วิ่งบน" },
+        { bt: "RUN_DOWN" as BetType, defaultVal: 4.2, hint: "วิ่งล่าง" },
+      ],
+    },
+  ];
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl sm:max-w-4xl lg:max-w-5xl">
+      <DialogContent className="max-h-[92vh] overflow-y-auto rounded-3xl sm:max-w-4xl lg:max-w-5xl p-6">
         <DialogHeader>
-          <DialogTitle>แก้ไขตลาดหวย — {m.name}</DialogTitle>
-          <DialogDescription>แก้ไขข้อมูลตลาด วันเวลาออกผล ขีดจำกัด และอัตราจ่ายทุกประเภท</DialogDescription>
+          <DialogTitle className="text-lg font-black text-neutral-900">แก้ไขตลาดหวย — {m.name}</DialogTitle>
+          <DialogDescription className="text-xs text-neutral-500">
+            ปรับข้อมูลตลาด วันเวลาออกผล ขีดจำกัด และบีบ/เปิด-ปิดประเภทตัวเลข 6, 4, 3, 2 หลักตามต้องการ
+          </DialogDescription>
         </DialogHeader>
 
         {/* 2-Column Responsive Layout for PC */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          {/* Column 1: ข้อมูลตลาดและสถานะ */}
-          <div className="space-y-3.5">
+        <div className="grid gap-5 lg:grid-cols-12 mt-2">
+          {/* Column 1: ข้อมูลตลาดและสถานะ (5 cols) */}
+          <div className="lg:col-span-5 space-y-3.5">
             <div className="rounded-2xl border border-neutral-100 bg-neutral-50/40 p-4 space-y-3">
               <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">ข้อมูลตลาดหวย</p>
               <div className="grid grid-cols-2 gap-3">
@@ -202,6 +347,19 @@ function EditMarketModal({ m, onClose, onSave }: { m: Market; onClose: () => voi
               </Field>
             </div>
 
+            <div className="rounded-2xl border border-neutral-100 bg-neutral-50/40 p-4 space-y-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">เวลา & ขีดจำกัดการแทง</p>
+              <div className="grid grid-cols-3 gap-2">
+                <Field label="เวลาออกผล"><Input type="time" value={form.draw_time.length === 5 ? form.draw_time : "12:00"} onChange={(e) => set("draw_time", e.target.value)} className={inputCls} /></Field>
+                <Field label="ปิดก่อน (นาที)"><Input type="number" min={0} value={form.close_minutes} onChange={(e) => set("close_minutes", Number(e.target.value))} className={inputCls} /></Field>
+                <Field label="ขั้นต่ำ (บาท)"><Input type="number" min={1} value={form.limits.min_bet} onChange={(e) => set("limits", { ...form.limits, min_bet: Number(e.target.value) })} className={inputCls} /></Field>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="สูงสุดต่อบิล"><Input type="number" value={form.limits.max_bet} onChange={(e) => set("limits", { ...form.limits, max_bet: Number(e.target.value) })} className={inputCls} /></Field>
+                <Field label="จำกัดต่อเลข"><Input type="number" value={form.limits.max_per_number} onChange={(e) => set("limits", { ...form.limits, max_per_number: Number(e.target.value) })} className={inputCls} /></Field>
+              </div>
+            </div>
+
             <div className="divide-y divide-neutral-100 rounded-2xl border border-neutral-100 bg-white px-4">
               <label className="flex items-center justify-between py-2.5 text-xs font-medium text-neutral-700">
                 <span>แสดงในหมวดหมู่ยอดนิยม</span>
@@ -218,28 +376,93 @@ function EditMarketModal({ m, onClose, onSave }: { m: Market; onClose: () => voi
             </div>
           </div>
 
-          {/* Column 2: เวลา, ขีดจำกัด และอัตราจ่าย */}
-          <div className="space-y-3.5">
-            <div className="rounded-2xl border border-neutral-100 bg-neutral-50/40 p-4 space-y-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">เวลา & ขีดจำกัดการแทง</p>
-              <div className="grid grid-cols-3 gap-2">
-                <Field label="เวลาออกผลรางวัล"><Input type="time" value={form.draw_time.length === 5 ? form.draw_time : "12:00"} onChange={(e) => set("draw_time", e.target.value)} className={inputCls} /></Field>
-                <Field label="ปิดรับก่อน (นาที)"><Input type="number" min={0} value={form.close_minutes} onChange={(e) => set("close_minutes", Number(e.target.value))} className={inputCls} /></Field>
-                <Field label="แทงขั้นต่ำ (บาท)"><Input type="number" min={1} value={form.limits.min_bet} onChange={(e) => set("limits", { ...form.limits, min_bet: Number(e.target.value) })} className={inputCls} /></Field>
+          {/* Column 2: การเปิดรับแทง & ประเภทตัวเลข (7 cols) */}
+          <div className="lg:col-span-7 space-y-4">
+            <div className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 pb-3 border-b border-neutral-100">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wide text-neutral-800">
+                    การเปิดรับแทง & ประเภทตัวเลข (Allowed Digits)
+                  </p>
+                  <p className="text-[11px] text-neutral-400">
+                    บีบหรือเลือกเปิดเฉพาะจำนวนหลักที่ต้องการ ปิดประเภทที่ไม่ต้องการให้ผู้ใช้แทง
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => applyPreset("GOV")}
+                    className="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors"
+                  >
+                    Preset รัฐบาล
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyPreset("4D")}
+                    className="px-2 py-1 rounded-lg text-[10px] font-bold bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 transition-colors"
+                  >
+                    Preset 4 หลัก
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyPreset("STOCK")}
+                    className="px-2 py-1 rounded-lg text-[10px] font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors"
+                  >
+                    Preset หวยหุ้น
+                  </button>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="แทงสูงสุดต่อบิล (บาท)"><Input type="number" value={form.limits.max_bet} onChange={(e) => set("limits", { ...form.limits, max_bet: Number(e.target.value) })} className={inputCls} /></Field>
-                <Field label="จำกัดยอดแทงต่อเลข (บาท)"><Input type="number" value={form.limits.max_per_number} onChange={(e) => set("limits", { ...form.limits, max_per_number: Number(e.target.value) })} className={inputCls} /></Field>
-              </div>
-            </div>
 
-            <div className="rounded-2xl border border-neutral-100 bg-white p-4">
-              <p className="mb-2.5 text-xs font-bold uppercase tracking-wide text-neutral-500">อัตราจ่าย (บาทละ)</p>
-              <div className="grid grid-cols-3 gap-2">
-                {BET_TYPES.map((bt) => (
-                  <div key={bt} className="grid gap-1">
-                    <Label className="text-[10px] text-neutral-500">{BET_TYPE_LABEL[bt]}</Label>
-                    <Input type="number" step="0.1" min={0} value={form.rates[bt]} onChange={(e) => setRate(bt, Number(e.target.value))} className="h-8 rounded-lg border-neutral-200 bg-neutral-50 text-xs font-bold" />
+              {/* Grouped Bet Types */}
+              <div className="space-y-3.5">
+                {digitGroups.map((grp) => (
+                  <div key={grp.title} className="rounded-xl border border-neutral-100 bg-neutral-50/50 p-3">
+                    <p className="text-[11px] font-extrabold text-neutral-700 mb-2">{grp.title}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {grp.items.map(({ bt, defaultVal, hint }) => {
+                        const currentVal = Number(form.rates[bt] ?? 0);
+                        const isOpen = currentVal > 0;
+                        return (
+                          <div
+                            key={bt}
+                            className={cn(
+                              "flex items-center justify-between gap-2 p-2 rounded-xl border transition-all",
+                              isOpen ? "bg-white border-neutral-200 shadow-2xs" : "bg-neutral-100/60 border-neutral-200/50 opacity-60"
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={isOpen}
+                                onCheckedChange={() => toggleBet(bt, defaultVal)}
+                                aria-label={`เปิดปิด ${BET_TYPE_LABEL[bt]}`}
+                              />
+                              <div>
+                                <p className="text-xs font-bold text-neutral-800 leading-tight">{BET_TYPE_LABEL[bt]}</p>
+                                <p className="text-[10px] text-neutral-400 font-mono">{bt}</p>
+                              </div>
+                            </div>
+
+                            <div className="w-24 text-right">
+                              {isOpen ? (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] text-neutral-400">×</span>
+                                  <Input
+                                    type="number"
+                                    step="0.1"
+                                    min={0}
+                                    value={form.rates[bt]}
+                                    onChange={(e) => setRate(bt, Number(e.target.value))}
+                                    className="h-7 text-right text-xs font-bold rounded-lg border-neutral-200 px-1.5"
+                                  />
+                                </div>
+                              ) : (
+                                <span className="text-[11px] font-semibold text-neutral-400">ปิดรับแทง</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -247,9 +470,9 @@ function EditMarketModal({ m, onClose, onSave }: { m: Market; onClose: () => voi
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-2 sm:gap-0 mt-4">
           <Btn variant="outline" className="rounded-full" onClick={onClose}>ยกเลิก</Btn>
-          <Btn className="rounded-full" onClick={() => { onSave(form); toast({ title: "บันทึกตลาดหวยแล้ว", description: `${form.name} · อัตราจ่าย 9 ประเภท + ขีดจำกัด` }); onClose(); }}>บันทึก</Btn>
+          <Btn className="rounded-full" onClick={() => { onSave(form); toast({ title: "บันทึกตลาดหวยแล้ว", description: `${form.name} · บันทึกประเภทการแทงและอัตราจ่ายเรียบร้อย` }); onClose(); }}>บันทึกข้อมูลตลาด</Btn>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -274,6 +497,8 @@ export function MarketsPage() {
             const existingMock = MARKETS.find((m) => m.code === live.code || m.id === live.id);
 
             const fallbackRates: Record<BetType, number> = {
+              "6DIGIT": live.code === "TH_GOV" || live.has_6digit ? 2000000 : 0,
+              "4TOP": 6000,
               "3TOP": 900,
               "3TODE": 150,
               "2TOP": 95,
@@ -282,7 +507,6 @@ export function MarketsPage() {
               "RUN_DOWN": 4.2,
               "3FRONT": 450,
               "3BOTTOM": 450,
-              "4TOP": 6000,
             };
 
             // Ground-truth rates directly from live database `payout_rates`
@@ -317,6 +541,7 @@ export function MarketsPage() {
               active: live.is_active ?? true,
               popular: live.show_in_popular ?? false,
               hot: live.show_in_trending ?? false,
+              has_6digit: Boolean(live.has_6digit || Number(liveRates["6DIGIT"] ?? 0) > 0),
               close_minutes: live.close_minutes_before ?? 5,
               draw_time: live.draw_time ? live.draw_time.slice(0, 5) : "18:00",
               draw_days: [
@@ -347,6 +572,7 @@ export function MarketsPage() {
     try {
       const regularDays = updated.draw_days.filter((d) => d !== 16);
       const dayOfMonth = updated.draw_days.includes(16) ? [16] : null;
+      const is6DigitActive = Number(updated.rates["6DIGIT"] ?? 0) > 0;
 
       const res = await fetch("/api/admin/data", {
         method: "POST",
@@ -367,6 +593,7 @@ export function MarketsPage() {
             show_in_trending: updated.hot,
             is_open: updated.active,
             is_active: updated.active,
+            has_6digit: is6DigitActive,
             rates: updated.rates,
             limits: updated.limits,
             min_bet: updated.limits.min_bet,

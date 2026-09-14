@@ -1190,6 +1190,11 @@ export async function POST(req: NextRequest) {
           show_in_trending,
           is_open,
           is_active,
+          has_6digit,
+          has_3top,
+          has_3bottom,
+          has_2top,
+          has_2bottom,
           rates,
           limits,
           min_bet,
@@ -1211,6 +1216,14 @@ export async function POST(req: NextRequest) {
         if (draw_time !== undefined) updateData.draw_time = draw_time;
         if (show_in_popular !== undefined) updateData.show_in_popular = Boolean(show_in_popular);
         if (show_in_trending !== undefined) updateData.show_in_trending = Boolean(show_in_trending);
+
+        if (has_6digit !== undefined) updateData.has_6digit = Boolean(has_6digit);
+        else if (rates && rates['6DIGIT'] !== undefined) updateData.has_6digit = Number(rates['6DIGIT']) > 0;
+
+        if (has_3top !== undefined) updateData.has_3top = Boolean(has_3top);
+        if (has_3bottom !== undefined) updateData.has_3bottom = Boolean(has_3bottom);
+        if (has_2top !== undefined) updateData.has_2top = Boolean(has_2top);
+        if (has_2bottom !== undefined) updateData.has_2bottom = Boolean(has_2bottom);
 
         const activeBool = is_active !== undefined ? Boolean(is_active) : is_open !== undefined ? Boolean(is_open) : undefined;
         if (activeBool !== undefined) {
@@ -1240,9 +1253,10 @@ export async function POST(req: NextRequest) {
           if (mktCode) {
             for (const [bt, rateVal] of Object.entries(rates)) {
               if (rateVal !== undefined && rateVal !== null) {
+                const numericRate = Number(rateVal);
                 await supabaseAdmin
                   .from("payout_rates")
-                  .upsert([{ market: mktCode, bet_type: bt, rate: Number(rateVal) }], { onConflict: "market,bet_type" });
+                  .upsert([{ market: mktCode, bet_type: bt, rate: numericRate }], { onConflict: "market,bet_type" });
               }
             }
           }
