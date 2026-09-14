@@ -1048,25 +1048,25 @@ export function InstantOverviewPage({ initialTab = "overview" }: { initialTab?: 
 
             <div className="mt-4 flex flex-wrap justify-center gap-1.5">
               <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700">
-                ⚡ หวยออกไว 1 นาที
+                หวยออกไว 1 นาที
               </span>
               {instantSettings.maintenance ? (
                 <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-700">
-                  🔴 ปิดปรับปรุง
+                  ปิดปรับปรุง
                 </span>
               ) : (
                 <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
-                  🟢 เปิดให้บริการ
+                  เปิดให้บริการ
                 </span>
               )}
               {instantSettings.show_trending ? (
                 <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-600">
-                  🔥 มาแรง
+                  มาแรง
                 </span>
               ) : null}
               {instantSettings.show_popular ? (
                 <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-600">
-                  ⭐ ยอดนิยม
+                  ยอดนิยม
                 </span>
               ) : null}
             </div>
