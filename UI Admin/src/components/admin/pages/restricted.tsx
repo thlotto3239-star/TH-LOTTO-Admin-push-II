@@ -120,13 +120,14 @@ export function RestrictedNumbersPage() {
     })();
 
     const tempId = "rn_" + Date.now();
+    const targetMkt = marketList.find((m) => m.id === form.market_id) || marketList[0] || { name: "หวย", code: "MKT", color: "#059669", logo_url: null, image_url: null };
     const newRecord: RestrictedNumber = {
       id: tempId,
       market_id: form.market_id || (marketList[0]?.id ?? ""),
       market_name: targetMkt?.name || "หวย",
-      market_code: targetMkt.code,
-      market_color: targetMkt.color,
-      market_logo: targetMkt.logo_url || targetMkt.image_url || null,
+      market_code: targetMkt?.code || "MKT",
+      market_color: targetMkt?.color || "#059669",
+      market_logo: targetMkt?.logo_url || targetMkt?.image_url || null,
       bet_type: form.bet_type,
       number: form.number.trim(),
       max_amount: Number(form.max_amount) || 0,
