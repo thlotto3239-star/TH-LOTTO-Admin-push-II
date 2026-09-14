@@ -204,10 +204,8 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any)
 
         // บันทึก Session ลงใน LocalStorage
         try {
-          if (remember) {
-            localStorage.setItem("thlotto_admin_session", adminName);
-            localStorage.setItem("thlotto_admin_profile", JSON.stringify(json.profile));
-          }
+          localStorage.setItem("thlotto_admin_session", adminName);
+          localStorage.setItem("thlotto_admin_profile", JSON.stringify(json.profile));
         } catch {}
 
         onLogin(adminName, json.profile);

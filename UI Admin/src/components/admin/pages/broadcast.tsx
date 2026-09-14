@@ -63,16 +63,16 @@ export function BroadcastPage() {
   } | null>(null);
 
   const loadPopupSettings = React.useCallback(() => {
-    fetch("/api/admin/data?resource=settings")
+    fetch("/api/admin/data?resource=popup")
       .then((r) => r.json())
       .then((res) => {
         if (res.success && res.data) {
           const s = res.data;
-          const isEnabled = ["TRUE", "1", "YES"].includes(String(s.popup_enabled || "").toUpperCase());
-          const titleVal = s.popup_title !== undefined ? String(s.popup_title) : "";
-          const descVal = s.popup_description !== undefined ? String(s.popup_description) : "";
-          const imgVal = s.popup_image_url !== undefined ? String(s.popup_image_url) : "";
-          const verVal = s.popup_version ? String(s.popup_version) : "ยังไม่มีเวอร์ชันบันทึก";
+          const isEnabled = Boolean(s.popup_enabled);
+          const titleVal = s.popup_title || "";
+          const descVal = s.popup_description || "";
+          const imgVal = s.popup_image_url || "";
+          const verVal = s.popup_version || "ยังไม่มีเวอร์ชันบันทึก";
 
           setPopupEnabled(isEnabled);
           setPopupTitle(titleVal);
