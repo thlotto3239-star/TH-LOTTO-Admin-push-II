@@ -285,11 +285,14 @@ export function MarketsPage() {
               "4TOP": 6000,
             };
 
-            // Ground-truth rates directly from live database `payout_rates`
+            // Ground-truth rates directly from live database `payout_rates` and `lottery_markets.payout_3top`
             const liveRates: Record<BetType, number> = {
               ...fallbackRates,
               ...(live.rates || {}),
             };
+            if (live.payout_3top) {
+              liveRates["3TOP"] = Number(live.payout_3top);
+            }
 
             const defaultLimits = {
               min_bet: Number(live.min_bet ?? existingMock?.limits?.min_bet ?? 1),

@@ -172,19 +172,30 @@ export async function GET(req: NextRequest) {
 
         const rateMap: Record<string, Record<string, number>> = {};
         (rates || []).forEach((r: any) => {
-          if (!rateMap[r.market]) rateMap[r.market] = {};
-          rateMap[r.market][r.bet_type] = Number(r.rate);
+          const key = r.market || r.market_id || r.lottery_code;
+          if (key) {
+            if (!rateMap[key]) rateMap[key] = {};
+            rateMap[key][r.bet_type] = Number(r.rate);
+          }
         });
 
         const merged = (markets || []).map((m: any) => {
-          const mktCode = m.id || m.code;
+          const mCode = m.code || m.id;
+          const mId = m.id || m.code;
+          const combinedRates = {
+            ...(mCode && rateMap[mCode] ? rateMap[mCode] : {}),
+            ...(mId && rateMap[mId] ? rateMap[mId] : {}),
+            ...(rateMap[String(mId)] ? rateMap[String(mId)] : {}),
+          };
+
           return {
             ...m,
-            code: mktCode,
+            code: mCode,
+            id: mId,
             logo_url: m.icon_url || m.logo_url,
             image_url: m.icon_url || m.image_url,
             close_minutes_before: m.close_before_minutes ?? m.close_minutes_before ?? 15,
-            rates: rateMap[mktCode] || {},
+            rates: combinedRates,
           };
         });
 
@@ -517,6 +528,7 @@ export async function GET(req: NextRequest) {
           { data: wheelPrizes },
           { data: wheelSpins },
           { data: settings },
+          { data: companyBanks },
         ] = await Promise.all([
           supabaseAdmin.from("sliders").select("*").order("display_order", { ascending: true }),
           supabaseAdmin.from("promotions").select("*").order("id", { ascending: true }),
@@ -526,6 +538,7 @@ export async function GET(req: NextRequest) {
           supabaseAdmin.from("lucky_wheel_prizes").select("*").order("slot_index", { ascending: true }),
           supabaseAdmin.from("lucky_wheel_spins").select("cost, prize_amount, spun_at"),
           supabaseAdmin.from("settings").select("*"),
+          supabaseAdmin.from("company_bank_accounts").select("*").order("id", { ascending: true }),
         ]);
 
         const spinsCount = (wheelSpins || []).length;
@@ -540,6 +553,7 @@ export async function GET(req: NextRequest) {
             articles: articles || [],
             announcements: announcements || [],
             banks: banks || [],
+            company_bank_accounts: companyBanks || [],
             wheelPrizes: wheelPrizes || [],
             wheelSpinsStats: {
               spins: spinsCount,
@@ -547,6 +561,35 @@ export async function GET(req: NextRequest) {
               prizes_paid: spinsPrizes,
             },
             settings: settings || [],
+          },
+        });
+      }
+
+      case "instant": {
+        const [
+          { data: instantBets },
+          { data: settings },
+        ] = await Promise.all([
+          supabaseAdmin.from("instant_bets").select("*, profiles!instant_bets_user_id_fkey(full_name, member_id)").order("created_at", { ascending: false }).limit(50),
+          supabaseAdmin.from("settings").select("*").in("key", ["instant_name", "instant_logo_url", "instant_show_popular", "instant_show_trending", "instant_win_rate"]),
+        ]);
+
+        const settingsMap: Record<string, string> = {};
+        (settings || []).forEach((s) => {
+          if (s.key) settingsMap[s.key] = s.value;
+        });
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            bets: instantBets || [],
+            settings: {
+              name: settingsMap.instant_name || "หวยไทย 1 นาที",
+              logo_url: settingsMap.instant_logo_url || "",
+              show_popular: settingsMap.instant_show_popular === "true",
+              show_trending: settingsMap.instant_show_trending !== "false",
+              win_rate: settingsMap.instant_win_rate ? Number(settingsMap.instant_win_rate) : 95,
+            },
           },
         });
       }
@@ -1189,20 +1232,26 @@ export async function POST(req: NextRequest) {
           .select();
         if (error) throw error;
 
-        // If payout rates provided, update payout_rates table
+        // If payout rates provided, update payout_rates table and lottery_markets payout_3top
         if (rates && typeof rates === "object") {
-          const mktCode = id || code || (data && data[0] ? data[0].id : null);
-          if (mktCode) {
-            const upsertRows = Object.entries(rates).map(([bt, rateVal]) => ({
-              market: mktCode,
-              bet_type: bt,
-              rate: Number(rateVal),
-            }));
+          const mktCode = code || (data && data[0] ? data[0].code : null);
+          const mktId = id || (data && data[0] ? data[0].id : null);
 
-            for (const r of upsertRows) {
+          // 1. Keep payout_3top in lottery_markets table updated
+          if (rates["3TOP"] !== undefined && mktId) {
+            await supabaseAdmin
+              .from("lottery_markets")
+              .update({ payout_3top: Number(rates["3TOP"]) })
+              .eq("id", mktId);
+          }
+
+          // 2. Upsert rows for both market code and market ID
+          const targetMarkets = Array.from(new Set([mktCode, mktId, String(mktId)].filter(Boolean)));
+          for (const targetMkt of targetMarkets) {
+            for (const [bt, rateVal] of Object.entries(rates)) {
               await supabaseAdmin
                 .from("payout_rates")
-                .upsert([r], { onConflict: "market,bet_type" })
+                .upsert([{ market: targetMkt, bet_type: bt, rate: Number(rateVal) }], { onConflict: "market,bet_type" })
                 .select();
             }
           }
@@ -1469,23 +1518,112 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, data });
       }
 
+      case "upsert_company_bank": {
+        const { id, bank_code, account_no, account_number, account_name, branch, qr_code_url, is_active } = payload;
+        const nowIso = new Date().toISOString();
+        const bCode = (bank_code || "KBANK").toUpperCase();
+        const accNo = account_no || account_number || "";
+        const accName = account_name || "";
+        const row: any = {
+          bank_code: bCode,
+          account_number: accNo,
+          account_name: accName,
+          branch: branch || "สำนักงานใหญ่",
+          qr_code_url: qr_code_url || "",
+          is_active: is_active ?? true,
+          updated_at: nowIso,
+        };
+        if (id && !String(id).startsWith("bk-")) {
+          row.id = id;
+        }
+
+        const { data, error } = await supabaseAdmin.from("company_bank_accounts").upsert([row], { onConflict: "account_number" }).select();
+        
+        // Keep settings table in sync as well
+        await supabaseAdmin.from("settings").upsert([
+          { key: "company_bank_code", value: bCode, updated_at: nowIso },
+          { key: "company_bank_account_number", value: accNo, updated_at: nowIso },
+          { key: "company_bank_account_name", value: accName, updated_at: nowIso },
+          { key: "bank_account_name", value: accName, updated_at: nowIso },
+          ...(qr_code_url ? [{ key: "bank_qr_url", value: qr_code_url, updated_at: nowIso }] : []),
+        ], { onConflict: "key" });
+
+        return NextResponse.json({ success: true, data: data || [row] });
+      }
+
       case "batch_update_settings": {
         const { settings } = payload;
         const upsertRows: { key: string; value: string; updated_at: string }[] = [];
+        const nowIso = new Date().toISOString();
+
+        let hasPopupChange = false;
+        let cBankCode = "";
+        let cAccNo = "";
+        let cAccName = "";
+        let cQrUrl = "";
+
+        const handleKV = (k: string, v: any) => {
+          const strVal = String(v ?? "");
+          upsertRows.push({ key: k, value: strVal, updated_at: nowIso });
+          if (k.startsWith("popup_")) hasPopupChange = true;
+          if (k === "company_bank_code") cBankCode = strVal.toUpperCase();
+          if (k === "company_bank_account_number") cAccNo = strVal;
+          if (k === "company_bank_account_name" || k === "bank_account_name") cAccName = strVal;
+          if (k === "bank_qr_url") cQrUrl = strVal;
+        };
+
         if (Array.isArray(settings)) {
           for (const item of settings) {
-            if (item.key) upsertRows.push({ key: item.key, value: String(item.value ?? ""), updated_at: new Date().toISOString() });
+            if (item.key) handleKV(item.key, item.value);
           }
         } else if (typeof settings === "object" && settings !== null) {
           for (const [k, v] of Object.entries(settings)) {
-            upsertRows.push({ key: k, value: String(v ?? ""), updated_at: new Date().toISOString() });
+            handleKV(k, v);
           }
         }
+
+        if (hasPopupChange) {
+          upsertRows.push({ key: "popup_version", value: Date.now().toString(), updated_at: nowIso });
+        }
+
         if (upsertRows.length > 0) {
           const { error } = await supabaseAdmin.from("settings").upsert(upsertRows, { onConflict: "key" });
           if (error) throw error;
         }
+
+        // Dual-sync company bank account if numbers were updated
+        if (cAccNo) {
+          try {
+            await supabaseAdmin.from("company_bank_accounts").upsert([{
+              bank_code: cBankCode || "KBANK",
+              account_number: cAccNo,
+              account_name: cAccName || "บริษัท ทีเอช ล็อตโต้ จำกัด",
+              branch: "สำนักงานใหญ่",
+              qr_code_url: cQrUrl || "",
+              is_active: true,
+              updated_at: nowIso,
+            }], { onConflict: "account_number" });
+          } catch (e) {
+            console.warn("Could not sync to company_bank_accounts table:", e);
+          }
+        }
+
         return NextResponse.json({ success: true, count: upsertRows.length });
+      }
+
+      case "update_instant_settings": {
+        const { name, logo_url, show_popular, show_trending, win_rate } = payload || {};
+        const nowIso = new Date().toISOString();
+        const rows = [
+          { key: "instant_name", value: String(name || "หวยไทย 1 นาที"), updated_at: nowIso },
+          { key: "instant_logo_url", value: String(logo_url || ""), updated_at: nowIso },
+          { key: "instant_show_popular", value: String(Boolean(show_popular)), updated_at: nowIso },
+          { key: "instant_show_trending", value: String(Boolean(show_trending)), updated_at: nowIso },
+          { key: "instant_win_rate", value: String(win_rate ?? 95), updated_at: nowIso },
+        ];
+        const { error } = await supabaseAdmin.from("settings").upsert(rows, { onConflict: "key" });
+        if (error) throw error;
+        return NextResponse.json({ success: true });
       }
 
       case "update_appearance": {
@@ -1532,6 +1670,7 @@ export async function POST(req: NextRequest) {
         add("popup_title", p.popup_title);
         add("popup_description", p.popup_description);
         add("popup_image_url", p.popup_image_url);
+        add("popup_version", Date.now().toString());
 
         if (pairs.length > 0) {
           const { error } = await supabaseAdmin.from("settings").upsert(pairs, { onConflict: "key" });

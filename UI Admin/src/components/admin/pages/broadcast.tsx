@@ -84,6 +84,7 @@ export function BroadcastPage() {
               popup_title: popupTitle.trim(),
               popup_description: popupDesc.trim(),
               popup_image_url: popupImgUrl.trim(),
+              popup_version: Date.now().toString(),
             },
           },
         }),
