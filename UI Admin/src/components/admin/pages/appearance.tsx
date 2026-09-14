@@ -867,6 +867,49 @@ export function AppearancePage() {
             value={s.popup_image_url}
             onPick={(v) => set("popup_image_url", v)}
           />
+
+          {/* Live Visual Card Preview of the Current Active Popup */}
+          <div className="mt-4 border-t border-neutral-100 pt-4 space-y-2">
+            <p className="text-xs font-bold text-neutral-500 uppercase tracking-wide flex items-center gap-1.5">
+              <Eye className="size-4 text-brand-600" /> ตัวอย่างพรีวิวป๊อปอัปที่จะเด้งแสดงบนหน้าผู้เล่นจริง (Live Player Popup Preview)
+            </p>
+            <div className="mx-auto max-w-sm overflow-hidden rounded-3xl bg-white text-neutral-900 shadow-xl border border-neutral-200 p-1">
+              <div className="relative overflow-hidden rounded-2xl bg-neutral-900 text-white p-3.5 text-center">
+                {s.popup_image_url ? (
+                  <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-neutral-800 mb-3 border border-white/10">
+                    <img
+                      src={s.popup_image_url}
+                      alt="Popup Banner"
+                      className="size-full object-cover"
+                      onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                    />
+                  </div>
+                ) : (
+                  <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-neutral-800/80 mb-3 border border-dashed border-neutral-700 flex items-center justify-center text-xs text-neutral-400">
+                    ไม่มีภาพป๊อปอัป (แสดงเฉพาะข้อความ)
+                  </div>
+                )}
+                <span className={cn(
+                  "inline-block mb-2 rounded-full px-2.5 py-0.5 text-[10px] font-bold",
+                  s.popup_enabled ? "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/30" : "bg-neutral-800 text-neutral-400"
+                )}>
+                  {s.popup_enabled ? "🟢 กำลังเปิดแสดงผลบนหน้าผู้เล่น" : "⚪ ปิดการแสดงผล"}
+                </span>
+                <h4 className="text-sm font-black text-white truncate">{s.popup_title || "ยินดีต้อนรับสมาชิกใหม่!"}</h4>
+                <p className="mt-1 text-xs text-neutral-300 leading-relaxed line-clamp-3">
+                  {s.popup_description || "สมาชิกใหม่ รับโบนัสฟรี 50% จากยอดฝากครั้งแรก!!"}
+                </p>
+                <div className="mt-3 flex items-center justify-center gap-2">
+                  <span className="rounded-full bg-brand-600 px-4 py-1.5 text-xs font-bold text-white shadow-md shadow-brand-500/20">
+                    รับสิทธิ์ทันที
+                  </span>
+                  <span className="rounded-full bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-400">
+                    ปิดหน้าต่าง
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </Panel>
     </div>
