@@ -5,7 +5,7 @@ import {
   LayoutDashboard, ArrowDownToLine, ArrowUpFromLine, Users, Dices, BadgeCheck,
   Zap, Disc3, Megaphone, Wrench, UserCog, Bell, Menu, LogOut, ChevronDown, Search,
   Images, Newspaper, Rss, Palette, Landmark, RadioTower, DatabaseBackup,
-  ShieldAlert, Ticket, Check, Share2,
+  ShieldAlert, Ticket, Check, Share2, Sparkles,
 } from "lucide-react";
 import { useAdminNav, KNOWN_ADMINS, PAGE_META, type PageId } from "./store";
 import { Btn, Avatar } from "./primitives";
@@ -26,6 +26,7 @@ import { PromotionsPage } from "./pages/promotions";
 import { SettingsPage } from "./pages/settings";
 import { AdminsPage } from "./pages/admins";
 import { SlidersPage } from "./pages/sliders";
+import { PopupPage } from "./pages/popup";
 import { ArticlesPage } from "./pages/articles";
 import { FeedsPage } from "./pages/feeds";
 import { AppearancePage } from "./pages/appearance";
@@ -83,6 +84,7 @@ const NAV: { group: string; items: { id: PageId; label: string; icon: React.Comp
     group: "คอนเทนต์",
     items: [
       { id: "sliders", label: "สไลเดอร์", icon: Images },
+      { id: "popup", label: "ป๊อปอัปหน้าแรก", icon: Sparkles },
       { id: "promotions", label: "โปรโมชั่น", icon: Megaphone },
       { id: "articles", label: "บทความ", icon: Newspaper },
       { id: "feeds", label: "จัดการฟีด", icon: Rss },
@@ -103,6 +105,7 @@ const NAV: { group: string; items: { id: PageId; label: string; icon: React.Comp
 export const DEFAULT_STAFF_PAGES: PageId[] = [
   "dashboard",
   "sliders",
+  "popup",
   "promotions",
   "articles",
   "feeds",
@@ -443,6 +446,7 @@ export function AdminApp({ onLogout }: { onLogout?: () => void } = {}) {
       case "wheel": return <WheelPage />;
       case "promotions": return <PromotionsPage />;
       case "sliders": return <SlidersPage />;
+      case "popup": return <PopupPage />;
       case "articles": return <ArticlesPage />;
       case "feeds": return <FeedsPage />;
       case "settings": return <SettingsPage />;

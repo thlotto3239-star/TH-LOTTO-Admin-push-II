@@ -10,6 +10,7 @@ import {
 import { Panel, Btn, PageHeader, Field, inputCls, ColorPickerInput } from "../primitives";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminNav } from "../store";
 import { APPEARANCE_SETTINGS, PRIMARY_PALETTE, FONT_OPTIONS } from "@/data/admin-mock";
 import { cn } from "@/lib/utils";
 
@@ -154,6 +155,7 @@ function ImageSlot({
 // ── Main Appearance Page Component ───────────────────────────────────────────
 export function AppearancePage() {
   const { toast } = useToast();
+  const { navigate } = useAdminNav();
   const [s, setS] = React.useState({ ...APPEARANCE_SETTINGS });
   const [initial, setInitial] = React.useState({ ...APPEARANCE_SETTINGS });
   const [previewDevice, setPreviewDevice] = React.useState<"pc" | "mobile">("pc");
@@ -817,9 +819,18 @@ export function AppearancePage() {
       {/* Group 6: ป๊อปอัปต้อนรับ & โปรโมชั่นหน้าแรก (Welcome & Promo Popup Modal) */}
       <Panel className="p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-neutral-400">
-            <Sparkles className="size-4 text-amber-500" /> 6. ป๊อปอัปต้อนรับ & โปรโมชั่นหน้าแรก (Welcome & Promo Popup Modal)
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-neutral-400">
+              <Sparkles className="size-4 text-amber-500" /> 6. ป๊อปอัปต้อนรับ & โปรโมชั่นหน้าแรก (Welcome & Promo Popup Modal)
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate("popup")}
+              className="inline-flex items-center gap-1 rounded-lg bg-amber-100/80 px-2 py-0.5 text-[11px] font-bold text-amber-800 hover:bg-amber-200 transition-colors"
+            >
+              <ExternalLink className="size-3" /> เปิดหน้าจัดการแบบเต็ม
+            </button>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-neutral-600">
               {s.popup_enabled ? "เปิดแสดงผลหน้าแรก" : "ปิดการแสดงผล"}

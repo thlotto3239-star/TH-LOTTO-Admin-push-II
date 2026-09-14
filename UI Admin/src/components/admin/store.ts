@@ -15,6 +15,7 @@ export type PageId =
   | "instant-overview"
   | "wheel"
   | "sliders"
+  | "popup"
   | "promotions"
   | "articles"
   | "feeds"
@@ -168,6 +169,7 @@ export const PAGE_META: Record<PageId, { title: string; group: string }> = {
   "instant-overview": { title: "หวยหนึ่งนาที — ภาพรวม", group: "หวยหนึ่งนาที" },
   wheel: { title: "วงล้อโชคดี", group: "เกม" },
   sliders: { title: "สไลเดอร์", group: "คอนเทนต์" },
+  popup: { title: "ป๊อปอัปหน้าแรก", group: "คอนเทนต์" },
   promotions: { title: "โปรโมชั่น", group: "คอนเทนต์" },
   articles: { title: "บทความ", group: "คอนเทนต์" },
   feeds: { title: "จัดการฟีด", group: "คอนเทนต์" },

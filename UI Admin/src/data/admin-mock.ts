@@ -724,6 +724,7 @@ export const PERMISSION_KEYS: { key: string; label: string; page: string }[] = [
   { key: "settings", label: "ตั้งค่าระบบ", page: "ตั้งค่า + ประกาศ + Backup" },
   { key: "appearance", label: "รูปลักษณ์เว็บ", page: "รูปลักษณ์" },
   { key: "sliders", label: "สไลเดอร์", page: "สไลเดอร์" },
+  { key: "popup", label: "ป๊อปอัปหน้าแรก", page: "ป๊อปอัปหน้าแรก" },
   { key: "promotions", label: "โปรโมชั่น", page: "โปรโมชั่น" },
   { key: "articles", label: "บทความ", page: "บทความ" },
   { key: "feeds", label: "ฟีด", page: "ฟีด + Trending" },

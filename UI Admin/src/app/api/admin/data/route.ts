@@ -291,6 +291,29 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, data: data || [] });
       }
 
+      case "popup": {
+        const { data, error } = await supabaseAdmin
+          .from("settings")
+          .select("key, value")
+          .in("key", ["popup_enabled", "popup_title", "popup_description", "popup_image_url", "popup_version"]);
+        if (error) throw error;
+        const map: Record<string, string> = {};
+        (data || []).forEach((s: any) => {
+          if (s.key) map[s.key] = s.value;
+        });
+        const enabledVal = String(map.popup_enabled || "").toUpperCase();
+        return NextResponse.json({
+          success: true,
+          data: {
+            popup_enabled: enabledVal === "TRUE" || enabledVal === "1" || enabledVal === "YES",
+            popup_title: map.popup_title || "",
+            popup_description: map.popup_description || "",
+            popup_image_url: map.popup_image_url || "",
+            popup_version: map.popup_version || "",
+          },
+        });
+      }
+
       case "restricted-numbers": {
         const { data, error } = await supabaseAdmin
           .from("restricted_numbers")
