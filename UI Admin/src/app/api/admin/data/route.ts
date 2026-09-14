@@ -561,7 +561,6 @@ export async function GET(req: NextRequest) {
           { data: wheelPrizes },
           { data: wheelSpins },
           { data: settings },
-          { data: companyBanks },
         ] = await Promise.all([
           supabaseAdmin.from("sliders").select("*").order("display_order", { ascending: true }),
           supabaseAdmin.from("promotions").select("*").order("id", { ascending: true }),
@@ -571,7 +570,6 @@ export async function GET(req: NextRequest) {
           supabaseAdmin.from("lucky_wheel_prizes").select("*").order("slot_index", { ascending: true }),
           supabaseAdmin.from("lucky_wheel_spins").select("cost, prize_amount, spun_at"),
           supabaseAdmin.from("settings").select("*"),
-          supabaseAdmin.from("company_bank_accounts").select("*").catch(() => ({ data: null })),
         ]);
 
         const spinsCount = (wheelSpins || []).length;
@@ -583,9 +581,7 @@ export async function GET(req: NextRequest) {
           if (s.key) settingsDict[s.key] = s.value;
         });
 
-        const synthCompanyBanks = (companyBanks && companyBanks.length > 0)
-          ? companyBanks
-          : (settingsDict.company_bank_account_number || settingsDict.bank_account_number)
+        const synthCompanyBanks = (settingsDict.company_bank_account_number || settingsDict.bank_account_number)
           ? [{
               id: "company-bank-1",
               bank_code: settingsDict.company_bank_code || "KBANK",

@@ -134,7 +134,10 @@ export function BanksPage() {
             is_active: cb.is_active ?? true,
           }));
           setAccounts(mapped);
-        } else if (res.success && Array.isArray(res.data?.settings) && res.data.settings.length > 0) {
+        }
+
+        // Parse settings & financial limits unconditionally from real DB settings
+        if (res.success && Array.isArray(res.data?.settings) && res.data.settings.length > 0) {
           const dict: Record<string, string> = {};
           res.data.settings.forEach((s: any) => {
             if (s.key) dict[s.key] = s.value;
@@ -144,20 +147,22 @@ export function BanksPage() {
           if (dict.min_withdraw) setLimits((p) => ({ ...p, min_withdraw: Number(dict.min_withdraw) }));
           if (dict.max_withdraw_per_request) setLimits((p) => ({ ...p, max_withdraw: Number(dict.max_withdraw_per_request) }));
 
-          if (dict.company_bank_account_number) {
-            setAccounts([
-              {
-                id: "sb-company-1",
-                bank_code: (dict.company_bank_code || "kbank").toLowerCase(),
-                account_no: dict.company_bank_account_number || "",
-                account_name: dict.company_bank_account_name || dict.bank_account_name || "บริษัท ทีเอช ล็อตโต้ จำกัด",
-                branch: "สำนักงานใหญ่",
-                qr_code_url: dict.bank_qr_url || "",
-                account_type: "deposit" as const,
-                is_default: true,
-                is_active: true,
-              },
-            ]);
+          if (!res.data?.company_bank_accounts || res.data.company_bank_accounts.length === 0) {
+            if (dict.company_bank_account_number) {
+              setAccounts([
+                {
+                  id: "sb-company-1",
+                  bank_code: (dict.company_bank_code || "kbank").toLowerCase(),
+                  account_no: dict.company_bank_account_number || "",
+                  account_name: dict.company_bank_account_name || dict.bank_account_name || "บริษัท ทีเอช ล็อตโต้ จำกัด",
+                  branch: "สำนักงานใหญ่",
+                  qr_code_url: dict.bank_qr_url || "",
+                  account_type: "deposit" as const,
+                  is_default: true,
+                  is_active: true,
+                },
+              ]);
+            }
           }
         }
       })
