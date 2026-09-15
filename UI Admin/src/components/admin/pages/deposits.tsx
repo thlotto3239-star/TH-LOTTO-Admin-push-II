@@ -11,6 +11,8 @@ import { fmtTHB, fmtDT, type DepositReq, PROMO_DETAILS } from "@/data/admin-mock
 import { useAdminCounts } from "../store";
 import { cn } from "@/lib/utils";
 
+import { supabase } from "@/lib/supabase";
+
 // ─── Slip preview (image modal) ──────────────────────────────────────────────
 function SlipModal({ req, onClose }: { req: DepositReq | null; onClose: () => void }) {
   if (!req) return null;
@@ -182,7 +184,23 @@ export function DepositsPage() {
 
   React.useEffect(() => {
     fetchDeposits();
-  }, [fetchDeposits]);
+
+    const channel = supabase
+      .channel("realtime:admin_deposits")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "deposit_requests" },
+        () => {
+          fetchDeposits();
+          fetchCounts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchDeposits, fetchCounts]);
 
   const counts = {
     PENDING: rows.filter((r) => r.status === "PENDING").length,

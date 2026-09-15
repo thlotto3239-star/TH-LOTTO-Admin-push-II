@@ -1418,12 +1418,38 @@ export async function POST(req: NextRequest) {
 
       case "update_deposit": {
         const { id, status, admin_note } = payload;
+        
+        // Fetch deposit details to get user_id & amount for realtime notification
+        const { data: depRow } = await supabaseAdmin
+          .from("deposit_requests")
+          .select("user_id, amount")
+          .eq("id", id)
+          .maybeSingle();
+
         if (status === "APPROVED") {
           const { data: rpcRes, error: rpcErr } = await supabaseAdmin.rpc("admin_service_approve_deposit", {
             p_request_id: id,
             p_admin_note: admin_note || "อนุมัติผ่านแผงควบคุม",
           });
           if (rpcErr) throw rpcErr;
+
+          // Realtime Notification to user: Deposit Approved Popup
+          if (depRow?.user_id) {
+            await supabaseAdmin.from("notifications").insert([{
+              user_id: depRow.user_id,
+              type: "DEPOSIT",
+              title: "💰 ฝากเงินสำเร็จ",
+              body: `ยอดเงิน ฿${Number(depRow.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} เข้าสู่กระเป๋าเงินของคุณเรียบร้อยแล้ว`,
+              data: {
+                is_popup: true,
+                amount: Number(depRow.amount),
+                request_id: id,
+                action_url: "/wallet",
+              },
+              is_read: false,
+            }]).catch((err: any) => console.error("Failed to insert deposit notification:", err));
+          }
+
           return NextResponse.json({ success: true, data: rpcRes });
         } else if (status === "REJECTED") {
           const { data: rpcRes, error: rpcErr } = await supabaseAdmin.rpc("admin_service_reject_deposit", {
@@ -1431,6 +1457,23 @@ export async function POST(req: NextRequest) {
             p_admin_note: admin_note || "ข้อมูลสลิปไม่ถูกต้อง",
           });
           if (rpcErr) throw rpcErr;
+
+          // Realtime Notification to user: Deposit Rejected Popup
+          if (depRow?.user_id) {
+            await supabaseAdmin.from("notifications").insert([{
+              user_id: depRow.user_id,
+              type: "WARNING",
+              title: "⚠️ คำขอฝากเงินไม่สำเร็จ",
+              body: admin_note || "ข้อมูลสลิปไม่ถูกต้องหรือไม่พบยอดโอน กรุณาตรวจสอบหรือติดต่อฝ่ายบริการลูกค้า",
+              data: {
+                is_popup: true,
+                request_id: id,
+                action_url: "/deposit",
+              },
+              is_read: false,
+            }]).catch((err: any) => console.error("Failed to insert deposit reject notification:", err));
+          }
+
           return NextResponse.json({ success: true, data: rpcRes });
         } else {
           // Handle other status updates (e.g. CANCELLED or PENDING reset)
@@ -1476,6 +1519,23 @@ export async function POST(req: NextRequest) {
           p_note: note || (delta > 0 ? "เพิ่มยอดกระเป๋าโดยแอดมิน" : "ลดยอดกระเป๋าโดยแอดมิน"),
         });
         if (rpcErr) throw rpcErr;
+
+        if (user_id) {
+          const numDelta = Number(delta);
+          await supabaseAdmin.from("notifications").insert([{
+            user_id,
+            type: numDelta > 0 ? "DEPOSIT" : "SYSTEM",
+            title: numDelta > 0 ? "💰 ปรับเพิ่มยอดเงิน" : "📢 ปรับลดยอดเงิน",
+            body: note || (numDelta > 0 ? `ระบบได้เติมเครดิต ฿${Math.abs(numDelta).toLocaleString(undefined, { minimumFractionDigits: 2 })} เข้ากระเป๋าของคุณ` : `ระบบได้ปรับลดยอดเงิน ฿${Math.abs(numDelta).toLocaleString(undefined, { minimumFractionDigits: 2 })}`),
+            data: {
+              is_popup: true,
+              delta: numDelta,
+              action_url: "/wallet",
+            },
+            is_read: false,
+          }]).catch((err: any) => console.error("Failed to insert wallet adjust notification:", err));
+        }
+
         return NextResponse.json({ success: true, balance: rpcRes?.balance, data: rpcRes });
       }
 
@@ -1508,12 +1568,38 @@ export async function POST(req: NextRequest) {
 
       case "update_withdrawal": {
         const { id, status, admin_note } = payload;
+
+        // Fetch withdrawal details to get user_id & amount for realtime notification
+        const { data: withRow } = await supabaseAdmin
+          .from("withdraw_requests")
+          .select("user_id, amount")
+          .eq("id", id)
+          .maybeSingle();
+
         if (status === "APPROVED") {
           const { data: rpcRes, error: rpcErr } = await supabaseAdmin.rpc("admin_service_approve_withdraw", {
             p_request_id: id,
             p_admin_note: admin_note || "อนุมัติผ่านแผงควบคุม",
           });
           if (rpcErr) throw rpcErr;
+
+          // Realtime Notification to user: Withdrawal Approved Popup
+          if (withRow?.user_id) {
+            await supabaseAdmin.from("notifications").insert([{
+              user_id: withRow.user_id,
+              type: "WITHDRAW",
+              title: "💸 ถอนเงินสำเร็จ",
+              body: `โอนเงินจำนวน ฿${Number(withRow.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} เข้าบัญชีธนาคารของคุณเรียบร้อยแล้ว`,
+              data: {
+                is_popup: true,
+                amount: Number(withRow.amount),
+                request_id: id,
+                action_url: "/wallet",
+              },
+              is_read: false,
+            }]).catch((err: any) => console.error("Failed to insert withdrawal approved notification:", err));
+          }
+
           return NextResponse.json({ success: true, data: rpcRes });
         } else if (status === "REJECTED") {
           const { data: rpcRes, error: rpcErr } = await supabaseAdmin.rpc("admin_service_reject_withdraw", {
@@ -1521,6 +1607,24 @@ export async function POST(req: NextRequest) {
             p_admin_note: admin_note || "ข้อมูลบัญชีไม่ถูกต้อง",
           });
           if (rpcErr) throw rpcErr;
+
+          // Realtime Notification to user: Withdrawal Rejected Popup
+          if (withRow?.user_id) {
+            await supabaseAdmin.from("notifications").insert([{
+              user_id: withRow.user_id,
+              type: "WARNING",
+              title: "⚠️ คำขอถอนเงินถูกปฏิเสธ",
+              body: admin_note || "ระบบได้คืนยอดเงินเข้ากระเป๋าของคุณแล้ว กรุณาตรวจสอบข้อมูลบัญชีหรือติดต่อเจ้าหน้าที่",
+              data: {
+                is_popup: true,
+                amount: Number(withRow.amount),
+                request_id: id,
+                action_url: "/wallet",
+              },
+              is_read: false,
+            }]).catch((err: any) => console.error("Failed to insert withdrawal rejected notification:", err));
+          }
+
           return NextResponse.json({ success: true, data: rpcRes });
         } else {
           const { data, error } = await supabaseAdmin

@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { fmtTHB, fmtDT, bankOf, type WithdrawReq, type Member } from "@/data/admin-mock";
 import { useAdminCounts } from "../store";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 function CopyBtn({ text, label }: { text: string; label?: string }) {
   const { toast } = useToast();
@@ -157,7 +158,23 @@ export function WithdrawalsPage() {
 
   React.useEffect(() => {
     fetchWithdrawals();
-  }, [fetchWithdrawals]);
+
+    const channel = supabase
+      .channel("realtime:admin_withdrawals")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "withdraw_requests" },
+        () => {
+          fetchWithdrawals();
+          fetchCounts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchWithdrawals, fetchCounts]);
 
   const counts = {
     PENDING: rows.filter((r) => r.status === "PENDING").length,
