@@ -15,6 +15,16 @@ function hashPin(phone: string, pin: string) {
 
 export const dynamic = "force-dynamic";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const resource = searchParams.get("resource") || "dashboard";
@@ -2437,11 +2447,109 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, data });
       }
 
+      case "create_deposit_request": {
+        const { user_id, amount, slip_url, promo_code } = payload || {};
+        if (!user_id || !amount) {
+          return NextResponse.json(
+            { success: false, error: "ข้อมูล user_id หรือ amount ไม่ครบถ้วน" },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+
+        const { data: inserted, error: insertError } = await supabaseAdmin
+          .from("deposit_requests")
+          .insert({
+            user_id,
+            amount: Number(amount),
+            slip_url: slip_url || null,
+            promo_code: promo_code || null,
+            status: "PENDING",
+            created_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("[API create_deposit_request ERROR]:", insertError);
+          return NextResponse.json(
+            { success: false, error: insertError.message },
+            { status: 500, headers: corsHeaders }
+          );
+        }
+
+        // Create admin notification
+        try {
+          await supabaseAdmin.from("admin_notifications").insert({
+            type: "DEPOSIT",
+            message: `มีรายการฝากเงินใหม่ ฿${Number(amount).toLocaleString()} รอการตรวจสอบ`,
+            link_url: "/deposits",
+            is_read: false,
+          });
+        } catch (nErr) {
+          console.warn("[Admin Notification Failed]:", nErr);
+        }
+
+        return NextResponse.json(
+          { success: true, data: inserted, request_id: inserted.id },
+          { headers: corsHeaders }
+        );
+      }
+
+      case "upload_slip": {
+        const { user_id, base64_image, file_name, mime_type } = payload || {};
+        if (!base64_image) {
+          return NextResponse.json(
+            { success: false, error: "Missing image data" },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+
+        const cleanBase64 = base64_image.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(cleanBase64, "base64");
+        const detectedMime = mime_type || "image/jpeg";
+        const targetExt = detectedMime.includes("png") ? "png" : detectedMime.includes("webp") ? "webp" : "jpg";
+        const finalName = `${user_id || "guest"}/${Date.now()}_${file_name || "slip"}.${targetExt}`;
+
+        let uploadRes = await supabaseAdmin.storage
+          .from("slips")
+          .upload(finalName, buffer, {
+            contentType: detectedMime,
+            upsert: true,
+          });
+
+        if (uploadRes.error) {
+          uploadRes = await supabaseAdmin.storage
+            .from("deposit-slips")
+            .upload(finalName, buffer, {
+              contentType: detectedMime,
+              upsert: true,
+            });
+        }
+
+        if (uploadRes.error) {
+          return NextResponse.json(
+            { success: false, error: uploadRes.error.message },
+            { status: 500, headers: corsHeaders }
+          );
+        }
+
+        const bucketName = uploadRes.data.fullPath?.startsWith("slips") ? "slips" : "deposit-slips";
+        const { data: urlData } = supabaseAdmin.storage
+          .from(bucketName)
+          .getPublicUrl(finalName);
+
+        return NextResponse.json(
+          { success: true, publicUrl: urlData.publicUrl },
+          { headers: corsHeaders }
+        );
+      }
+
       default:
-        return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 });
+        return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400, headers: corsHeaders });
     }
   } catch (err: any) {
     console.error("[API POST ERROR]:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: err.message }, { status: 500, headers: corsHeaders });
   }
 }
+
