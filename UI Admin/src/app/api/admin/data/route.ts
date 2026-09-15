@@ -1416,6 +1416,27 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true });
       }
 
+      case "create_deposit_request": {
+        const { user_id, amount, slip_url, promo_code } = payload;
+        if (!user_id || !amount) {
+          return NextResponse.json({ success: false, error: "กรุณาระบุข้อมูลผู้ใช้และยอดเงิน" }, { status: 400 });
+        }
+        const { data, error } = await supabaseAdmin
+          .from("deposit_requests")
+          .insert([{
+            user_id,
+            amount: Number(amount),
+            slip_url: slip_url || null,
+            promo_code: promo_code || null,
+            status: "PENDING",
+            created_at: new Date().toISOString(),
+          }])
+          .select()
+          .single();
+        if (error) throw error;
+        return NextResponse.json({ success: true, request_id: data?.id, data });
+      }
+
       case "update_deposit": {
         const { id, status, admin_note } = payload;
         
