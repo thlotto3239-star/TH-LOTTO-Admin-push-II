@@ -111,6 +111,7 @@ export type MemberStatus = "active" | "inactive" | "suspended";
 export interface Member {
   id: string;
   member_id: string;
+  serial_number?: string | null;
   full_name: string;
   phone: string;
   bank_code: string;

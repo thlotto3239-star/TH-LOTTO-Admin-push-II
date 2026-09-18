@@ -51,6 +51,10 @@ function EditModal({ member, onClose, onSave }: { member: Member; onClose: () =>
                   <span className="font-mono font-medium text-neutral-800">{form.phone || "-"}</span>
                 </div>
                 <div className="flex items-center justify-between">
+                  <span className="text-neutral-500">Serial Number:</span>
+                  <span className="font-mono font-medium text-neutral-800">{member.serial_number || "-"}</span>
+                </div>
+                <div className="flex items-center justify-between">
                   <span className="text-neutral-500">ธนาคาร:</span>
                   <BankBadge code={form.bank_code} />
                 </div>
@@ -278,6 +282,7 @@ export function MembersPage() {
           return {
             id: p.id,
             member_id: p.member_id || p.id.slice(0, 8).toUpperCase(),
+            serial_number: p.serial_number || null,
             full_name: p.full_name || "ไม่ระบุชื่อ",
             phone: p.phone || "-",
             bank_code: normalizeBank(p.bank_name),
@@ -405,8 +410,8 @@ export function MembersPage() {
   };
 
   const exportCsv = () => {
-    const headers = ["MemberID", "FullName", "Phone", "Bank", "AccountNo", "VIP", "Status", "Balance", "TotalBets", "TotalWon", "CreatedAt"];
-    const lines = filtered.map((m) => [m.member_id, `"${m.full_name}"`, m.phone, m.bank_code, m.bank_account_number, m.vip_level, m.status, m.balance, m.total_bets, m.total_won, m.created_at].join(","));
+    const headers = ["MemberID", "SerialNumber", "FullName", "Phone", "Bank", "AccountNo", "VIP", "Status", "Balance", "TotalBets", "TotalWon", "CreatedAt"];
+    const lines = filtered.map((m) => [m.member_id, m.serial_number || "-", `"${m.full_name}"`, m.phone, m.bank_code, m.bank_account_number, m.vip_level, m.status, m.balance, m.total_bets, m.total_won, m.created_at].join(","));
     const blob = new Blob(["\uFEFF" + [headers.join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -503,6 +508,7 @@ export function MembersPage() {
               <Th>สมาชิก</Th>
               <Th>สถานะ & พิกัดเซสชัน</Th>
               <Th>รหัสสมาชิก</Th>
+              <Th>Serial Number</Th>
               <Th>เบอร์โทร</Th>
               <Th>ธนาคาร / เลขบัญชี</Th>
               <Th>ชื่อบัญชี</Th>
@@ -549,6 +555,7 @@ export function MembersPage() {
                     <p className="mt-0.5 text-[10px] text-neutral-500 font-mono truncate max-w-[200px]" title={userDevice}>💻 {userDevice}</p>
                   </Td>
                   <Td><span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-bold text-neutral-500">{m.member_id}</span></Td>
+                  <Td className="whitespace-nowrap font-mono text-xs text-neutral-500">{m.serial_number || "-"}</Td>
                   <Td className="whitespace-nowrap font-mono text-xs">{m.phone}</Td>
                   <Td>
                     <BankBadge code={m.bank_code} />

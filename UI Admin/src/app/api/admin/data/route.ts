@@ -512,6 +512,7 @@ export async function GET(req: NextRequest) {
               id,
               member_id,
               full_name,
+              serial_number,
               phone,
               vip_level,
               bank_name,
@@ -1493,7 +1494,7 @@ export async function POST(req: NextRequest) {
 
           // Realtime Notification to user: Deposit Approved Popup
           if (depRow?.user_id) {
-            await supabaseAdmin.from("notifications").insert([{
+            const { error: notifErr } = await supabaseAdmin.from("notifications").insert([{
               user_id: depRow.user_id,
               type: "DEPOSIT",
               title: "💰 ฝากเงินสำเร็จ",
@@ -1505,7 +1506,8 @@ export async function POST(req: NextRequest) {
                 action_url: "/wallet",
               },
               is_read: false,
-            }]).catch((err: any) => console.error("Failed to insert deposit notification:", err));
+            }]);
+            if (notifErr) console.error("Failed to insert deposit notification:", notifErr);
           }
 
           return NextResponse.json({ success: true, data: rpcRes });
@@ -1518,7 +1520,7 @@ export async function POST(req: NextRequest) {
 
           // Realtime Notification to user: Deposit Rejected Popup
           if (depRow?.user_id) {
-            await supabaseAdmin.from("notifications").insert([{
+            const { error: notifErr } = await supabaseAdmin.from("notifications").insert([{
               user_id: depRow.user_id,
               type: "WARNING",
               title: "⚠️ คำขอฝากเงินไม่สำเร็จ",
@@ -1529,7 +1531,8 @@ export async function POST(req: NextRequest) {
                 action_url: "/deposit",
               },
               is_read: false,
-            }]).catch((err: any) => console.error("Failed to insert deposit reject notification:", err));
+            }]);
+            if (notifErr) console.error("Failed to insert deposit reject notification:", notifErr);
           }
 
           return NextResponse.json({ success: true, data: rpcRes });
@@ -1580,7 +1583,7 @@ export async function POST(req: NextRequest) {
 
         if (user_id) {
           const numDelta = Number(delta);
-          await supabaseAdmin.from("notifications").insert([{
+          const { error: notifErr } = await supabaseAdmin.from("notifications").insert([{
             user_id,
             type: numDelta > 0 ? "DEPOSIT" : "SYSTEM",
             title: numDelta > 0 ? "💰 ปรับเพิ่มยอดเงิน" : "📢 ปรับลดยอดเงิน",
@@ -1591,7 +1594,8 @@ export async function POST(req: NextRequest) {
               action_url: "/wallet",
             },
             is_read: false,
-          }]).catch((err: any) => console.error("Failed to insert wallet adjust notification:", err));
+          }]);
+          if (notifErr) console.error("Failed to insert wallet adjust notification:", notifErr);
         }
 
         return NextResponse.json({ success: true, balance: rpcRes?.balance, data: rpcRes });
@@ -1643,7 +1647,7 @@ export async function POST(req: NextRequest) {
 
           // Realtime Notification to user: Withdrawal Approved Popup
           if (withRow?.user_id) {
-            await supabaseAdmin.from("notifications").insert([{
+            const { error: notifErr } = await supabaseAdmin.from("notifications").insert([{
               user_id: withRow.user_id,
               type: "WITHDRAW",
               title: "💸 ถอนเงินสำเร็จ",
@@ -1655,7 +1659,8 @@ export async function POST(req: NextRequest) {
                 action_url: "/wallet",
               },
               is_read: false,
-            }]).catch((err: any) => console.error("Failed to insert withdrawal approved notification:", err));
+            }]);
+            if (notifErr) console.error("Failed to insert withdrawal approved notification:", notifErr);
           }
 
           return NextResponse.json({ success: true, data: rpcRes });
@@ -1668,7 +1673,7 @@ export async function POST(req: NextRequest) {
 
           // Realtime Notification to user: Withdrawal Rejected Popup
           if (withRow?.user_id) {
-            await supabaseAdmin.from("notifications").insert([{
+            const { error: notifErr } = await supabaseAdmin.from("notifications").insert([{
               user_id: withRow.user_id,
               type: "WARNING",
               title: "⚠️ คำขอถอนเงินถูกปฏิเสธ",
@@ -1680,7 +1685,8 @@ export async function POST(req: NextRequest) {
                 action_url: "/wallet",
               },
               is_read: false,
-            }]).catch((err: any) => console.error("Failed to insert withdrawal rejected notification:", err));
+            }]);
+            if (notifErr) console.error("Failed to insert withdrawal rejected notification:", notifErr);
           }
 
           return NextResponse.json({ success: true, data: rpcRes });
