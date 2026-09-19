@@ -15,7 +15,7 @@ envFile.split('\n').forEach(line => {
 const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
 async function main() {
-  const { data, error } = await supabase.from('settings').select('*');
+  const { data, error } = await supabase.from('system_settings').select('*');
   if (error) {
     console.error('Error:', error);
     return;

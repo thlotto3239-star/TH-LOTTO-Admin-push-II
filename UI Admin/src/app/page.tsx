@@ -10,7 +10,7 @@ import { getAdminClientGeo } from "@/lib/client-geo";
 const SESSION_KEY = "thlotto_admin_session";
 
 function syncAdminProfile(profile: any, fallbackName: string) {
-  const isSuper = profile?.admin_role === "super_admin" || profile?.phone === "0622306037" || profile?.is_super === true;
+  const isSuper = profile?.admin_role === "super_admin" || profile?.is_super === true;
   useAdminNav.getState().setCurrentAdmin({
     id: profile?.id || "admin-session",
     full_name: profile?.full_name || fallbackName,

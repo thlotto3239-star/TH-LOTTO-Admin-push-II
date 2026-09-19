@@ -228,6 +228,21 @@ export function DepositsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "update_deposit", payload: { id, status, admin_note: note } }),
       });
+      
+      if (res.status === 504) {
+        toast({ title: "ระบบกำลังประมวลผล", description: "รายการกำลังถูกประมวลผลในเบื้องหลังเนื่องจากมีข้อมูลจำนวนมาก กรุณารอสักครู่และรีเฟรชหน้าจอ", duration: 5000 });
+        setTimeout(() => { fetchDeposits(); fetchCounts(); }, 3000);
+        return;
+      }
+      
+      if (!res.ok && res.status !== 200) {
+        // Fallback for other non-200 html pages
+        const text = await res.text().catch(() => "");
+        if (text.includes("<!DOCTYPE")) {
+          throw new Error(`Server returned HTML error (${res.status})`);
+        }
+      }
+
       const json = await res.json();
       if (json.success) {
         toast({ title: status === "APPROVED" ? "อนุมัติรายการฝากแล้ว" : "ปฏิเสธรายการแล้ว", description: `อัปเดตสถานะ Supabase เรียบร้อย` });

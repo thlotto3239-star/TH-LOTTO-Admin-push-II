@@ -105,6 +105,7 @@ export function BetsPage() {
               payout_rate: Number(b.payout_rate || 0),
               payout_amount: Number(b.payout_amount || 0),
               status: (b.status || "PENDING").toUpperCase(),
+              is_paid: !!b.is_paid,
               created_at: b.created_at,
               draw_date: b.draw_date || (b.created_at ? b.created_at.slice(0, 10) : "-"),
               member_id: memberId,

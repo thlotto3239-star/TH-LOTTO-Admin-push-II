@@ -119,7 +119,7 @@ export const DEFAULT_STAFF_PAGES: PageId[] = [
 
 export function isPagePermitted(pageId: PageId, currentAdmin: any): boolean {
   if (!currentAdmin) return true;
-  if (currentAdmin.is_super || currentAdmin.admin_role === "super_admin" || currentAdmin.phone === "0622306037") {
+  if (currentAdmin.is_super || currentAdmin.admin_role === "super_admin") {
     return true;
   }
   const perms: string[] = currentAdmin.permissions || [];

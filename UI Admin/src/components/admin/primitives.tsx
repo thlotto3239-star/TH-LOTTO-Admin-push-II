@@ -181,9 +181,11 @@ export function TableWrap({ children, className }: { children: React.ReactNode; 
   );
 }
 
-export function Th({ children, className }: { children?: React.ReactNode; className?: string }) {
+export function Th({ children, className, colSpan, rowSpan }: { children?: React.ReactNode; className?: string; colSpan?: number; rowSpan?: number }) {
   return (
     <th
+      colSpan={colSpan}
+      rowSpan={rowSpan}
       className={cn(
         "whitespace-nowrap border-b border-neutral-200 bg-neutral-50/60 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500 first:rounded-tl-xl last:rounded-tr-xl",
         className
@@ -194,9 +196,9 @@ export function Th({ children, className }: { children?: React.ReactNode; classN
   );
 }
 
-export function Td({ children, className }: { children?: React.ReactNode; className?: string }) {
+export function Td({ children, className, colSpan, rowSpan }: { children?: React.ReactNode; className?: string; colSpan?: number; rowSpan?: number }) {
   return (
-    <td className={cn("border-b border-neutral-100 px-4 py-3.5 align-middle text-neutral-700", className)}>
+    <td colSpan={colSpan} rowSpan={rowSpan} className={cn("border-b border-neutral-100 px-4 py-3.5 align-middle text-neutral-700", className)}>
       {children}
     </td>
   );
@@ -337,13 +339,18 @@ import { Label } from "@/components/ui/label";
 export function Field({
   label,
   children,
+  required,
 }: {
   label: string;
   children: React.ReactNode;
+  required?: boolean;
 }) {
   return (
     <div className="grid gap-1.5">
-      <Label className="text-sm text-neutral-600">{label}</Label>
+      <Label className="text-sm text-neutral-600">
+        {label}
+        {required && <span className="text-rose-500 ml-1">*</span>}
+      </Label>
       {children}
     </div>
   );

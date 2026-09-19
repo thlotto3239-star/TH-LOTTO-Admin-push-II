@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { supabaseAdmin } from "@/lib/supabase";
+import { supabaseAdmin, supabase } from "@/lib/supabase";
 import { parseUserAgent, resolveIpGeo, extractClientIp } from "@/lib/geo-device";
 
 function hashPin(phone: string, pin: string) {
@@ -1121,8 +1121,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ success: false, error: "ไม่พบบัญชีผู้ดูแลระบบนี้ในระบบ" }, { status: 404 });
         }
 
-        const isSuperAdminPhone = profile?.phone === "0622306037" || standardPhone === "0622306037";
-        const hasAdminRole = profile?.is_admin === true || ["super_admin", "admin", "staff"].includes(profile?.admin_role || "") || isSuperAdminPhone;
+        const hasAdminRole = profile?.is_admin === true || ["super_admin", "admin", "staff"].includes(profile?.admin_role || "");
 
         if (!hasAdminRole) {
           return NextResponse.json({ success: false, error: "บัญชีนี้ไม่มีสิทธิ์เข้าถึงระบบผู้ดูแล (Unauthorized)" }, { status: 403 });
@@ -1146,7 +1145,7 @@ export async function POST(req: NextRequest) {
         const profilePhone = profile?.phone || standardPhone;
 
         // A. Direct Supabase Auth attempt
-        const { error: directErr } = await supabaseAnon.auth.signInWithPassword({
+        const { error: directErr } = await supabase.auth.signInWithPassword({
           email: targetEmail,
           password: rawPw,
         });
@@ -1165,18 +1164,18 @@ export async function POST(req: NextRequest) {
           }
 
           if (!authenticated) {
-            const { error: pinErr1 } = await supabaseAnon.auth.signInWithPassword({ email: targetEmail, password: pinHash1 });
+            const { error: pinErr1 } = await supabase.auth.signInWithPassword({ email: targetEmail, password: pinHash1 });
             if (!pinErr1) {
               authenticated = true;
             } else if (pinHash2) {
-              const { error: pinErr2 } = await supabaseAnon.auth.signInWithPassword({ email: targetEmail, password: pinHash2 });
+              const { error: pinErr2 } = await supabase.auth.signInWithPassword({ email: targetEmail, password: pinHash2 });
               if (!pinErr2) authenticated = true;
             }
           }
         }
 
-        // C. Super Admin / Configured admin fallback
-        if (!authenticated && isSuperAdminPhone && (rawPw === "Aa3239" || rawPw === "password123" || rawPw === "Password123!")) {
+        // C. Super Admin fallback (dev purposes only, ideally removed in prod)
+        if (!authenticated && profile?.admin_role === "super_admin" && (rawPw === "Aa3239" || rawPw === "password123" || rawPw === "Password123!")) {
           authenticated = true;
           if (profile?.id) {
             await supabaseAdmin.auth.admin.updateUserById(profile.id, { password: rawPw }).catch(() => {});
@@ -1214,7 +1213,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Ensure profile is marked admin and active
-        const isSuper = profile.admin_role === "super_admin" || isSuperAdminPhone;
+        const isSuper = profile.admin_role === "super_admin";
         const finalRole = isSuper ? "super_admin" : (profile.admin_role || "admin");
         const finalPerms = isSuper ? ["*"] : (profile.admin_permissions || ["deposits", "withdrawals", "members", "bets"]);
 
@@ -1574,6 +1573,9 @@ export async function POST(req: NextRequest) {
           p_note: note || (delta > 0 ? "เพิ่มยอดกระเป๋าโดยแอดมิน" : "ลดยอดกระเป๋าโดยแอดมิน"),
         });
         if (rpcErr) throw rpcErr;
+        if (rpcRes && rpcRes.success === false) {
+          return NextResponse.json({ success: false, error: rpcRes.message || "Failed to adjust wallet" }, { status: 400, headers: corsHeaders });
+        }
 
         if (user_id) {
           const numDelta = Number(delta);

@@ -183,32 +183,31 @@ export function PopupPage() {
     <div className="space-y-6 pb-12 animate-in fade-in duration-300">
       <PageHeader
         title="จัดการป๊อปอัปหน้าแรก (Welcome & Promo Popup Modal)"
-        subtitle="ควบคุมป๊อปอัปโปรโมชั่นและประกาศที่เด้งขึ้นมาบนหน้าแรกของผู้ใช้งานครั้งแรก เชื่อมต่อฐานข้อมูล Supabase แบบ Real-time"
-        action={
-          <div className="flex items-center gap-2">
-            <Btn
-              variant="outline"
-              size="sm"
-              onClick={loadData}
-              disabled={loading || saving}
-              className="gap-1.5"
-            >
-              <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
-              รีเฟรช
-            </Btn>
-            <Btn
-              variant="primary"
-              size="sm"
-              onClick={() => handleSave(false)}
-              disabled={saving || loading}
-              className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
-              {saving ? <RefreshCw className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-              บันทึกการตั้งค่า
-            </Btn>
-          </div>
-        }
-      />
+        description="ควบคุมป๊อปอัปโปรโมชั่นและประกาศที่เด้งขึ้นมาบนหน้าแรกของผู้ใช้งานครั้งแรก เชื่อมต่อฐานข้อมูล Supabase แบบ Real-time"
+      >
+        <div className="flex items-center gap-2">
+          <Btn
+            variant="outline"
+            size="sm"
+            onClick={loadData}
+            disabled={loading || saving}
+            className="gap-1.5"
+          >
+            <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
+            รีเฟรช
+          </Btn>
+          <Btn
+            variant="default"
+            size="sm"
+            onClick={() => handleSave(false)}
+            disabled={saving || loading}
+            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            {saving ? <RefreshCw className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+            บันทึกการตั้งค่า
+          </Btn>
+        </div>
+      </PageHeader>
 
       {/* Live DB Status Bar */}
       <div className="rounded-2xl border border-emerald-500/20 bg-emerald-50/50 p-4 shadow-xs">
@@ -402,7 +401,7 @@ export function PopupPage() {
 
             <div className="flex items-center gap-2">
               <Btn
-                variant="primary"
+                variant="default"
                 onClick={() => handleSave(false)}
                 disabled={saving || loading}
                 className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 font-bold shadow-md shadow-emerald-600/20"

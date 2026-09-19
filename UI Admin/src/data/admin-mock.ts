@@ -400,6 +400,7 @@ export interface Market {
   hot: boolean;
   active: boolean;
   has_6digit?: boolean;
+  category?: string;
   youtube_url: string | null;
   logo_url?: string | null;
   image_url?: string | null;
