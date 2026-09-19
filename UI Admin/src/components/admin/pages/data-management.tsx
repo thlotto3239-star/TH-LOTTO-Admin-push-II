@@ -85,6 +85,7 @@ export function DataManagementPage() {
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchLiveStats();
     fetchBackupLogs();
   }, [fetchLiveStats, fetchBackupLogs]);

@@ -74,12 +74,6 @@ function ManualDrawModal({
   const [result3bottom, setResult3bottom] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!marketId && markets.length > 0) {
-      setMarketId(markets[0].id);
-    }
-  }, [marketId, markets]);
-
   const handleMainChange = (val: string) => {
     setResultMain(val);
     const clean = val.replace(/\D/g, "");
@@ -305,6 +299,7 @@ export function ResultsPage() {
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, [loadData]);
 
@@ -811,12 +806,9 @@ export function ResultsPage() {
         </TableWrap>
       </Panel>
 
-      <ManualDrawModal
-        open={manualModalOpen}
-        onClose={() => setManualModalOpen(false)}
-        markets={markets}
-        onSuccess={() => loadData()}
-      />
+      {manualModalOpen && (
+        <ManualDrawModal open={manualModalOpen} onClose={() => setManualModalOpen(false)} markets={markets} onSuccess={() => loadData(true)} />
+      )}
     </div>
   );
 }

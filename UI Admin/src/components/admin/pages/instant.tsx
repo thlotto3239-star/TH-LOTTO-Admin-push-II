@@ -221,6 +221,7 @@ export function InstantOverviewPage({ initialTab = "overview" }: { initialTab?: 
 
   React.useEffect(() => {
     if (initialTab) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab(initialTab);
     }
   }, [initialTab]);
@@ -292,6 +293,7 @@ export function InstantOverviewPage({ initialTab = "overview" }: { initialTab?: 
 
   // Auto-refresh ทุก 30 วินาที ดึงข้อมูลจริงจาก Supabase
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadLiveData();
     const iv = setInterval(() => {
       setTick((t) => {

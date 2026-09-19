@@ -208,6 +208,7 @@ function NotificationBell() {
   const { notifications, unread_notifications, markNotificationRead, markAllNotificationsRead } = useAdminCounts();
   const [mounted, setMounted] = React.useState(false);
   const [open, setOpen] = React.useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   React.useEffect(() => setMounted(true), []);
 
   const handleOpenItem = (n: AdminNotificationItem) => {

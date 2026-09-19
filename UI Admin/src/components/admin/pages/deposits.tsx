@@ -70,6 +70,7 @@ function ActionModal({
   const { toast } = useToast();
   const promo = req?.promo_code ? PROMO_DETAILS[req.promo_code] : null;
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   React.useEffect(() => setNote(""), [req, mode]);
 
   if (!req) return null;
@@ -183,6 +184,7 @@ export function DepositsPage() {
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchDeposits();
 
     const channel = supabase

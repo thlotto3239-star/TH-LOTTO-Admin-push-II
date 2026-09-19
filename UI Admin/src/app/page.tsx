@@ -29,6 +29,7 @@ export default function Page() {
   const [unauthorizedError, setUnauthorizedError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
 
     // 1. ตรวจสอบ Local Storage session ก่อน

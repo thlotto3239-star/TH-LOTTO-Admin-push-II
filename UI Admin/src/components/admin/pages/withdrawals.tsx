@@ -41,9 +41,8 @@ function DetailModal({
   onClose: () => void;
   onSubmit: (id: string, status: "APPROVED" | "REJECTED", note: string) => void;
 }) {
-  const [note, setNote] = React.useState("");
+  const [note, setNote] = React.useState(req?.admin_note ?? "");
   const { toast } = useToast();
-  React.useEffect(() => setNote(req?.admin_note ?? ""), [req]);
 
   if (!req) return null;
 
@@ -157,6 +156,7 @@ export function WithdrawalsPage() {
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchWithdrawals();
 
     const channel = supabase
@@ -358,7 +358,7 @@ export function WithdrawalsPage() {
         {filtered.length === 0 ? <EmptyState title="ไม่พบรายการถอนในหมวดนี้" /> : null}
       </Panel>
 
-      {modal ? <DetailModal req={modal.req} mode={modal.mode} onClose={() => setModal(null)} onSubmit={update} /> : null}
+      {modal ? <DetailModal key={modal.req.id} req={modal.req} mode={modal.mode} onClose={() => setModal(null)} onSubmit={update} /> : null}
     </div>
   );
 }

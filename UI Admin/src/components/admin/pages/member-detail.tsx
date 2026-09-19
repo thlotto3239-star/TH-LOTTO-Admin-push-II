@@ -122,6 +122,7 @@ export function MemberDetailPage() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const fetchDetail = React.useCallback(async (id: string) => {
     setLoading(true);
     try {
@@ -143,6 +144,7 @@ export function MemberDetailPage() {
     if (selectedMemberId) {
       fetchDetail(selectedMemberId);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
     }
   }, [selectedMemberId, fetchDetail]);

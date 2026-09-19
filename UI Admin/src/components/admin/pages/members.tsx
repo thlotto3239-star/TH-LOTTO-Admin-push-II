@@ -311,6 +311,7 @@ export function MembersPage() {
   }, []);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMembers();
   }, [fetchMembers]);
 

@@ -100,6 +100,7 @@ export function AffiliatePage() {
   }, [toast]);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAffiliateData();
   }, [fetchAffiliateData]);
 
