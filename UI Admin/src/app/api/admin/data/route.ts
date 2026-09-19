@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase";
 import { parseUserAgent, resolveIpGeo, extractClientIp } from "@/lib/geo-device";
-
-const supabaseAnon = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ygopnjbvccenryejqmlw.supabase.co",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-);
 
 function hashPin(phone: string, pin: string) {
   return crypto.createHash("sha256").update(pin + phone).digest("hex");
