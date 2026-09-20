@@ -91,9 +91,10 @@
 - `phone` (varchar, UNIQUE): หมายเลขโทรศัพท์
 - `full_name` (varchar): ชื่อ-นามสกุลจริง
 - `avatar_url` (text): ลิงก์รูปโปรไฟล์ (รองรับ Google Avatar อัตโนมัติ)
-- `bank_name` (varchar): ธนาคารของสมาชิก
-- `bank_account_number` (varchar): เลขบัญชีธนาคาร
-- `bank_account_name` (varchar): ชื่อบัญชีธนาคาร
+- `bank_name` (varchar): รหัสธนาคารของสมาชิก (เช่น `KBANK`, `SCB`, `BBL`, `KTB` - SSOT สำหรับรับเงินถอน)
+- `bank_account_number` (varchar): เลขบัญชีธนาคาร (SSOT)
+- `bank_account_name` (varchar): ชื่อบัญชีธนาคาร (SSOT)
+- `pin_hash` (text): รหัส PIN ความปลอดภัย **6 หลัก** (SHA-256) สำหรับเข้าสู่ระบบและยืนยันการถอนเงิน
 - `vip_level` (varchar): ระดับ VIP (`VIP 0` - `VIP 5`)
 - `is_admin` (boolean): สิทธิ์ผู้ดูแลระบบ
 - `admin_role` (varchar): ตำแหน่ง (`superadmin`, `admin`, `operator`)

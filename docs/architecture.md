@@ -168,3 +168,7 @@ sequenceDiagram
    - การปฏิเสธคำขอถอนเงิน (`update_withdrawal` -> `REJECTED`) มีระบบคืนยอดเงินกลับเข้ากระเป๋าสมาชิกแบบอัตโนมัติพร้อมบันทึก Audit Log ลงในตาราง `transactions`
 4. **Environment Isolation:**
    - ไฟล์คอนฟิกูเรชันความลับ (`SUPABASE_SERVICE_ROLE_KEY`, Database Passwords) ถูกแยกเก็บใน `.env.local` ปลอดภัยจากการ Commit เข้า Git Repository
+5. **6-Digit Security PIN & Financial Authorization:**
+   - การยืนยันตัวตนทางการเงิน (การถอนเงิน, การเปลี่ยนรหัสผ่าน, การตั้งรหัสใหม่) บังคับใช้มาตรฐานรหัส PIN ตัวเลข **6 หลัก** ที่เข้ารหัสแบบ SHA-256 (`pin_hash`) และประมวลผลผ่าน Stored Procedure `request_withdrawal_securely` พร้อมการล็อกแถว (`FOR UPDATE`)
+6. **Canonical Single Source of Truth (SSOT) for Member Bank Accounts:**
+   - ข้อมูลบัญชีธนาคารสำหรับรับเงินถอนของสมาชิกถูกจัดเก็บและดึงข้อมูลจากตาราง `profiles` (`bank_name`, `bank_account_number`, `bank_account_name`) เป็นศูนย์กลางความจริงหนึ่งเดียว เพื่อป้องกันความคลาดเคลื่อนและการกระจายตัวของข้อมูลทางการเงิน

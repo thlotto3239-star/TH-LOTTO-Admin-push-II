@@ -1,7 +1,7 @@
 # 🏛️ THLOTTO-II — MASTER SYSTEM BLUEPRINT & CANONICAL SPECIFICATION
-**Version:** 3.0 (Comprehensive Ground Truth Edition)  
+**Version:** 3.1 (Latest Canonical Production Release)  
 **Standard:** ARM AI Engineering Standard (ARM-AES v1.0)  
-**Last Updated:** 2026-09-09  
+**Last Updated:** 2026-09-20  
 **Status:** 🔒 CANONICAL SINGLE SOURCE OF TRUTH (SSOT) — ห้ามแก้ไขโดยไม่ผ่านการอนุมัติ
 
 ---
@@ -37,11 +37,11 @@
 └──────────────────────────────────────────────────────────────────────────────────┘
 
  [ 1. FRONTEND USER APP ]         [ 2. ADMIN PORTAL ]            [ 3. CRON & BOT ]
- https://th-lotto-plus.vercel.app  https://th-lotto-admin-push-ten.vercel.app  Edge Functions / Schedulers
- ├── Framework: Vite 6 + React 19  ├── Framework: Next.js 16 + React 19       └── Auto Draw Engine
+ https://lotto-th-customer.vercel.app  https://th-lotto-admin-push-ii.vercel.app  Edge Functions / Schedulers
+ ├── Framework: Vite 8 + React 19  ├── Framework: Next.js 16 + React 19       └── Auto Draw Engine
  ├── State: React Context + Custom ├── Routing: App Router (SSR + API Routes) └── Settle Bets Worker
- ├── Styling: Tailwind CSS         ├── Styling: Tailwind CSS + Lucide Icons
- ├── Repo: THLOTTO-II              ├── Repo: TH-LOTTO-Admin-push-II
+ ├── Styling: Tailwind CSS 4       ├── Styling: Tailwind CSS + Lucide Icons
+ ├── Repo: thlotto-premium         ├── Repo: TH-LOTTO-Admin-push-II
  └── Remote: origin                └── Remote: admin-deploy
            │                                 │                               │
            ▼                                 ▼                               ▼
@@ -50,7 +50,7 @@
  │               Supabase Cloud Project: ygopnjbvccenryejqmlw                      │
  │  ├── PostgreSQL 15 Database (39 Tables, Normalized, Strict Constraints)         │
  │  ├── Row-Level Security (RLS) & Role Separation                                 │
- │  ├── GoTrue Auth (Google OAuth 2.0 + Phone/PIN Hash)                            │
+ │  ├── GoTrue Auth (Google OAuth 2.0 + Phone/6-Digit PIN Hash SHA-256)            │
  │  ├── Realtime WebSocket Replication Channels (Postgres Changes)                 │
  │  └── Atomic Stored Procedures with Row-Level Locking ('FOR UPDATE')            │
  └─────────────────────────────────────────────────────────────────────────────────┘
@@ -62,7 +62,7 @@
 
 | # | ชื่อตาราง (Table Name) | หน้าที่และความรับผิดชอบ (Function & Purpose) | คีย์หลัก / Foreign Keys |
 |---|---|---|---|
-| 1 | `profiles` | ข้อมูลโปรไฟล์ผู้ใช้, เบอร์โทร, ชื่อนามสกุล, บัญชีธนาคาร, PIN hash, ระดับ VIP | `id` (PK), `member_id` (Unique) |
+| 1 | `profiles` | **Single Source of Truth (SSOT)** ข้อมูลสมาชิก, เบอร์โทร, ชื่อนามสกุล, บัญชีธนาคารหลัก (`bank_name`, `bank_account_number`, `bank_account_name`), PIN hash SHA-256 (6 หลัก), ระดับ VIP, สถานะ | `id` (PK), `member_id` (Unique) |
 | 2 | `admin_users` | ข้อมูลแอดมิน, อีเมล, รหัสผ่าน hash, บทบาท (`super_admin`, `staff`), สถานะ | `id` (PK), `email` (Unique) |
 | 3 | `wallets` | กระเป๋าเงินหลัก (`balance`), ยอดคอมมิชชั่น (`commission_balance`), ยอดเทิร์นโอเวอร์ | `id` (PK), `user_id` (FK -> profiles.id) |
 | 4 | `transactions` | ประวัติการเงินทุกประเภท (ฝาก, ถอน, ปรับยอด, คืนเงิน, ได้รางวัล, จ่ายค่าหวย) | `id` (PK), `user_id` (FK), `wallet_id` (FK) |
@@ -117,21 +117,21 @@
 | 7 | `QRPayment.jsx` (`/deposit/qr`) | หน้าสร้าง PromptPay QR Code อัตโนมัติพร้อมเวลานับถอยหลัง 10 นาที | `deposit_requests` |
 | 8 | `UploadSlip.jsx` (`/deposit/upload`) | อัปโหลดสลิปการโอนเงินเพื่อส่งคำขอฝากให้แอดมินอนุมัติ | `deposit_requests`, Supabase Storage (`slips`) |
 | 9 | `DepositSuccess.jsx` (`/deposit/success`) | หน้าจอแจ้งผลการส่งคำขอฝากเงินสำเร็จ | `deposit_requests` |
-| 10 | `Withdrawal.jsx` (`/withdrawal`) | หน้าถอนเงิน: ตรวจสอบยอดคงเหลือ, เช็กเทิร์นโอเวอร์, ระบุจำนวนเงินถอน | `wallets`, `user_banks`, `financial_settings` |
-| 11 | `WithdrawalConfirm.jsx` (`/withdrawal/confirm`) | ยืนยันคำขอถอนเงินและใส่รหัส PIN เพื่อความปลอดภัย | `withdraw_requests`, `submit_withdraw_request()` |
+| 10 | `Withdrawal.jsx` (`/withdrawal`) | หน้าถอนเงิน: ตรวจสอบยอดคงเหลือ, เช็กเทิร์นโอเวอร์, ระบุจำนวนเงินถอน, แสดงบัญชีธนาคารผู้รับจาก `profiles` ผ่าน `BankBadge`, ยืนยันด้วยรหัส PIN 6 หลัก | `wallets`, `profiles`, `financial_settings`, `request_withdrawal_securely()` |
+| 11 | `WithdrawalConfirm.jsx` (`/withdrawal/confirm`) | หน้ายืนยันและแสดงสลิปคำขอถอนเงินสำเร็จพร้อมรายละเอียดธนาคาร | `withdraw_requests` |
 | 12 | `Wallet.jsx` (`/wallet`) | กระเป๋าเงินรวม: ยอดเครดิต, ยอดคอมมิชชั่น, ทางลัดฝาก-ถอน, ประวัติล่าสุด | `wallets`, `transactions` |
 | 13 | `Transactions.jsx` (`/transactions`) | ประวัติรายการฝาก-ถอน-โอนเงินทั้งหมด พร้อมตัวกรองประเภทและสถานะ | `transactions` |
 | 14 | `BetHistory.jsx` (`/history`) | ประวัติโพยหวยที่แทง: บิลที่รอผล, บิลที่ถูกรางวัล, บิลที่ไม่ถูก, รายละเอียดย่อย | `bets`, `bet_items` |
 | 15 | `Results.jsx` (`/results`) | ตรวจผลรางวัลหวยย้อนหลังทุกประเภท เลือกตามวันที่และงวด | `lottery_results`, `lottery_markets` |
 | 16 | `LuckyWheel.jsx` (`/wheel`) | มินิเกมวงล้อลุ้นโชค: หมุนวงล้อลุ้นรางวัลเครดิตฟรีและแต้มสะสม | `lucky_wheel_rewards`, `spin_lucky_wheel()` |
 | 17 | `Affiliate.jsx` (`/affiliate`) | ระบบแนะนำเพื่อน: ลิงก์สมัคร, สถิติผู้สมัคร, ส่วนแบ่งคอมมิชชั่น, การถอนรายได้ | `referrals`, `wallets` |
-| 18 | `BankAccount.jsx` (`/bank-account`) | จัดการผูกบัญชีธนาคารสำหรับรับเงินถอน (จำกัดชื่อตรงกับโปรไฟล์) | `user_banks`, `bank_list` |
-| 19 | `Profile.jsx` (`/profile`) | ข้อมูลบัญชีผู้ใช้, ระดับ VIP, วันที่สมัคร, เมนูความปลอดภัย | `profiles`, `vip_tiers` |
-| 20 | `EditProfile.jsx` (`/profile/edit`) | แก้ไขข้อมูลส่วนตัว เช่น ชื่อนามสกุล (จำกัดการเปลี่ยนหลังยืนยัน) | `profiles` |
-| 21 | `ChangePassword.jsx` (`/change-password`) | เปลี่ยนรหัสผ่านหรือรหัส PIN 6 หลัก | `profiles`, Supabase Auth |
-| 22 | `ForgotPassword.jsx` (`/forgot-password`) | ขอรีเซ็ตรหัสผ่านผ่านเบอร์โทรศัพท์และ SMS OTP | Supabase Auth OTP |
-| 23 | `Login.jsx` (`/login`) | เข้าสู่ระบบด้วย เบอร์โทร/รหัสผ่าน, PIN 6 หลัก, หรือ Google OAuth | `profiles`, `login_attempts` |
-| 24 | `Register.jsx` (`/register`) | สมัครสมาชิกใหม่: เบอร์โทร, ตั้งรหัสผ่าน, เลือกธนาคาร, ใส่รหัสผู้แนะนำ | `profiles`, `wallets`, `referrals` |
+| 18 | `BankAccount.jsx` (`/bank-account`) | จัดการผูกบัญชีธนาคารสำหรับรับเงินถอน (ดึงและซิงก์จาก `profiles` โดยตรง) | `profiles`, `banks` |
+| 19 | `Profile.jsx` (`/profile`) | ข้อมูลบัญชีผู้ใช้, ระดับ VIP, แสดงข้อมูลธนาคารและสถานะรหัส PIN 6 หลัก | `profiles`, `wallets` |
+| 20 | `EditProfile.jsx` (`/profile/edit`) | แก้ไขข้อมูลส่วนตัว เช่น ชื่อนามสกุล และรหัส PIN 6 หลัก (`/^[0-9]{6}$/`) | `profiles`, `BankSelector` |
+| 21 | `ChangePassword.jsx` (`/change-password`) | เปลี่ยนรหัส PIN 6 หลักเพื่อความปลอดภัยในการเข้าสู่ระบบและการถอนเงิน | `profiles`, Supabase Auth |
+| 22 | `ForgotPassword.jsx` (`/forgot-password`) | กู้คืนรหัสผ่าน 3 ขั้นตอน: ระบุเบอร์โทร ➔ ยืนยันเลขบัญชีธนาคาร ➔ ตั้งรหัส PIN 6 หลักใหม่ | `profiles`, `authService` |
+| 23 | `Login.jsx` (`/login`) | เข้าสู่ระบบด้วย เบอร์โทร/PIN 6 หลัก, หรือ Google OAuth | `profiles`, `login_attempts` |
+| 24 | `Register.jsx` (`/register`) | สมัครสมาชิกใหม่: ข้อมูลส่วนตัว + PIN 6 หลัก ➔ ผูกบัญชีธนาคาร (รหัสตัวพิมพ์ใหญ่ `KBANK`, auto-fill ชื่อบัญชี) บันทึกลง `profiles` | `profiles`, `wallets`, `referrals`, `banks` |
 | 25 | `RegistrationSuccess.jsx` (`/register/success`) | หน้าต้อนรับสมาชิกใหม่พร้อมรับโบนัสเริ่มต้น | `profiles`, `promotions` |
 | 26 | `Notifications.jsx` (`/notifications`) | กล่องข้อความแจ้งเตือนส่วนบุคคลและประกาศจากระบบ | `notifications`, `broadcast_messages` |
 | 27 | `Promotions.jsx` (`/promotions`) | หน้ารวมโปรโมชั่นทั้งหมด พร้อมปุ่มกดรับสิทธิ์ | `promotions` |
@@ -256,6 +256,62 @@ BEGIN
     RETURN jsonb_build_object('success', true, 'message', 'ปฏิเสธการถอนและคืนเครดิตเรียบร้อย', 'new_balance', v_new_balance);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 3. ขอถอนเงินอย่างปลอดภัยด้วย PIN 6 หลักและหักเงินทันที (Atomic Secure Withdrawal with 6-Digit PIN)
+CREATE OR REPLACE FUNCTION request_withdrawal_securely(
+    p_amount numeric,
+    p_pin_hash text
+) RETURNS jsonb AS $$
+DECLARE
+    v_user_id uuid := auth.uid();
+    v_profile RECORD;
+    v_wallet RECORD;
+    v_new_balance numeric;
+    v_req_id uuid;
+BEGIN
+    -- ตรวจสอบการยืนยันตัวตน
+    IF v_user_id IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'error_code', 'UNAUTHORIZED', 'message', 'กรุณาเข้าสู่ระบบ');
+    END IF;
+
+    -- ล็อกแถวและตรวจสอบ PIN 6 หลักจาก profiles (SSOT)
+    SELECT * INTO v_profile FROM profiles WHERE id = v_user_id FOR UPDATE;
+    IF v_profile.pin_hash IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'error_code', 'NO_PIN', 'message', 'ยังไม่ได้ตั้งรหัส PIN');
+    END IF;
+    IF v_profile.pin_hash != p_pin_hash THEN
+        RETURN jsonb_build_object('success', false, 'error_code', 'WRONG_PIN', 'message', 'รหัสผ่าน / PIN 6 หลักไม่ถูกต้อง');
+    END IF;
+
+    -- ตรวจสอบข้อมูลบัญชีธนาคารใน profiles
+    IF v_profile.bank_name IS NULL OR v_profile.bank_account_number IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'error_code', 'NO_BANK', 'message', 'กรุณาผูกบัญชีธนาคารก่อนทำรายการ');
+    END IF;
+
+    -- ตรวจสอบยอดเงินคงเหลือในกระเป๋า (Concurrency Lock)
+    SELECT * INTO v_wallet FROM wallets WHERE user_id = v_user_id FOR UPDATE;
+    IF v_wallet.balance < p_amount THEN
+        RETURN jsonb_build_object('success', false, 'error_code', 'INSUFFICIENT_BALANCE', 'message', 'ยอดเงินคงเหลือไม่เพียงพอ');
+    END IF;
+
+    -- ตัดยอดเงินคงเหลือในกระเป๋า
+    UPDATE wallets
+    SET balance = balance - p_amount, updated_at = NOW()
+    WHERE user_id = v_user_id
+    RETURNING balance INTO v_new_balance;
+
+    -- สร้างคำขอถอนเงิน (withdraw_requests)
+    INSERT INTO withdraw_requests (user_id, amount, status, created_at, updated_at)
+    VALUES (v_user_id, p_amount, 'pending', NOW(), NOW())
+    RETURNING id INTO v_req_id;
+
+    -- บันทึก Ledger Transaction
+    INSERT INTO transactions (user_id, type, amount, status, note, created_at)
+    VALUES (v_user_id, 'withdrawal', p_amount, 'pending', 'แจ้งถอนเงิน รอดำเนินการ', NOW());
+
+    RETURN jsonb_build_object('success', true, 'message', 'ส่งคำขอถอนเงินสำเร็จ', 'new_balance', v_new_balance, 'request_id', v_req_id);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 ```
 
 ---
@@ -337,6 +393,11 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 4. **Content Sync:**
    - [ ] แก้ไขตัววิ่งในแอดมิน ➔ หน้าผู้ใช้อัปเดตทันที
    - [ ] บรอดแคสต์ข้อความเด้งเตือนผู้ใช้ Realtime
+5. **Security & System Invariants (ARM-AES v1.0):**
+   - [ ] รหัส PIN บังคับตัวเลข **6 หลัก** ตรงกันทุกหน้าจอ (Register, Login, Profile, EditProfile, ChangePassword, ForgotPassword, Withdrawal)
+   - [ ] ข้อมูลธนาคารหลักต้องอ่านและบันทึกที่ตาราง `profiles` (`bank_name`, `bank_account_number`, `bank_account_name`) เป็น Single Source of Truth
+   - [ ] Stored Procedure `request_withdrawal_securely` ตรวจสอบ PIN hash และตัดยอดเครดิตทันที
+   - [ ] ปฏิบัติตาม Rule 8 (สรุปและขออนุมัติก่อนทำ) และ Rule 9 (ห้ามสมมติชื่อคอลัมน์ในฐานข้อมูล) อย่างเคร่งครัด
 
 ---
 
@@ -344,4 +405,5 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 1. **เมื่อมีการเพิ่มหน้าจอใหม่:** ต้องลงทะเบียนในตารางพจนานุกรมในเอกสารนี้ และสร้างบันทึกใน `docs/tasks/`
 2. **เมื่อมีการแก้ Schema Database:** ต้องเขียน Migration Script ผ่าน Supabase CLI / Stored Procedure และห้ามทำลายข้อมูลเดิม (Non-destructive migrations)
-3. **การตรวจสอบ Build:** รัน `npm run build` ในทั้ง `UI Admin` และ `UI Customer` ต้องผ่าน 0 errors ก่อน Commit เสมอ
+3. **การตรวจสอบ Build & Test:** รัน `npm run test` และ `npm run build` ในทั้ง `UI Admin` และ `UI Customer` ต้องผ่าน 0 errors ก่อน Commit & Push ทุกครั้ง
+4. **การรักษาสถาปัตยกรรมหลัก (Invariants):** ห้ามเปลี่ยนระบบ PIN กลับเป็น 4 หลัก หรือย้ายการบันทึกข้อมูลธนาคารหลักออกจาก `profiles` โดยเด็ดขาด
