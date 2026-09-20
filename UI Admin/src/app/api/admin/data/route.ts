@@ -1596,6 +1596,40 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, balance: rpcRes?.balance, data: rpcRes });
       }
 
+      case "clear_turnover": {
+        const { user_id, note } = payload;
+        const { data: updWallet, error: updErr } = await supabaseAdmin
+          .from("wallets")
+          .update({
+            turnover_required: 0,
+            turnover_completed: 0,
+            active_promo_id: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", user_id)
+          .select()
+          .single();
+
+        if (updErr) throw updErr;
+
+        if (user_id) {
+          const { error: notifErr } = await supabaseAdmin.from("notifications").insert([{
+            user_id,
+            type: "SYSTEM",
+            title: "✅ ปลดล็อกเงื่อนไขเทิร์นโอเวอร์",
+            body: note || "เจ้าหน้าที่ได้ทำการปลดล็อกยอดเทิร์นโอเวอร์ให้คุณแล้ว สามารถทำรายการถอนได้ตามปกติ",
+            data: {
+              is_popup: true,
+              action_url: "/withdrawal",
+            },
+            is_read: false,
+          }]);
+          if (notifErr) console.error("Failed to insert turnover clear notification:", notifErr);
+        }
+
+        return NextResponse.json({ success: true, data: updWallet });
+      }
+
       case "record_result": {
         const { market_id, draw_date, result_main, result_3top, result_2top, result_2bottom, result_3front, result_3bottom } = payload;
         const { data: rpcData, error: rpcErr } = await supabaseAdmin.rpc("admin_set_result_and_settle", {

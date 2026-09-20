@@ -122,6 +122,32 @@ export function MemberDetailPage() {
     }
   };
 
+  const handleClearTurnover = async (id: string) => {
+    if (!confirm("คุณต้องการปลดล็อก / ล้างเงื่อนไขเทิร์นโอเวอร์ของสมาชิกท่านนี้ใช่หรือไม่?")) return;
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "clear_turnover",
+          payload: { user_id: id, note: "ปลดล็อกเทิร์นโอเวอร์โดยแอดมิน" },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({
+          title: "ปลดล็อกเทิร์นโอเวอร์สำเร็จ",
+          description: "รีเซ็ตเงื่อนไขเทิร์นโอเวอร์เป็น 0 เรียบร้อยแล้ว",
+        });
+        fetchDetail(id);
+      } else {
+        toast({ title: "ดำเนินการล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "เชื่อมต่อล้มเหลว", description: e.message, variant: "destructive" });
+    }
+  };
+
   // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const fetchDetail = React.useCallback(async (id: string) => {
     setLoading(true);
@@ -326,6 +352,44 @@ export function MemberDetailPage() {
                 <div className="rounded-2xl bg-neutral-50 p-4">
                   <p className="text-xs text-neutral-500">ชนะรวม</p>
                   <p className="mt-1 text-xl font-bold text-neutral-900">{fmtTHB(member.total_won)}</p>
+                </div>
+                {/* Turnover Status & Quick Action */}
+                <div className={`sm:col-span-2 rounded-2xl p-4 ring-1 ring-inset ${
+                  Number(wallet?.turnover_required || 0) > 0 && Number(wallet?.turnover_completed || 0) < Number(wallet?.turnover_required || 0)
+                    ? "bg-amber-50/80 ring-amber-200"
+                    : "bg-emerald-50/80 ring-emerald-200"
+                }`}>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-neutral-700">เงื่อนไขเทิร์นโอเวอร์ (Turnover)</p>
+                      <p className="mt-1 text-sm font-semibold text-neutral-900">
+                        {Number(wallet?.turnover_required || 0) > 0 ? (
+                          <>
+                            ทำแล้ว <span className="font-mono text-brand-700">{fmtTHB(wallet?.turnover_completed || 0)}</span> / กำหนด <span className="font-mono text-amber-800">{fmtTHB(wallet?.turnover_required || 0)}</span>
+                            {Number(wallet?.turnover_completed || 0) < Number(wallet?.turnover_required || 0) ? (
+                              <span className="ml-2 text-xs font-medium text-amber-700">
+                                (ค้างอีก {fmtTHB((wallet?.turnover_required || 0) - (wallet?.turnover_completed || 0))})
+                              </span>
+                            ) : (
+                              <span className="ml-2 text-xs font-medium text-emerald-700">✅ ครบแล้ว</span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-emerald-700 font-medium">✅ ปกติ (ไม่ติดเงื่อนไขเทิร์นโอเวอร์ สามารถถอนได้ทันที)</span>
+                        )}
+                      </p>
+                    </div>
+                    {Number(wallet?.turnover_required || 0) > 0 && (
+                      <Btn
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full border-amber-300 bg-white text-xs font-bold text-amber-800 hover:bg-amber-100"
+                        onClick={() => handleClearTurnover(member.id)}
+                      >
+                        ปลดล็อกเทิร์นโอเวอร์
+                      </Btn>
+                    )}
+                  </div>
                 </div>
               </div>
             </Panel>

@@ -96,6 +96,7 @@ export function BanksPage() {
     max_deposit: 500000,
     min_withdraw: 100,
     max_withdraw: 100000,
+    default_turnover_multiplier: 0,
   });
   const [isSavingLimits, setIsSavingLimits] = React.useState(false);
 
@@ -146,6 +147,7 @@ export function BanksPage() {
           if (dict.max_deposit) setLimits((p) => ({ ...p, max_deposit: Number(dict.max_deposit) }));
           if (dict.min_withdraw) setLimits((p) => ({ ...p, min_withdraw: Number(dict.min_withdraw) }));
           if (dict.max_withdraw_per_request) setLimits((p) => ({ ...p, max_withdraw: Number(dict.max_withdraw_per_request) }));
+          if (dict.default_turnover_multiplier !== undefined) setLimits((p) => ({ ...p, default_turnover_multiplier: Number(dict.default_turnover_multiplier) }));
 
           if (!res.data?.company_bank_accounts || res.data.company_bank_accounts.length === 0) {
             if (dict.company_bank_account_number) {
@@ -257,6 +259,7 @@ export function BanksPage() {
               max_deposit: limits.max_deposit,
               min_withdraw: limits.min_withdraw,
               max_withdraw_per_request: limits.max_withdraw,
+              default_turnover_multiplier: String(limits.default_turnover_multiplier),
             },
           },
         }),
@@ -356,7 +359,7 @@ export function BanksPage() {
           </Btn>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 pt-4">
           <Field label="ยอดฝากขั้นต่ำ (บาท)">
             <div className="relative">
               <input
@@ -407,6 +410,21 @@ export function BanksPage() {
               />
               <span className="absolute right-2.5 top-2 text-xs font-bold text-neutral-400">฿</span>
             </div>
+          </Field>
+
+          <Field label="เทิร์นฝากปกติ (เท่า)">
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                value={limits.default_turnover_multiplier}
+                onChange={(e) => setLimits((p) => ({ ...p, default_turnover_multiplier: Number(e.target.value) }))}
+                className={cn(inputCls, "font-mono font-bold text-sm bg-white pr-10")}
+              />
+              <span className="absolute right-2.5 top-2 text-xs font-bold text-neutral-400">เท่า</span>
+            </div>
+            <p className="mt-1 text-[10px] text-neutral-400">0 = เงินฝากปกติไม่ติดเทิร์น</p>
           </Field>
         </div>
       </Panel>

@@ -1,5 +1,8 @@
 # Project Adapter: THLOTTO-II (`AGENTS.md`)
 
+> ⚡ **PRIORITY 1 MANDATE:**
+> ทุกการทำงานในโปรเจกต์นี้ **ต้องยึดถือและปฏิบัติตาม [.agents/rules/00-web-development-standards.md](file:///c:/Users/armyn/Downloads/THLOTTO-II/.agents/rules/00-web-development-standards.md) เป็นอันดับแรกสุดเสมอ** (มาตรฐาน Git, การ Commit พร้อมรายละเอียด What/Why/Which files, การแบ่ง Branch, ความปลอดภัย, SOLID/DRY/KISS และ Quality Assurance)
+
 This repository is governed by the **ARM AI Engineering Standard (ARM-AES v1.0)**.
 Refer to [ARM-AI-ENGINEERING-STANDARD.md](file:///c:/Users/armyn/Downloads/THLOTTO-II/ARM-AI-ENGINEERING-STANDARD.md) for full universal standards and lifecycle rules.
 
