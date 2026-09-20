@@ -506,7 +506,6 @@ export async function GET(req: NextRequest) {
               id,
               member_id,
               full_name,
-              serial_number,
               phone,
               vip_level,
               bank_name,

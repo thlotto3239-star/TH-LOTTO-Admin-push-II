@@ -262,21 +262,21 @@ export function AdminsPage() {
       const action = isNew ? "create_admin_user" : "update_admin_user";
       const payload = isNew
         ? {
-            full_name: a.full_name,
-            phone: a.phone,
-            password: password || undefined,
-            admin_role: a.role === "super" ? "super_admin" : "admin",
-            permissions: a.role === "super" ? ["*"] : a.permissions,
-          }
+          full_name: a.full_name,
+          phone: a.phone,
+          password: password || undefined,
+          admin_role: a.role === "super" ? "super_admin" : "admin",
+          permissions: a.role === "super" ? ["*"] : a.permissions,
+        }
         : {
-            id: a.id,
-            full_name: a.full_name,
-            phone: a.phone,
-            password: password && password.length >= 6 ? password : undefined,
-            admin_role: a.role === "super" ? "super_admin" : "admin",
-            permissions: a.role === "super" ? ["*"] : a.permissions,
-            status: a.status,
-          };
+          id: a.id,
+          full_name: a.full_name,
+          phone: a.phone,
+          password: password && password.length >= 6 ? password : undefined,
+          admin_role: a.role === "super" ? "super_admin" : "admin",
+          permissions: a.role === "super" ? ["*"] : a.permissions,
+          status: a.status,
+        };
 
       const res = await fetch("/api/admin/data", {
         method: "POST",

@@ -206,7 +206,7 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any)
         try {
           localStorage.setItem("thlotto_admin_session", adminName);
           localStorage.setItem("thlotto_admin_profile", JSON.stringify(json.profile));
-        } catch {}
+        } catch { }
 
         onLogin(adminName, json.profile);
         return;

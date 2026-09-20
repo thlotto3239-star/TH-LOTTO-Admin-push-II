@@ -266,7 +266,7 @@ export function AppearancePage() {
           setInitial((prev) => ({ ...prev, ...loaded }));
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const dirty = JSON.stringify(s) !== JSON.stringify(initial);
