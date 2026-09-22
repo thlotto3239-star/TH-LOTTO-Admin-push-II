@@ -1574,10 +1574,11 @@ export async function POST(req: NextRequest) {
             user_id,
             amount: withdrawAmount,
             bank_name: userProf.bank_name,
-            account_number: userProf.bank_account_number,
-            account_name: userProf.bank_account_name || userProf.full_name,
-            status: "PENDING",
+            bank_account_number: userProf.bank_account_number,
+            bank_account_name: userProf.bank_account_name || userProf.full_name,
+            status: "pending",
             created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           })
           .select()
           .single();
@@ -1592,16 +1593,21 @@ export async function POST(req: NextRequest) {
         }
 
         // 5. Insert transaction
-        await supabaseAdmin.from("transactions").insert({
-          user_id,
-          type: "WITHDRAW",
-          amount: withdrawAmount,
-          balance_before: curBalance,
-          balance_after: newBalance,
-          status: "PENDING",
-          description: `แจ้งถอนเงินเข้าบัญชี ${userProf.bank_name} (${userProf.bank_account_number})`,
-          created_at: new Date().toISOString(),
-        }).catch(() => {});
+        try {
+          await supabaseAdmin.from("transactions").insert({
+            user_id,
+            type: "WITHDRAW",
+            amount: withdrawAmount,
+            balance_after: newBalance,
+            status: "PENDING",
+            note: `ถอนเงิน ฿${withdrawAmount.toLocaleString()} เข้า ${userProf.bank_name} ${userProf.bank_account_number}`,
+            reference_id: withdrawReq?.id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+        } catch (tErr) {
+          console.warn("[Withdrawal Transaction Log Error]:", tErr);
+        }
 
         // 6. Insert admin notification with type: 'WITHDRAW' (Satisfies constraint 100%)
         try {
