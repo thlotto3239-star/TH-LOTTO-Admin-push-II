@@ -116,6 +116,39 @@ function EditModal({ member, onClose, onSave }: { member: Member; onClose: () =>
                 </Select>
               </Field>
             </div>
+
+            {/* Password / 6-digit PIN reset within Edit Modal */}
+            <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                  <KeyRound className="size-4 text-amber-600" />
+                  แก้ไขรหัสผ่าน / PIN 6 หลักของสมาชิก
+                </label>
+                <span className="text-[10px] text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-full font-medium">
+                  ปล่อยว่างไว้หากไม่เปลี่ยน
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  maxLength={6}
+                  value={form.new_pin || ""}
+                  onChange={(e) => set("new_pin", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="ระบุตัวเลข 6 หลักเพื่อตั้งรหัสใหม่"
+                  className={cn(inputCls, "bg-white font-mono text-center font-bold tracking-widest")}
+                />
+                <Btn
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => set("new_pin", Math.floor(100000 + Math.random() * 900000).toString())}
+                  className="whitespace-nowrap rounded-xl border-amber-300 bg-white hover:bg-amber-50"
+                >
+                  สุ่มเลข
+                </Btn>
+              </div>
+              <p className="text-[10px] text-neutral-500">รหัสนี้คือรหัสผ่านเข้าสู่ระบบและรหัสยืนยันการถอนเงินของสมาชิก</p>
+            </div>
           </div>
         </div>
 
@@ -446,6 +479,7 @@ export function MembersPage() {
             bank_account_name: m.bank_account_name,
             status: m.status,
             vip_level: m.vip_level,
+            new_pin: m.new_pin,
           },
         }),
       });

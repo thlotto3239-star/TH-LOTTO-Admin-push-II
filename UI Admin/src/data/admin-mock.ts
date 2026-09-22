@@ -130,6 +130,7 @@ export interface Member {
   last_login_ip?: string | null;
   last_login_device?: string | null;
   last_login_city?: string | null;
+  new_pin?: string;
 }
 
 const NAMES = [

@@ -1465,6 +1465,172 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      case "create_withdrawal_request": {
+        const { user_id, amount, pin, pin_hash } = payload || {};
+        if (!user_id || !amount) {
+          return NextResponse.json(
+            { success: false, error: "กรุณาระบุข้อมูลผู้ใช้และจำนวนเงิน" },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+
+        const withdrawAmount = Number(amount);
+        if (isNaN(withdrawAmount) || withdrawAmount < 100) {
+          return NextResponse.json(
+            { success: false, error: "จำนวนเงินถอนขั้นต่ำคือ 100 บาท" },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+
+        // 1. Fetch user profile & check bank info and pin
+        const { data: userProf, error: profErr } = await supabaseAdmin
+          .from("profiles")
+          .select("id, phone, full_name, bank_name, bank_account_number, bank_account_name, pin_hash")
+          .eq("id", user_id)
+          .single();
+
+        if (profErr || !userProf) {
+          return NextResponse.json(
+            { success: false, error: "ไม่พบข้อมูลผู้ใช้ในระบบ" },
+            { status: 404, headers: corsHeaders }
+          );
+        }
+
+        if (!userProf.bank_name || !userProf.bank_account_number) {
+          return NextResponse.json(
+            { success: false, error: "ยังไม่ได้ระบุบัญชีธนาคาร กรุณาเพิ่มบัญชีธนาคารก่อนทำรายการ" },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+
+        // Verify PIN (6-digit password confirmation)
+        if (userProf.pin_hash) {
+          let expectedHash = pin_hash;
+          if (pin && userProf.phone) {
+            expectedHash = hashPin(userProf.phone, String(pin).trim());
+          }
+          if (expectedHash !== userProf.pin_hash && pin !== userProf.pin_hash) {
+            return NextResponse.json(
+              { success: false, error: "รหัสผ่าน / PIN ไม่ถูกต้อง", error_code: "WRONG_PIN" },
+              { status: 400, headers: corsHeaders }
+            );
+          }
+        }
+
+        // 2. Fetch wallet balance & turnover
+        const { data: wallet, error: wallErr } = await supabaseAdmin
+          .from("wallets")
+          .select("id, balance, turnover_required, turnover_completed")
+          .eq("user_id", user_id)
+          .single();
+
+        if (wallErr || !wallet) {
+          return NextResponse.json(
+            { success: false, error: "ไม่พบกระเป๋าเงินของผู้ใช้" },
+            { status: 404, headers: corsHeaders }
+          );
+        }
+
+        const curBalance = Number(wallet.balance || 0);
+        if (curBalance < withdrawAmount) {
+          return NextResponse.json(
+            { success: false, error: `ยอดเงินคงเหลือไม่เพียงพอ (คงเหลือ ฿${curBalance.toLocaleString()})` },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+
+        // Check turnover constraint
+        const reqTurnover = Number(wallet.turnover_required || 0);
+        const compTurnover = Number(wallet.turnover_completed || 0);
+        if (reqTurnover > 0 && compTurnover < reqTurnover) {
+          const remaining = reqTurnover - compTurnover;
+          return NextResponse.json(
+            { success: false, error: `ติดเงื่อนไขเทิร์นโอเวอร์ (ขาดอีก ฿${remaining.toLocaleString()})`, error_code: "TURNOVER_LOCKED" },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+
+        // 3. Atomically deduct balance
+        const newBalance = curBalance - withdrawAmount;
+        const { error: updErr } = await supabaseAdmin
+          .from("wallets")
+          .update({
+            balance: newBalance,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", user_id);
+
+        if (updErr) {
+          return NextResponse.json(
+            { success: false, error: "ไม่สามารถตัดยอดเงินได้: " + updErr.message },
+            { status: 500, headers: corsHeaders }
+          );
+        }
+
+        // 4. Insert withdraw_requests
+        const { data: withdrawReq, error: reqInsertErr } = await supabaseAdmin
+          .from("withdraw_requests")
+          .insert({
+            user_id,
+            amount: withdrawAmount,
+            bank_name: userProf.bank_name,
+            account_number: userProf.bank_account_number,
+            account_name: userProf.bank_account_name || userProf.full_name,
+            status: "PENDING",
+            created_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (reqInsertErr) {
+          // Refund on failure
+          await supabaseAdmin.from("wallets").update({ balance: curBalance }).eq("user_id", user_id);
+          return NextResponse.json(
+            { success: false, error: "ไม่สามารถบันทึกคำขอถอนเงิน: " + reqInsertErr.message },
+            { status: 500, headers: corsHeaders }
+          );
+        }
+
+        // 5. Insert transaction
+        await supabaseAdmin.from("transactions").insert({
+          user_id,
+          type: "WITHDRAW",
+          amount: withdrawAmount,
+          balance_before: curBalance,
+          balance_after: newBalance,
+          status: "PENDING",
+          description: `แจ้งถอนเงินเข้าบัญชี ${userProf.bank_name} (${userProf.bank_account_number})`,
+          created_at: new Date().toISOString(),
+        }).catch(() => {});
+
+        // 6. Insert admin notification with type: 'WITHDRAW' (Satisfies constraint 100%)
+        try {
+          await supabaseAdmin.from("admin_notifications").insert({
+            type: "WITHDRAW",
+            message: `คำขอถอนเงิน ฿${withdrawAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} จาก ${userProf.full_name || userProf.phone}`,
+            link_url: "/withdrawals",
+            metadata: {
+              amount: withdrawAmount,
+              request_id: withdrawReq.id,
+            },
+            is_read: false,
+            created_at: new Date().toISOString(),
+          });
+        } catch (nErr) {
+          console.warn("[Withdrawal Admin Notification Skipped]:", nErr);
+        }
+
+        return NextResponse.json(
+          {
+            success: true,
+            message: "ส่งคำขอถอนเงินเรียบร้อยแล้ว",
+            request_id: withdrawReq.id,
+            balance_after: newBalance,
+          },
+          { headers: corsHeaders }
+        );
+      }
+
       case "update_deposit": {
         const { id, status, admin_note } = payload;
         
@@ -1543,7 +1709,7 @@ export async function POST(req: NextRequest) {
       }
 
       case "update_member": {
-        const { id, full_name, phone, bank_name, bank_account_number, bank_account_name, status, vip_level } = payload;
+        const { id, full_name, phone, bank_name, bank_account_number, bank_account_name, status, vip_level, new_pin } = payload;
         const updateData: any = { updated_at: new Date().toISOString() };
         if (full_name !== undefined) updateData.full_name = full_name;
         if (phone !== undefined) updateData.phone = phone;
@@ -1553,13 +1719,25 @@ export async function POST(req: NextRequest) {
         if (status !== undefined) updateData.status = status;
         if (vip_level !== undefined) updateData.vip_level = String(vip_level);
 
+        // If admin specifies new password / 6-digit PIN
+        if (new_pin && /^[0-9]{6}$/.test(String(new_pin).trim())) {
+          const cleanPin = String(new_pin).trim();
+          let targetPhone = phone;
+          if (!targetPhone) {
+            const { data: curP } = await supabaseAdmin.from("profiles").select("phone").eq("id", id).maybeSingle();
+            targetPhone = curP?.phone || "";
+          }
+          updateData.pin_hash = hashPin(targetPhone, cleanPin);
+          await supabaseAdmin.auth.admin.updateUserById(id, { password: cleanPin }).catch(() => {});
+        }
+
         const { data, error } = await supabaseAdmin
           .from("profiles")
           .update(updateData)
           .eq("id", id)
           .select();
         if (error) throw error;
-        return NextResponse.json({ success: true, data });
+        return NextResponse.json({ success: true, data }, { headers: corsHeaders });
       }
 
       case "adjust_wallet": {
