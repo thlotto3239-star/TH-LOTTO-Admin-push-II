@@ -11,6 +11,7 @@ import {
 } from "../primitives";
 import { useToast } from "@/hooks/use-toast";
 import { fmtNum, type BroadcastMsg } from "@/data/admin-mock";
+import { useAdminNav } from "../store";
 import { cn } from "@/lib/utils";
 
 const TYPE_UI: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; chip: string; dot: string; border: string }> = {
@@ -30,6 +31,7 @@ export const getTypeUI = (t?: string) => {
 
 export function BroadcastPage() {
   const { toast } = useToast();
+  const { navigate } = useAdminNav();
   const [activeTab, setActiveTab] = React.useState<"compose" | "marquee" | "popup">("compose");
   const [audience, setAudience] = React.useState<"all" | "individual">("all");
   const [channel, setChannel] = React.useState<"inapp" | "popup">("inapp");
@@ -700,230 +702,27 @@ export function BroadcastPage() {
           </div>
         </Panel>
       ) : activeTab === "popup" ? (
-        /* TAB 3: WELCOME & PROMO POPUP MODAL MANAGER */
-        <div className="grid gap-5 lg:grid-cols-12">
-          {/* LEFT: Live Phone Visualizer */}
-          <div className="min-w-0 lg:col-span-5 space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide flex items-center gap-1.5">
-                <Smartphone className="size-4 text-brand-600" /> พรีวิวป๊อปอัปหน้าแรกบนมือถือ
-              </span>
-              <span className={cn(
-                "text-[11px] font-bold px-2 py-0.5 rounded-full",
-                popupEnabled ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-neutral-100 text-neutral-500"
-              )}>
-                {popupEnabled ? "🟢 กำลังเปิดใช้งาน" : "⚪ ปิดใช้งานอยู่"}
-              </span>
-            </div>
-
-            <Panel className="relative overflow-hidden border-neutral-200/90 bg-neutral-900 text-white p-4 shadow-xl min-h-[500px] flex flex-col justify-between rounded-3xl">
-              {/* Phone Top Bar */}
-              <div className="flex items-center justify-between text-[11px] text-neutral-400 pb-3 border-b border-neutral-850">
-                <span>09:41</span>
-                <span className="font-semibold text-neutral-200">TH-LOTTO Home</span>
-                <span>5G · 100%</span>
-              </div>
-
-              {/* Popup Modal Mock in Mobile */}
-              <div className="my-auto py-3">
-                <div className="relative mx-auto max-w-xs overflow-hidden rounded-2xl bg-white text-neutral-900 shadow-2xl border border-neutral-200 animate-in fade-in zoom-in-95">
-                  {popupImgUrl ? (
-                    <div className="relative aspect-square w-full overflow-hidden bg-neutral-900 flex items-center justify-center">
-                      <img
-                        src={popupImgUrl}
-                        alt="Popup Banner"
-                        className="w-full h-full object-cover"
-                        onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
-                      />
-                      {!popupEnabled && (
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center">
-                          <span className="rounded-full bg-neutral-900/90 px-3 py-1 text-xs font-bold text-amber-300 border border-amber-500/30">
-                            ⚪ ปิดการแสดงผลอยู่
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ) : null}
-
-                  <div className="p-5 space-y-2 text-left">
-                    <h3 className="font-bold text-slate-800 text-base truncate">
-                      {popupTitle || "ยินดีต้อนรับสู่ TH LOTTO II"}
-                    </h3>
-                    <p className="text-slate-500 text-sm line-clamp-3 leading-relaxed">
-                      {popupDesc || "สมาชิกใหม่ รับโบนัสฟรี 50% จากยอดฝากครั้งแรก!!"}
-                    </p>
-                    <div className="flex gap-2 pt-3">
-                      <button
-                        type="button"
-                        className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl active:scale-95 transition text-center shadow-xs"
-                      >
-                        ปิด
-                      </button>
-                      <button
-                        type="button"
-                        className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-500 text-sm font-bold rounded-xl active:scale-95 transition text-center"
-                      >
-                        ไม่แสดงอีก
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-center text-[10px] text-neutral-500 pt-2 border-t border-neutral-850">
-                จำลองหน้าจอ Home.jsx ที่สมาชิกทุกคนจะเห็นเมื่อเข้าสู่เว็บไซต์
-              </div>
-            </Panel>
+        /* TAB 3: WELCOME & PROMO POPUP MODAL (REDIRECT TO SSOT POPUP PAGE) */
+        <Panel className="p-8 text-center space-y-5 rounded-3xl border-dashed border-2 border-amber-300 bg-amber-50/40">
+          <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-500/20">
+            <Sparkles className="size-8" />
           </div>
-
-          {/* RIGHT: Edit Form & Live Controls */}
-          <Panel className="min-w-0 lg:col-span-7 p-6 space-y-5">
-            <div className="flex items-start justify-between border-b border-neutral-100 pb-4">
-              <div>
-                <h3 className="text-base font-bold text-neutral-900 flex items-center gap-2">
-                  <Sparkles className="size-5 text-amber-500" /> ตั้งค่าป๊อปอัปต้อนรับหน้าแรก (Welcome Popup)
-                </h3>
-                <p className="mt-0.5 text-xs text-neutral-500">
-                  กำหนดรูปภาพ หัวข้อ และรายละเอียดที่จะแสดงเป็น Modal โฆษณาอัตโนมัติเมื่อผู้เล่นเปิดหน้าเว็บ
-                </p>
-              </div>
-              <label className="flex items-center gap-2 cursor-pointer select-none rounded-full bg-neutral-50 px-3 py-1.5 border border-neutral-200 hover:bg-neutral-100 transition-all">
-                <span className="text-xs font-bold text-neutral-700">
-                  {popupEnabled ? "เปิดแสดงป๊อปอัป" : "ปิดป๊อปอัป"}
-                </span>
-                <input
-                  type="checkbox"
-                  checked={popupEnabled}
-                  onChange={(e) => setPopupEnabled(e.target.checked)}
-                  className="size-4 accent-brand-600 rounded cursor-pointer"
-                />
-              </label>
-            </div>
-            {/* Active Stored Data in Database */}
-            {savedPopup ? (
-              <div className="rounded-2xl border border-amber-200/80 bg-amber-50/60 p-3.5 text-xs space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-amber-900 flex items-center gap-1.5">
-                    📌 ข้อมูลป๊อปอัปเดิมในระบบที่เปิดใช้งานอยู่ปัจจุบัน (Saved Values in DB)
-                  </span>
-                  <span className={cn(
-                    "rounded-full px-2.5 py-0.5 text-[10px] font-bold",
-                    savedPopup.enabled ? "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300" : "bg-neutral-200 text-neutral-600"
-                  )}>
-                    {savedPopup.enabled ? "🟢 เปิดใช้งานอยู่ใน DB" : "⚪ ปิดใช้งานใน DB"}
-                  </span>
-                </div>
-                <div className="grid gap-1.5 text-amber-950/90 pl-1 font-sans">
-                  <p><span className="font-semibold text-amber-800">หัวข้อเดิม:</span> {savedPopup.title || "ไม่ได้ระบุ"}</p>
-                  <p><span className="font-semibold text-amber-800">รายละเอียดเดิม:</span> {savedPopup.desc || "ไม่ได้ระบุ"}</p>
-                  {savedPopup.imgUrl ? (
-                    <div className="flex items-center gap-2 pt-0.5">
-                      <span className="font-semibold text-amber-800">รูปภาพเดิม:</span>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={savedPopup.imgUrl} alt="รูปเดิม" className="size-8 rounded object-cover border border-amber-300" />
-                      <a href={savedPopup.imgUrl} target="_blank" rel="noreferrer" className="truncate text-[11px] underline text-brand-700 hover:text-brand-800">
-                        {savedPopup.imgUrl}
-                      </a>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-
-            <div className="space-y-4">
-              <Field label="หัวข้อป๊อปอัป (Popup Title)" required>
-                <input
-                  className={inputCls}
-                  placeholder="เช่น ยินดีต้อนรับสมาชิกใหม่! หรือ แจ้งโปรโมชั่นพิเศษ"
-                  value={popupTitle}
-                  onChange={(e) => setPopupTitle(e.target.value)}
-                />
-              </Field>
-
-              <Field label="รายละเอียด / สิทธิประโยชน์ (Popup Description)">
-                <textarea
-                  rows={3}
-                  className={cn(inputCls, "h-auto resize-none py-2.5 leading-relaxed")}
-                  placeholder="เช่น สมาชิกใหม่ รับโบนัสฟรี 50% จากยอดฝากครั้งแรก..."
-                  value={popupDesc}
-                  onChange={(e) => setPopupDesc(e.target.value)}
-                />
-              </Field>
-
-              <Field label="รูปภาพแบนเนอร์ป๊อปอัป (Popup Image)">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 shadow-xs hover:bg-neutral-50 hover:border-brand-500 active:scale-95 transition-all">
-                      <span>📤 อัปโหลดภาพจากคอมพิวเตอร์</span>
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp,image/gif"
-                        className="hidden"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          try {
-                            const fd = new FormData();
-                            fd.append("file", file);
-                            fd.append("bucket", "sliders");
-                            const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-                            const json = await res.json();
-                            if (json.success && json.url) {
-                              setPopupImgUrl(json.url);
-                              toast({ title: "อัปโหลดรูปป๊อปอัปสำเร็จ", description: file.name });
-                            } else {
-                              toast({ title: "อัปโหลดล้มเหลว", description: json.error, variant: "destructive" });
-                            }
-                          } catch (err: any) {
-                            toast({ title: "เกิดข้อผิดพลาด", description: err.message, variant: "destructive" });
-                          }
-                        }}
-                      />
-                    </label>
-                    <span className="text-[11px] text-neutral-400">หรือระบุ URL</span>
-                  </div>
-
-                  <input
-                    className={inputCls}
-                    placeholder="https://... หรือ Supabase Storage URL"
-                    value={popupImgUrl}
-                    onChange={(e) => setPopupImgUrl(e.target.value)}
-                  />
-                  <p className="mt-1 text-[11px] text-neutral-400 flex items-center gap-1.5">
-                    <Info className="size-3 text-neutral-400" /> แนะนำรูปสี่เหลี่ยมจัตุรัสหรือผืนผ้า ( Aspect Ratio 1:1 หรือ 16:9 )
-                  </p>
-                </div>
-              </Field>
-
-              {/* Preset Image Quick Selection */}
-              <div className="space-y-1.5 pt-1">
-                <span className="text-[11px] font-semibold text-neutral-500">รูปภาพป๊อปอัปในระบบ:</span>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPopupImgUrl("https://ygopnjbvccenryejqmlw.supabase.co/storage/v1/object/public/sliders/popup/1785749698532.jpg")}
-                    className="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors font-medium flex items-center gap-1.5"
-                  >
-                    🖼️ ใช้รูปโปรโมชั่นสมาชิกใหม่ 50% (Default)
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-neutral-100 flex items-center justify-between">
-              <span className="text-xs text-neutral-400">
-                ข้อมูลจะบันทึกลงตาราง <code className="text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded font-mono">settings</code> บน Supabase
-              </span>
-              <Btn
-                onClick={savePopupSettings}
-                disabled={isSavingPopup}
-                className="gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 shadow-md shadow-brand-500/20"
-              >
-                {isSavingPopup ? "กำลังบันทึก..." : "💾 บันทึกข้อมูลป๊อปอัปหน้าแรก"}
-              </Btn>
-            </div>
-          </Panel>
-        </div>
+          <div className="max-w-md mx-auto space-y-2">
+            <h3 className="text-lg font-bold text-neutral-900">จัดการป๊อปอัปต้อนรับและโปรโมชั่นหน้าแรก</h3>
+            <p className="text-xs text-neutral-600 leading-relaxed">
+              ระบบจัดการป๊อปอัปหน้าแรกถูกรวมศูนย์ไว้ที่เมนู <strong>&quot;ป๊อปอัปหน้าแรก&quot;</strong> (หมวดคอนเทนต์) เพื่อความเป็นมาตรฐาน Single Source of Truth ป้องกันความซ้ำซ้อนของข้อมูล และมีระบบ Live Responsive Preview 1:1 ครบถ้วน
+            </p>
+          </div>
+          <div className="pt-2">
+            <Btn
+              onClick={() => navigate("popup")}
+              className="gap-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 shadow-md shadow-emerald-600/20"
+            >
+              <ExternalLink className="size-4" />
+              เปิดหน้าจัดการป๊อปอัปหน้าแรก
+            </Btn>
+          </div>
+        </Panel>
       ) : null}
 
       {/* History Panel */}

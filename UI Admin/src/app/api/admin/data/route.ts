@@ -369,7 +369,21 @@ export async function GET(req: NextRequest) {
           supabaseAdmin.from("admin_notifications").select("*").order("is_read", { ascending: true }).order("created_at", { ascending: false }).limit(30),
         ]);
 
-        const notifications = (rawNotifs || []).map((n) => {
+        const seenReqs = new Set<string>();
+        const seenMsgs = new Set<string>();
+        const uniqueNotifs = (rawNotifs || []).filter((n) => {
+          const reqId = n.metadata?.request_id;
+          if (reqId) {
+            if (seenReqs.has(reqId)) return false;
+            seenReqs.add(reqId);
+          }
+          const msgKey = `${n.type}:${(n.message || "").trim().toLowerCase()}`;
+          if (seenMsgs.has(msgKey)) return false;
+          seenMsgs.add(msgKey);
+          return true;
+        });
+
+        const notifications = uniqueNotifs.map((n) => {
           let title = "การแจ้งเตือนระบบ";
           let type: "info" | "warning" | "success" = "info";
           let target_page: string | undefined = undefined;
@@ -1615,14 +1629,26 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        // Create admin notification
+        // Create admin notification (only if not already created)
         try {
-          await supabaseAdmin.from("admin_notifications").insert({
-            type: "DEPOSIT",
-            message: `มีรายการฝากเงินใหม่ ฿${Number(amount).toLocaleString()} รอการตรวจสอบ`,
-            link_url: "/deposits",
-            is_read: false,
-          });
+          const { count } = await supabaseAdmin
+            .from("admin_notifications")
+            .select("id", { count: "exact", head: true })
+            .filter("metadata->>request_id", "eq", inserted.id);
+
+          if (!count || count === 0) {
+            await supabaseAdmin.from("admin_notifications").insert({
+              type: "DEPOSIT",
+              message: `คำขอฝากเงิน ฿${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} รอการตรวจสอบ`,
+              link_url: "/deposits",
+              metadata: {
+                amount: Number(amount),
+                request_id: inserted.id,
+              },
+              is_read: false,
+              created_at: new Date().toISOString(),
+            });
+          }
         } catch (nErr) {
           console.warn("[Admin Notification Failed]:", nErr);
         }
@@ -1777,19 +1803,26 @@ export async function POST(req: NextRequest) {
           console.warn("[Withdrawal Transaction Log Error]:", tErr);
         }
 
-        // 6. Insert admin notification with type: 'WITHDRAW' (Satisfies constraint 100%)
+        // 6. Insert admin notification with type: 'WITHDRAW' (check if not already inserted)
         try {
-          await supabaseAdmin.from("admin_notifications").insert({
-            type: "WITHDRAW",
-            message: `คำขอถอนเงิน ฿${withdrawAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} จาก ${userProf.full_name || userProf.phone}`,
-            link_url: "/withdrawals",
-            metadata: {
-              amount: withdrawAmount,
-              request_id: withdrawReq.id,
-            },
-            is_read: false,
-            created_at: new Date().toISOString(),
-          });
+          const { count } = await supabaseAdmin
+            .from("admin_notifications")
+            .select("id", { count: "exact", head: true })
+            .filter("metadata->>request_id", "eq", withdrawReq.id);
+
+          if (!count || count === 0) {
+            await supabaseAdmin.from("admin_notifications").insert({
+              type: "WITHDRAW",
+              message: `คำขอถอนเงิน ฿${withdrawAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} จาก ${userProf.full_name || userProf.phone}`,
+              link_url: "/withdrawals",
+              metadata: {
+                amount: withdrawAmount,
+                request_id: withdrawReq.id,
+              },
+              is_read: false,
+              created_at: new Date().toISOString(),
+            });
+          }
         } catch (nErr) {
           console.warn("[Withdrawal Admin Notification Skipped]:", nErr);
         }
