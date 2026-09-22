@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.1.1] - 2026-09-22
+
+### Added
+- **Production Withdrawal API (`UI Admin/src/app/api/admin/data/route.ts` & `UI Customer/src/pages/Withdrawal.jsx`):**
+  - Implemented `create_withdrawal_request` action handling wallet deduction, bank account verification, turnover checking, `withdraw_requests` insertion, and `transactions` logging.
+  - Inserted admin notifications using type `'WITHDRAW'`, resolving the PostgreSQL `admin_notifications_type_check` constraint violation.
+- **Admin Direct Password / PIN Editing in Edit Modal (`UI Admin/src/components/admin/pages/members.tsx`):**
+  - Integrated 6-digit password / PIN editing directly within `EditModal` for each member, allowing admins to view, randomize, and change passwords for customers on the fly.
+  - Synchronized updated passwords directly to Supabase Auth (`supabaseAdmin.auth.admin.updateUserById`) and `profiles.pin_hash`.
+
+### Changed
+- **PIN Change UX Fix (`UI Customer/src/pages/ChangePassword.jsx`):**
+  - Removed strict blocking validation preventing users from re-confirming their existing PIN.
+  - Handled GoTrue Auth duplicate password responses smoothly to prevent deadlock.
+
 ## [3.1.0] - 2026-09-22
 
 ### Added

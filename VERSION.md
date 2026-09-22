@@ -1,7 +1,7 @@
 # THLOTTO-II Version Specification
 
-**Current Version:** `3.1.0`  
-**Release Name:** Canonical Production Release (SSOT Verified)  
+**Current Version:** `3.1.1`  
+**Release Name:** Production Withdrawal API & Admin Member Password Management  
 **Release Date:** 2026-09-22  
 **Standard:** ARM AI Engineering Standard (ARM-AES v1.0) & Web Development Standards  
 
