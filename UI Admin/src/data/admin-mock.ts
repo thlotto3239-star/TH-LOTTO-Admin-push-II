@@ -206,6 +206,18 @@ export interface DepositReq {
   approver_name: string | null;
   admin_note: string | null;
   slip_url?: string | null;
+  promo?: {
+    id?: number;
+    title?: string;
+    description?: string;
+    bonus_rate?: number;
+    bonus_amount?: number;
+    turnover_multiplier?: number;
+    max_withdrawal?: number;
+    min_deposit?: number;
+    allowed_game?: string;
+    image_url?: string;
+  } | null;
 }
 
 const dSeed = new Date(2026, 7, 4, 12, 0);
@@ -243,6 +255,24 @@ export interface WithdrawReq {
   approver_name: string | null;
   admin_note: string | null;
   promo_hold: number | null;
+  wallet?: {
+    balance: number;
+    active_promo_id: number | null;
+    turnover_required: number;
+    turnover_completed: number;
+    remaining_turnover: number;
+    has_promo: boolean;
+    is_turnover_met: boolean;
+  } | null;
+  promo?: {
+    id: number;
+    title: string;
+    description?: string;
+    bonus_rate: number;
+    turnover_multiplier: number;
+    max_withdrawal: number;
+    allowed_game: string;
+  } | null;
 }
 
 export const WITHDRAWALS: WithdrawReq[] = MEMBERS.slice(3, 15).map((m, i) => {

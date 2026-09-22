@@ -37,13 +37,14 @@ export async function GET(req: NextRequest) {
           { data: topBettorBets },
           { data: recentBets },
           { data: recentDeposits },
+          { data: recentWithdrawals },
         ] = await Promise.all([
           supabaseAdmin.from("profiles").select("*", { count: "exact", head: true }).eq("is_admin", false),
           supabaseAdmin.from("bets").select("*", { count: "exact", head: true }),
-          supabaseAdmin.from("deposit_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
-          supabaseAdmin.from("withdraw_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
-          supabaseAdmin.from("deposit_requests").select("amount, created_at").eq("status", "APPROVED"),
-          supabaseAdmin.from("withdraw_requests").select("amount, created_at").eq("status", "APPROVED"),
+          supabaseAdmin.from("deposit_requests").select("*", { count: "exact", head: true }).in("status", ["PENDING", "pending"]),
+          supabaseAdmin.from("withdraw_requests").select("*", { count: "exact", head: true }).in("status", ["PENDING", "pending"]),
+          supabaseAdmin.from("deposit_requests").select("amount, created_at").in("status", ["APPROVED", "approved"]),
+          supabaseAdmin.from("withdraw_requests").select("amount, created_at").in("status", ["APPROVED", "approved"]),
           supabaseAdmin.from("bets").select("amount, payout_amount, status, created_at"),
           supabaseAdmin.from("bets").select("amount, user_id, created_at, profiles!bets_profile_fkey (id, full_name, member_id, avatar_url)"),
           supabaseAdmin.from("bets").select(`
@@ -54,6 +55,10 @@ export async function GET(req: NextRequest) {
           supabaseAdmin.from("deposit_requests").select(`
             *,
             profiles!deposit_requests_profile_fkey (full_name, member_id, avatar_url, bank_name, bank_account_number, bank_account_name)
+          `).order("created_at", { ascending: false }).limit(30),
+          supabaseAdmin.from("withdraw_requests").select(`
+            *,
+            profiles!withdraw_requests_profile_fkey (full_name, member_id, avatar_url, bank_name, bank_account_number, bank_account_name)
           `).order("created_at", { ascending: false }).limit(30),
         ]);
 
@@ -154,6 +159,7 @@ export async function GET(req: NextRequest) {
             weeklyChart,
             recentBets: recentBets || [],
             recentDeposits: recentDeposits || [],
+            recentWithdrawals: recentWithdrawals || [],
           },
         });
       }
@@ -349,8 +355,8 @@ export async function GET(req: NextRequest) {
           { count: unreadNotifs },
           { data: rawNotifs },
         ] = await Promise.all([
-          supabaseAdmin.from("deposit_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
-          supabaseAdmin.from("withdraw_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
+          supabaseAdmin.from("deposit_requests").select("*", { count: "exact", head: true }).in("status", ["PENDING", "pending"]),
+          supabaseAdmin.from("withdraw_requests").select("*", { count: "exact", head: true }).in("status", ["PENDING", "pending"]),
           supabaseAdmin.from("profiles").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
           supabaseAdmin.from("draw_schedules").select("*", { count: "exact", head: true }).eq("status", "UPCOMING"),
           supabaseAdmin.from("admin_notifications").select("*", { count: "exact", head: true }).eq("is_read", false),
@@ -441,59 +447,167 @@ export async function GET(req: NextRequest) {
 
 
       case "deposits": {
-        const { data, error } = await supabaseAdmin
-          .from("deposit_requests")
-          .select(`
-            id,
-            user_id,
-            amount,
-            slip_url,
-            status,
-            admin_note,
-            created_at,
-            promo_code,
-            approved_by,
-            approved_at,
-            profiles!deposit_requests_profile_fkey (
-              full_name,
-              member_id,
-              phone,
-              avatar_url,
-              bank_name,
-              bank_account_number,
-              bank_account_name
-            )
-          `)
-          .order("created_at", { ascending: false });
+        const [
+          { data, error },
+          { data: allPromos }
+        ] = await Promise.all([
+          supabaseAdmin
+            .from("deposit_requests")
+            .select(`
+              id,
+              user_id,
+              amount,
+              slip_url,
+              status,
+              admin_note,
+              created_at,
+              promo_code,
+              approved_by,
+              approved_at,
+              profiles!deposit_requests_profile_fkey (
+                full_name,
+                member_id,
+                phone,
+                avatar_url,
+                bank_name,
+                bank_account_number,
+                bank_account_name
+              ),
+              approver:profiles!deposit_requests_approved_by_fkey (
+                id,
+                full_name,
+                username
+              )
+            `)
+            .order("created_at", { ascending: false }),
+          supabaseAdmin.from("promotions").select("*"),
+        ]);
         if (error) throw error;
-        return NextResponse.json({ success: true, data });
+
+        const promoMap = new Map<string, any>();
+        (allPromos || []).forEach((p: any) => {
+          promoMap.set(String(p.id), p);
+          if (p.promo_code) promoMap.set(String(p.promo_code).toLowerCase(), p);
+          if (p.title) promoMap.set(String(p.title).toLowerCase(), p);
+        });
+
+        const enriched = (data || []).map((d: any) => {
+          let promoInfo = null;
+          if (d.promo_code) {
+            const found = promoMap.get(String(d.promo_code)) || promoMap.get(String(d.promo_code).toLowerCase());
+            if (found) {
+              promoInfo = {
+                id: found.id,
+                title: found.title,
+                description: found.description,
+                bonus_rate: Number(found.bonus_rate || 0),
+                bonus_amount: Number(found.bonus_amount || 0),
+                turnover_multiplier: Number(found.turnover_multiplier || 0),
+                max_withdrawal: Number(found.max_withdrawal || 0),
+                min_deposit: Number(found.min_deposit || 0),
+                allowed_game: found.allowed_game || "ทุกประเภท",
+                image_url: found.image_url,
+              };
+            } else {
+              promoInfo = {
+                title: d.promo_code,
+                bonus_rate: 0,
+                turnover_multiplier: 0,
+              };
+            }
+          }
+          return {
+            ...d,
+            approver_name: d.approver?.full_name || d.approver?.username || (d.approved_by ? "แอดมิน" : null),
+            promo: promoInfo,
+          };
+        });
+
+        return NextResponse.json({ success: true, data: enriched });
       }
 
       case "withdrawals": {
-        const { data, error } = await supabaseAdmin
-          .from("withdraw_requests")
-          .select(`
-            id,
-            user_id,
-            amount,
-            status,
-            admin_note,
-            created_at,
-            approved_by,
-            approved_at,
-            profiles!withdraw_requests_profile_fkey (
-              full_name,
-              member_id,
-              phone,
-              avatar_url,
-              bank_name,
-              bank_account_number,
-              bank_account_name
-            )
-          `)
-          .order("created_at", { ascending: false });
+        const [
+          { data, error },
+          { data: allWallets },
+          { data: allPromos }
+        ] = await Promise.all([
+          supabaseAdmin
+            .from("withdraw_requests")
+            .select(`
+              id,
+              user_id,
+              amount,
+              status,
+              admin_note,
+              created_at,
+              approved_by,
+              approved_at,
+              profiles!withdraw_requests_profile_fkey (
+                full_name,
+                member_id,
+                phone,
+                avatar_url,
+                bank_name,
+                bank_account_number,
+                bank_account_name
+              ),
+              approver:profiles!withdraw_requests_approved_by_fkey (
+                id,
+                full_name,
+                username
+              )
+            `)
+            .order("created_at", { ascending: false }),
+          supabaseAdmin.from("wallets").select("user_id, balance, active_promo_id, turnover_required, turnover_completed"),
+          supabaseAdmin.from("promotions").select("*"),
+        ]);
         if (error) throw error;
-        return NextResponse.json({ success: true, data });
+
+        const walletMap = new Map<string, any>();
+        (allWallets || []).forEach((w: any) => {
+          if (w.user_id) walletMap.set(w.user_id, w);
+        });
+
+        const promoMap = new Map<number, any>();
+        (allPromos || []).forEach((p: any) => {
+          promoMap.set(p.id, p);
+        });
+
+        const enriched = (data || []).map((w: any) => {
+          const wallet = walletMap.get(w.user_id);
+          const activePromo = wallet?.active_promo_id ? promoMap.get(wallet.active_promo_id) : null;
+          const reqTurnover = Number(wallet?.turnover_required || 0);
+          const compTurnover = Number(wallet?.turnover_completed || 0);
+          const remainingTurnover = Math.max(0, reqTurnover - compTurnover);
+          const hasPromo = Boolean(wallet?.active_promo_id);
+          const isTurnoverMet = !hasPromo || (reqTurnover > 0 ? compTurnover >= reqTurnover : true);
+
+          return {
+            ...w,
+            approver_name: w.approver?.full_name || w.approver?.username || (w.approved_by ? "แอดมิน" : null),
+            wallet: wallet ? {
+              balance: Number(wallet.balance || 0),
+              active_promo_id: wallet.active_promo_id,
+              turnover_required: reqTurnover,
+              turnover_completed: compTurnover,
+              remaining_turnover: remainingTurnover,
+              has_promo: hasPromo,
+              is_turnover_met: isTurnoverMet,
+            } : null,
+            promo: activePromo ? {
+              id: activePromo.id,
+              title: activePromo.title,
+              description: activePromo.description,
+              bonus_rate: Number(activePromo.bonus_rate || 0),
+              turnover_multiplier: Number(activePromo.turnover_multiplier || 0),
+              max_withdrawal: Number(activePromo.max_withdrawal || 0),
+              allowed_game: activePromo.allowed_game || "ทุกประเภท",
+            } : null,
+          };
+        });
+
+        return NextResponse.json({ success: true, data: enriched });
       }
 
       case "members": {
@@ -1025,6 +1139,45 @@ export async function GET(req: NextRequest) {
           .select("*")
           .order("display_order", { ascending: true });
         if (error) throw error;
+        return NextResponse.json({ success: true, data: data || [] });
+      }
+
+      case "export": {
+        const table = searchParams.get("table");
+        const allowedTables = [
+          "withdraw_requests",
+          "deposit_requests",
+          "profiles",
+          "bets",
+          "transactions",
+          "lottery_results",
+          "settings",
+          "banks",
+          "wallets",
+          "draw_schedules",
+          "lottery_markets",
+          "payout_rates",
+          "restricted_numbers",
+          "instant_draws",
+          "instant_bets",
+          "promotions",
+          "articles",
+          "announcements",
+          "backup_logs",
+        ];
+        if (!table || !allowedTables.includes(table)) {
+          return NextResponse.json({ success: false, error: "Invalid table specified for export" }, { status: 400 });
+        }
+        const { data, error } = await supabaseAdmin
+          .from(table)
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(2000);
+        if (error) {
+          const { data: fallbackData, error: fbError } = await supabaseAdmin.from(table).select("*").limit(2000);
+          if (fbError) throw fbError;
+          return NextResponse.json({ success: true, data: fallbackData || [] });
+        }
         return NextResponse.json({ success: true, data: data || [] });
       }
 
@@ -1576,7 +1729,7 @@ export async function POST(req: NextRequest) {
             bank_name: userProf.bank_name,
             bank_account_number: userProf.bank_account_number,
             bank_account_name: userProf.bank_account_name || userProf.full_name,
-            status: "pending",
+            status: "PENDING",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
@@ -1660,7 +1813,7 @@ export async function POST(req: NextRequest) {
       }
 
       case "update_deposit": {
-        const { id, status, admin_note } = payload;
+        const { id, status, admin_note, admin_id } = payload;
         
         // Fetch deposit details to get user_id & amount for realtime notification
         const { data: depRow } = await supabaseAdmin
@@ -1673,8 +1826,16 @@ export async function POST(req: NextRequest) {
           const { data: rpcRes, error: rpcErr } = await supabaseAdmin.rpc("admin_service_approve_deposit", {
             p_request_id: id,
             p_admin_note: admin_note || "อนุมัติผ่านแผงควบคุม",
+            p_admin_id: admin_id || null,
           });
           if (rpcErr) throw rpcErr;
+
+          if (admin_id) {
+            await supabaseAdmin
+              .from("deposit_requests")
+              .update({ approved_by: admin_id, approved_at: new Date().toISOString() })
+              .eq("id", id);
+          }
 
           // Realtime Notification to user: Deposit Approved Popup
           if (depRow?.user_id) {
@@ -1699,8 +1860,16 @@ export async function POST(req: NextRequest) {
           const { data: rpcRes, error: rpcErr } = await supabaseAdmin.rpc("admin_service_reject_deposit", {
             p_request_id: id,
             p_admin_note: admin_note || "ข้อมูลสลิปไม่ถูกต้อง",
+            p_admin_id: admin_id || null,
           });
           if (rpcErr) throw rpcErr;
+
+          if (admin_id) {
+            await supabaseAdmin
+              .from("deposit_requests")
+              .update({ approved_by: admin_id })
+              .eq("id", id);
+          }
 
           // Realtime Notification to user: Deposit Rejected Popup
           if (depRow?.user_id) {
@@ -1921,7 +2090,7 @@ export async function POST(req: NextRequest) {
       }
 
       case "update_withdrawal": {
-        const { id, status, admin_note } = payload;
+        const { id, status, admin_note, admin_id } = payload;
 
         // Fetch withdrawal details to get user_id & amount for realtime notification
         const { data: withRow } = await supabaseAdmin
@@ -1934,8 +2103,16 @@ export async function POST(req: NextRequest) {
           const { data: rpcRes, error: rpcErr } = await supabaseAdmin.rpc("admin_service_approve_withdraw", {
             p_request_id: id,
             p_admin_note: admin_note || "อนุมัติผ่านแผงควบคุม",
+            p_admin_id: admin_id || null,
           });
           if (rpcErr) throw rpcErr;
+
+          if (admin_id) {
+            await supabaseAdmin
+              .from("withdraw_requests")
+              .update({ approved_by: admin_id, approved_at: new Date().toISOString() })
+              .eq("id", id);
+          }
 
           // Realtime Notification to user: Withdrawal Approved Popup
           if (withRow?.user_id) {
@@ -1943,7 +2120,7 @@ export async function POST(req: NextRequest) {
               user_id: withRow.user_id,
               type: "WITHDRAW",
               title: "💸 ถอนเงินสำเร็จ",
-              body: `โอนเงินจำนวน ฿${Number(withRow.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} เข้าบัญชีธนาคารของคุณเรียบร้อยแล้ว`,
+              body: `อนุมัติการถอนเงินจำนวน ฿${Number(withRow.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} เข้าบัญชีธนาคารของคุณเรียบร้อยแล้ว`,
               data: {
                 is_popup: true,
                 amount: Number(withRow.amount),
@@ -1960,8 +2137,16 @@ export async function POST(req: NextRequest) {
           const { data: rpcRes, error: rpcErr } = await supabaseAdmin.rpc("admin_service_reject_withdraw", {
             p_request_id: id,
             p_admin_note: admin_note || "ข้อมูลบัญชีไม่ถูกต้อง",
+            p_admin_id: admin_id || null,
           });
           if (rpcErr) throw rpcErr;
+
+          if (admin_id) {
+            await supabaseAdmin
+              .from("withdraw_requests")
+              .update({ approved_by: admin_id })
+              .eq("id", id);
+          }
 
           // Realtime Notification to user: Withdrawal Rejected Popup
           if (withRow?.user_id) {
@@ -2825,6 +3010,20 @@ export async function POST(req: NextRequest) {
           { success: true, publicUrl: urlData.publicUrl },
           { headers: corsHeaders }
         );
+      }
+
+      case "record_backup": {
+        const { backup_type, backup_date } = payload || {};
+        const { data, error } = await supabaseAdmin
+          .from("backup_logs")
+          .insert({
+            backup_type: backup_type || "database",
+            backed_up_at: new Date().toISOString(),
+            status: "success",
+            notes: `บันทึกการสำรอง/ส่งออกข้อมูลประเภท ${backup_type || "database"} เมื่อ ${backup_date || new Date().toISOString().slice(0, 10)}`
+          })
+          .select();
+        return NextResponse.json({ success: true, data }, { headers: corsHeaders });
       }
 
       default:

@@ -200,7 +200,27 @@ export function DashboardPage() {
             status: d.status,
           }));
 
-          const merged = [...betsFeed, ...depsFeed].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+          const withsFeed: FeedItem[] = (json.data.recentWithdrawals || []).map((w: any) => ({
+            id: `with-${w.id}`,
+            time: w.created_at,
+            kind: "withdraw",
+            member: {
+              full_name: w.profiles?.full_name || "สมาชิก",
+              member_id: w.profiles?.member_id || (w.user_id ? w.user_id.slice(0, 8) : "MB"),
+              phone: "-",
+              avatar_url: w.profiles?.avatar_url || null,
+              bank_code: w.profiles?.bank_name || "KBANK",
+              bank_account_number: w.profiles?.bank_account_number || "-",
+              vip_level: 0,
+            },
+            amount: Number(w.amount),
+            bank_code: w.profiles?.bank_name || "KBANK",
+            account_no: w.profiles?.bank_account_number,
+            account_name: w.profiles?.bank_account_name,
+            status: ((w.status || "PENDING").toUpperCase()) as any,
+          }));
+
+          const merged = [...betsFeed, ...depsFeed, ...withsFeed].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
           setLiveFeed(merged);
         }
       } catch (e) {

@@ -108,6 +108,9 @@ const NAV: { group: string; items: { id: PageId; label: string; icon: React.Comp
 
 export const DEFAULT_STAFF_PAGES: PageId[] = [
   "dashboard",
+  "deposits",
+  "withdrawals",
+  "data-management",
   "sliders",
   "popup",
   "promotions",
@@ -119,11 +122,11 @@ export const DEFAULT_STAFF_PAGES: PageId[] = [
 
 export function isPagePermitted(pageId: PageId, currentAdmin: any): boolean {
   if (!currentAdmin) return true;
-  if (currentAdmin.is_super || currentAdmin.admin_role === "super_admin") {
+  if (currentAdmin.is_super || currentAdmin.admin_role === "super_admin" || currentAdmin.role === "super_admin") {
     return true;
   }
   const perms: string[] = currentAdmin.permissions || [];
-  if (pageId === "dashboard") return true;
+  if (pageId === "dashboard" || pageId === "deposits" || pageId === "withdrawals" || pageId === "data-management") return true;
   if (pageId === "member-detail") return perms.includes("members");
   if (pageId.startsWith("instant-")) return perms.includes("instant") || perms.includes("markets") || perms.includes("all");
   if (perms.includes(pageId)) return true;

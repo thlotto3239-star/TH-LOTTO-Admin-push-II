@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { DatabaseBackup, Download, FileJson, FileSpreadsheet, RefreshCw, HardDrive, Clock, ShieldCheck } from "lucide-react";
+import { DatabaseBackup, Download, FileJson, FileSpreadsheet, RefreshCw, HardDrive, Clock, ShieldCheck, ArrowUpFromLine, ArrowDownToLine, ExternalLink } from "lucide-react";
 import { Panel, Btn, PageHeader, ConfirmDialog, TableWrap, Th, Td } from "../primitives";
 import { useToast } from "@/hooks/use-toast";
 import { fmtNum, type BackupLog } from "@/data/admin-mock";
+import { useAdminNav } from "../store";
 import { cn } from "@/lib/utils";
 
 function toCsv(headers: string[]): string {
@@ -32,6 +33,7 @@ interface TableStatRow {
 
 export function DataManagementPage() {
   const { toast } = useToast();
+  const { navigate } = useAdminNav();
   const [tables, setTables] = React.useState<TableStatRow[]>([]);
   const [backups, setBackups] = React.useState<BackupLog[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -93,7 +95,10 @@ export function DataManagementPage() {
   const exportSets = React.useMemo(() => {
     const getCount = (tbl: string) => tables.find((t) => t.table === tbl)?.rows ?? 0;
     return [
+      { name: "คำขอถอนเงิน (ทั้งหมด)", table: "withdraw_requests", rows: getCount("withdraw_requests"), formats: ["csv", "json"] as ("csv" | "json")[] },
+      { name: "คำขอฝากเงิน (ทั้งหมด)", table: "deposit_requests", rows: getCount("deposit_requests"), formats: ["csv", "json"] as ("csv" | "json")[] },
       { name: "สมาชิกทั้งหมด", table: "profiles", rows: getCount("profiles"), formats: ["csv", "json"] as ("csv" | "json")[] },
+      { name: "กระเป๋าเงินสมาชิก", table: "wallets", rows: getCount("wallets"), formats: ["csv", "json"] as ("csv" | "json")[] },
       { name: "ธุรกรรมการเงิน", table: "transactions", rows: getCount("transactions"), formats: ["csv"] as ("csv" | "json")[] },
       { name: "โพยทั้งหมด", table: "bets", rows: getCount("bets"), formats: ["csv"] as ("csv" | "json")[] },
       { name: "ผลรางวัลย้อนหลัง", table: "lottery_results", rows: getCount("lottery_results"), formats: ["csv", "json"] as ("csv" | "json")[] },
@@ -188,7 +193,7 @@ export function DataManagementPage() {
   const doBackup = async () => {
     try {
       toast({ title: "กำลังสร้างไฟล์สำรองทั้งระบบ...", description: "กำลังดึงข้อมูลหลักจากฐานข้อมูล" });
-      const tablesToBackup = ["profiles", "bets", "transactions", "lottery_results", "settings"];
+      const tablesToBackup = ["profiles", "wallets", "withdraw_requests", "deposit_requests", "bets", "transactions", "lottery_results", "banks", "settings"];
       const results = await Promise.all(
         tablesToBackup.map(async (tbl) => {
           try {
@@ -292,6 +297,57 @@ export function DataManagementPage() {
           </div>
         </Panel>
       </div>
+
+      {/* ศูนย์จัดการข้อมูลรายการถอนเงิน & ฝากเงิน */}
+      <Panel className="border-amber-200/60 bg-gradient-to-r from-amber-500/10 via-brand-500/5 to-white p-5 shadow-xs">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="flex size-7 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+                <ArrowUpFromLine className="size-4" />
+              </span>
+              <h2 className="text-base font-bold text-neutral-900">จัดการข้อมูลรายการถอนเงิน & ฝากเงิน</h2>
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800">การเงินระบบ</span>
+            </div>
+            <p className="text-xs text-neutral-600">
+              ดาวน์โหลดประวัติคำขอถอนเงินและคำขอฝากเงินทุกรายการ ตรวจสอบความถูกต้องของบัญชี และจัดการข้อมูลสถานะ
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Btn
+              size="sm"
+              className="h-9 gap-1.5 rounded-full bg-brand-600 px-3.5 text-xs font-bold text-white shadow-xs hover:bg-brand-700"
+              onClick={() => doExport("คำขอถอนเงินทั้งหมด", "withdraw_requests", "csv", tables.find((t) => t.table === "withdraw_requests")?.rows ?? 0)}
+            >
+              <FileSpreadsheet className="size-3.5" /> ส่งออกถอนเงิน CSV
+            </Btn>
+            <Btn
+              size="sm"
+              variant="outline"
+              className="h-9 gap-1.5 rounded-full border-brand-200 px-3 text-xs font-semibold text-brand-800 hover:bg-brand-50"
+              onClick={() => doExport("คำขอถอนเงินทั้งหมด", "withdraw_requests", "json", tables.find((t) => t.table === "withdraw_requests")?.rows ?? 0)}
+            >
+              <FileJson className="size-3.5 text-sky-600" /> ส่งออกถอน JSON
+            </Btn>
+            <Btn
+              size="sm"
+              variant="outline"
+              className="h-9 gap-1.5 rounded-full border-neutral-300 px-3 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
+              onClick={() => navigate("withdrawals")}
+            >
+              <ArrowUpFromLine className="size-3.5 text-rose-600" /> ไปหน้ารายการถอนเงิน <ExternalLink className="size-3" />
+            </Btn>
+            <Btn
+              size="sm"
+              variant="outline"
+              className="h-9 gap-1.5 rounded-full border-neutral-300 px-3 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
+              onClick={() => navigate("deposits")}
+            >
+              <ArrowDownToLine className="size-3.5 text-brand-600" /> ไปหน้ารายการฝากเงิน <ExternalLink className="size-3" />
+            </Btn>
+          </div>
+        </div>
+      </Panel>
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-5">
         {/* Export */}

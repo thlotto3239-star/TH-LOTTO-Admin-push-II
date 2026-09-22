@@ -208,6 +208,31 @@ Work Log:
 Stage Summary:
 - ตรวจสอบรายการและโมดูลทั้งหมดในระบบ THLOTTO-II ครบถ้วนตามมาตรฐาน GitHub และข้อกำหนด
 - กำจัดการคิวรีตารางที่ไม่มีอยู่จริงจนหมดสิ้น ข้อมูลทั้งหมดอ้างอิงจากฐานข้อมูลจริง `ygopnjbvccenryejqmlw` 100%
-- เอกสาร VERSION.md, CHANGELOG.md, SYSTEM_BLUEPRINT.md และ worklog.md ถูกอัปเดตตรงกันสมบูรณ์แบบ
-- ผ่านการทดสอบและ Build สำเร็จ 0 Error
+---
+Task ID: 11
+Agent: Antigravity (Advanced Agentic Coding)
+Task: ตรวจสอบและบันทึกสถานะระบบจริง (Withdrawal Flow, Password Reset & Admin Notification), เปิดเซิร์ฟเวอร์พรีวิวทั้งสองฝั่ง และเตรียมพร้อมรับคำสั่ง
 
+Work Log:
+- ตรวจสอบสถานะการเชื่อมต่อฐานข้อมูล Supabase Cloud (`ygopnjbvccenryejqmlw`): เชื่อมต่อสำเร็จ 100%, มี 39 ตารางใน schema public (RLS เปิดครบ), ยืนยันข้อมูลสดของ profiles (145), wallets (145), deposit_requests (31), withdraw_requests (4) ฯลฯ
+- ตรวจสอบฟังก์ชันการแจ้งถอนเงินของสมาชิก (Withdrawal Flow):
+  - สมาชิก (UI Customer/Withdrawal.jsx): ดึงยอดถอนขั้นต่ำจาก settings.min_withdraw, ตรวจสอบ turnover, ยืนยัน PIN 6 หลัก, ตัดเงินแบบ Atomic ใน wallets, บันทึกลง withdraw_requests (pending), transactions (WITHDRAW) และ admin_notifications
+  - แอดมิน (UI Admin/route.ts): ตรวจสอบคำขอ, กดอนุมัติเรียก `admin_service_approve_withdraw`, กดปฏิเสธเรียก `admin_service_reject_withdraw` คืนเงินเข้ากระเป๋าสมาชิกอัตโนมัติ
+- ตรวจสอบฟังก์ชันการรีเซ็ตและเปลี่ยนรหัสผ่าน (Password/PIN):
+  - การเปลี่ยนรหัสผ่านขณะล็อกอิน (ChangePassword.jsx): สมาชิกเปลี่ยน PIN 6 หลัก -> อัปเดต auth.users และ profiles.pin_hash -> ยิงแจ้งเตือนแอดมิน (action: notify_admin_password_change) ลง admin_notifications (แอดมินรับทราบเพื่อตรวจสอบประวัติ ไม่ต้องกดอนุมัติ)
+  - การลืมรหัสผ่าน (ForgotPassword.jsx): สมาชิกกรอกเบอร์โทร + เลขบัญชีธนาคาร -> เรียก Stored Procedure `reset_user_password` (ใน DB ตรวจสอบ PIN 4 หลัก)
+- ตรวจสอบและคงสถานะเซิร์ฟเวอร์พรีวิวทั้งสองฝั่ง:
+  - UI Admin: http://localhost:62991 (PID: 21420, Next.js 16) — สถานะ 200 OK
+  - UI Customer: http://localhost:62992 (PID: 2328, Vite 8) — สถานะ 200 OK
+- บันทึกเอกสารรายละเอียดลง docs/tasks/2026-09-23_audit_and_inspection_log.md ตามมาตรฐาน Rule 3 & 4
+- ตรวจสอบและแก้ไขปัญหาเว็บแอดมิน (UI Admin) โหลดหมุนค้าง:
+  - สาเหตุ: Process เก่า (PID 21420) ค้าง Socket Deadlock จากการรันต่อเนื่องนานกว่า 6 ชั่วโมง (Memory 918 MB) ไม่ส่ง Response Bytes กลับมา
+  - การแก้ไข: ทำการ Force kill process 21420, เคลียร์ .next/cache และรีสตาร์ท Next.js Turbopack ใหม่
+  - ผลลัพธ์: ตอบสนอง HTTP 200 OK ภายใน 388 ms หน้าเว็บแอดมินเปิดได้ทันที ไม่หมุนค้างแล้ว
+- รันเซิร์ฟเวอร์ฝั่งผู้ใช้ (UI Customer) บนพอร์ต 62992 (PID 9540, Vite 8) และสั่งเปิดหน้าเว็บพรีวิวขึ้นบนหน้าจอผู้ใช้พร้อมกันทั้งสองฝั่ง (Admin 62991 + Customer 62992)
+- ทดสอบการตอบสนองพร้อมกัน: ทั้งสองฝั่ง HTTP 200 OK สมบูรณ์ 100%
+
+Stage Summary:
+- เซิร์ฟเวอร์พรีวิวเปิดรันและเด้งเปิดบนเบราว์เซอร์ของผู้ใช้พร้อมกันทั้ง 2 ฝั่ง (Admin 62991 + Customer 62992)
+- บันทึกเอกสารการตรวจสอบประจำวันเสร็จสมบูรณ์
+- สแตนด์บายรอรับคำสั่งแก้ไขจากผู้ใช้ตามลำดับ
