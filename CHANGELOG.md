@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.1.3] - 2026-09-23
+
+### Added
+- **Notification Badge & Bell Synchronized Counter (`UI Admin` & `UI Customer`):**
+  - Synchronized the menu badge counters (e.g. รายการถอนเงิน, รายการฝากเงิน) with the top Bell icon (`NotificationBell`), grounded in unread notifications (`is_read: false`).
+  - Implemented real-time decrementation (e.g. 3 -> 2 -> 1): clicking any unread notification in the Bell dropdown marks it as read, reduces both Bell and category menu badges in real-time, and navigates immediately to the target page.
+  - Added `markRequestRead` action to auto-mark notifications as read when an admin opens the request detail modal or processes a transaction directly from the table.
+  - Linked Supabase Realtime channel on `admin_notifications` and `notifications` across both Admin and Customer applications.
+
+### Changed
+- **Customer Notification Indicator (`UI Customer/src/components/AppHeader.jsx` & `DesktopSidebar.jsx`):**
+  - Updated AppHeader bell and DesktopSidebar navigation to display numerical unread badges with realtime updates.
+  - Enhanced `Notifications.jsx` to navigate to `action_url` and decrement unread counter upon clicking.
+
+## [3.1.2] - 2026-09-23
+
+### Changed
+- **Deposit & Withdrawal Promotion Terms & Approver Flow (`UI Admin/src/components/admin/pages/withdrawals.tsx` & `deposits.tsx`):**
+  - Fixed `DetailModal` to clearly show `ยอดโปรที่ยังค้าง: ไม่มี (ไม่ได้รับโปร)` when members have no active promo, and explicit turnover progress with full terms toggle when active.
+  - Replaced all action button labels and tab text from "โอนแล้ว" to "อนุมัติ".
+  - Passed `admin_id` to PostgreSQL stored procedures (`admin_service_approve_withdraw` / `admin_service_approve_deposit`) and recorded `approved_by` and approver identity.
+
 ## [3.1.1] - 2026-09-22
 
 ### Added
