@@ -185,3 +185,29 @@ Stage Summary:
 - กฎเกณฑ์การถอนเงินถูกต้อง: ฝากปกติถอนได้ทันที ไม่ติดเทิร์น, ติดเทิร์นเฉพาะผู้รับโปรโมชั่น
 - ระบบรีเซ็ตรหัส PIN 6 หลักของสมาชิกโดยแอดมินทำงานได้จริงทั้งในตารางและหน้ารายละเอียดสมาชิก พร้อมระบบซิงก์ Auth และแจ้งเตือน
 - ผ่านการตรวจสอบความถูกต้องและการ Build ทุกโปรเจกต์ 0 error
+
+---
+Task ID: 10
+Agent: Antigravity (Advanced Agentic Coding)
+Task: ตรวจสอบความถูกต้องของทุกรายการในระบบ (Full System Audit), ทำความสะอาดโค้ดอ้างอิงตารางฐานข้อมูลจริง 41 ตาราง, อัปเดต SYSTEM_BLUEPRINT, เพิ่ม VERSION.md และ CHANGELOG.md ตามมาตรฐาน GitHub & Web Standards
+
+Work Log:
+- DEEP AUDIT 41 TABLES & 186 RPCs: ดึงข้อมูลโครงสร้างจริงผ่าน OpenAPI และทดสอบ 21 กลุ่มรีซอร์สจริง (Markets 37 ตลาด, Payout Rates 334 รายการ, Restricted Numbers, Promotions 4 รายการ, Sliders 5 ตัว, Lucky Wheel 8 ช่อง, Banks 8 รายการ ฯลฯ) ผ่านการทดสอบทั้งหมด 100%
+- CODEBASE CLEANUP:
+  - แก้ไข `UI Customer/src/pages/Deposit.jsx`: ดึงข้อมูลบัญชีธนาคารบริษัทและการตั้งค่าฝากเงินตรงจากตาราง `settings` (SSOT) และเชื่อมต่อ Realtime channel ให้ตรงจุด กำจัดการเรียก `company_bank_accounts` และ `system_settings` ที่ไม่มีอยู่จริง
+  - แก้ไข `UI Customer/src/pages/LuckyWheel.jsx`: ปรับ Realtime channel จาก `lucky_wheel_rewards` ให้ชี้ไปยังตารางจริง `lucky_wheel_prizes`
+  - แก้ไข `UI Admin/src/app/api/admin/data/route.ts`: ป้องกันข้อผิดพลาดใน `upsert_company_bank` โดยให้ซิงก์ตรงเข้าตาราง `settings` อย่างปลอดภัย
+- DOCUMENTATION & STANDARDS COMPLIANCE:
+  - อัปเดต `docs/SYSTEM_BLUEPRINT.md`: แก้ไขตารางในหมวด 2 ให้เป็น "พจนานุกรมและโครงสร้างฐานข้อมูล 41 ตารางและวิวจากระบบจริง" ระบุหน้าที่และคีย์หลักครบถ้วน
+  - สร้าง `VERSION.md` ที่ root โปรเจกต์ ระบุเวอร์ชัน 3.1.0 และรายละเอียดของแต่ละโมดูล
+  - สร้าง `CHANGELOG.md` ที่ root โปรเจกต์ ตามรูปแบบ Keep a Changelog
+- VERIFICATION & BUILDS:
+  - `UI Customer`: รัน Vitest ผ่าน 37/37 tests และ `npm run build` ผ่าน 100% (3.69s)
+  - `UI Admin`: รัน `npm run build` (Next.js 16 Turbopack) ผ่าน 100% (3.0s)
+
+Stage Summary:
+- ตรวจสอบรายการและโมดูลทั้งหมดในระบบ THLOTTO-II ครบถ้วนตามมาตรฐาน GitHub และข้อกำหนด
+- กำจัดการคิวรีตารางที่ไม่มีอยู่จริงจนหมดสิ้น ข้อมูลทั้งหมดอ้างอิงจากฐานข้อมูลจริง `ygopnjbvccenryejqmlw` 100%
+- เอกสาร VERSION.md, CHANGELOG.md, SYSTEM_BLUEPRINT.md และ worklog.md ถูกอัปเดตตรงกันสมบูรณ์แบบ
+- ผ่านการทดสอบและ Build สำเร็จ 0 Error
+

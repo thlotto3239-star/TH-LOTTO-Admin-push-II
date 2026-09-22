@@ -58,49 +58,51 @@
 
 ---
 
-## 2. พจนานุกรมและโครงสร้างฐานข้อมูล 39 ตารางจริง (Live Database Data Dictionary)
+## 2. พจนานุกรมและโครงสร้างฐานข้อมูล 41 ตารางและวิวจากระบบจริง (Live Database Data Dictionary)
 
-| # | ชื่อตาราง (Table Name) | หน้าที่และความรับผิดชอบ (Function & Purpose) | คีย์หลัก / Foreign Keys |
+| # | ชื่อตาราง/วิว (Table/View Name) | หน้าที่และความรับผิดชอบ (Function & Purpose) | คีย์หลัก / Foreign Keys |
 |---|---|---|---|
-| 1 | `profiles` | **Single Source of Truth (SSOT)** ข้อมูลสมาชิก, เบอร์โทร, ชื่อนามสกุล, บัญชีธนาคารหลัก (`bank_name`, `bank_account_number`, `bank_account_name`), PIN hash SHA-256 (6 หลัก), ระดับ VIP, สถานะ | `id` (PK), `member_id` (Unique) |
-| 2 | `admin_users` | ข้อมูลแอดมิน, อีเมล, รหัสผ่าน hash, บทบาท (`super_admin`, `staff`), สถานะ | `id` (PK), `email` (Unique) |
-| 3 | `wallets` | กระเป๋าเงินหลัก (`balance`), ยอดคอมมิชชั่น (`commission_balance`), ยอดเทิร์นโอเวอร์ | `id` (PK), `user_id` (FK -> profiles.id) |
-| 4 | `transactions` | ประวัติการเงินทุกประเภท (ฝาก, ถอน, ปรับยอด, คืนเงิน, ได้รางวัล, จ่ายค่าหวย) | `id` (PK), `user_id` (FK), `wallet_id` (FK) |
-| 5 | `deposit_requests` | คำขอฝากเงิน, จำนวนเงิน, สลิปโอนเงิน (`slip_url`), ธนาคารปลายทาง, สถานะ | `id` (PK), `user_id` (FK) |
-| 6 | `withdraw_requests` | คำขอถอนเงิน, จำนวนเงิน, บัญชีผู้รับ, ค่าธรรมเนียม, สถานะ, หมายเหตุแอดมิน | `id` (PK), `user_id` (FK) |
-| 7 | `company_bank_accounts` | บัญชีธนาคารของบริษัทสำหรับรับโอนเงินฝาก, พร้อมสวิตช์เปิด/ปิด (`is_active`) | `id` (PK) |
-| 8 | `financial_settings` | การตั้งค่ายอดฝาก-ถอนขั้นต่ำ/สูงสุด, เงื่อนไขเทิร์นโอเวอร์, ค่าธรรมเนียม | `id` (PK) |
-| 9 | `user_banks` | บัญชีธนาคารที่ผู้เล่นผูกไว้ในระบบเพื่อใช้รับเงินถอน | `id` (PK), `user_id` (FK) |
-| 10 | `lottery_markets` | 37 ตลาดหวย (หวยรัฐบาล, ฮานอย, ลาว, ยี่กี, หุ้น), สถานะเปิด-ปิด, หมวดหมู่ | `id` (PK), `code` (Unique) |
-| 11 | `draw_schedules` | รอบการออกรางวัลของแต่ละตลาด, เวลารับแทง, เวลาปิดรับ, เวลาออกผล | `id` (PK), `market_id` (FK) |
-| 12 | `payout_rates` | อัตราจ่ายเงินรางวัลของแต่ละตลาดและประเภทการแทง (เช่น 3 ตัวตรง = 900) | `id` (PK), `market_id` (FK) |
-| 13 | `restricted_numbers` | รายการเลขอั้น (ไม่รับแทง) และเลขจ่ายครึ่ง (ลดอัตราจ่าย) ประจำงวด | `id` (PK), `market_id` (FK) |
-| 14 | `bets` | โพยกการแทงหวยรอบปกติ/15 นาที, ยอดรวม, ส่วนลด, ยอดจ่ายรางวัล, สถานะ | `id` (PK), `user_id` (FK), `schedule_id` (FK) |
-| 15 | `bet_items` | รายการตัวเลขย่อยในโพย (ตัวเลข, ประเภทการแทง, ราคาแทง, อัตราจ่าย, ผล) | `id` (PK), `bet_id` (FK -> bets.id) |
-| 16 | `instant_bets` | โพยการแทงหวยสปีด 1 นาที พร้อมผลสุ่ม Seed Hash และคำนวณเงินทันที | `id` (PK), `user_id` (FK) |
-| 17 | `lottery_results` | ผลรางวัลที่ออกอย่างเป็นทางการ (3 ตัวบน, 2 ตัวล่าง, 3 ตัวโต๊ด, วิ่งบน/ล่าง) | `id` (PK), `schedule_id` (FK) |
+| 1 | `profiles` | **Single Source of Truth (SSOT)** ข้อมูลสมาชิก, เบอร์โทร, ชื่อนามสกุล, บัญชีธนาคารหลัก (`bank_name`, `bank_account_number`, `bank_account_name`), PIN hash SHA-256 (6 หลัก), สิทธิ์แอดมิน (`is_admin`, `admin_role`, `admin_permissions`), ระดับ VIP, สถานะ | `id` (PK), `member_id` (Unique) |
+| 2 | `wallets` | กระเป๋าเงินหลัก (`balance`), ยอดคอมมิชชั่น (`commission_balance`), ยอดเทิร์นโอเวอร์ (`turnover_required`, `turnover_completed`), โปรโมชั่นที่ใช้งาน (`active_promo_id`) | `id` (PK), `user_id` (FK -> profiles.id) |
+| 3 | `transactions` | ประวัติการเงินทุกประเภท (ฝาก, ถอน, ปรับยอด, คืนเงิน, ได้รางวัล, จ่ายค่าหวย) | `id` (PK), `user_id` (FK), `reference_id` |
+| 4 | `deposit_requests` | คำขอฝากเงิน, จำนวนเงิน, สลิปโอนเงิน (`slip_url`), สถานะ, หมายเหตุแอดมิน, โปรโมชั่น | `id` (PK), `user_id` (FK -> profiles.id) |
+| 5 | `withdraw_requests` | คำขอถอนเงิน, จำนวนเงิน, ข้อมูลบัญชีผู้รับ (`bank_name`, `bank_account_number`, `bank_account_name`), สถานะ, หมายเหตุแอดมิน | `id` (PK), `user_id` (FK -> profiles.id) |
+| 6 | `settings` | **SSOT ตั้งค่าระบบทั้งหมด:** บัญชีธนาคารบริษัท (`company_bank_code`, `company_bank_account_number`, `company_bank_account_name`, `bank_qr_url`), เกณฑ์การเงิน (`min_deposit`, `min_withdraw`, `default_turnover_multiplier`), ป๊อปอัป, LINE Notify, ธีม | `key` (PK) |
+| 7 | `banks` | รายชื่อธนาคารหลักในประเทศไทยที่รองรับ (8 แห่ง) พร้อมโค้ด รูปภาพ และสวิตช์เปิด/ปิด | `id` (PK), `code` (Unique) |
+| 8 | `lottery_markets` | 37 ตลาดหวย (หวยรัฐบาล, ฮานอย, ลาว, ยี่กี, หุ้น), สถานะเปิด-ปิด, หมวดหมู่, กติกา | `id` (PK), `code` (Unique) |
+| 9 | `draw_schedules` | รอบการออกรางวัลของแต่ละตลาด, เวลารับแทง, เวลาปิดรับ, เวลาออกผล, สถานะ | `id` (PK), `market_id` (FK) |
+| 10 | `payout_rates` | อัตราจ่ายเงินรางวัล 334 รายการ สำหรับแต่ละตลาดและประเภทการแทง | `id` (PK), `market` |
+| 11 | `restricted_numbers` | รายการเลขอั้น (ไม่รับแทง) และเลขจ่ายครึ่ง ประจำงวด | `id` (PK), `market_id` (FK) |
+| 12 | `bets` | โพยแทงหวยรอบปกติ/15 นาที, ตัวเลข (`numbers`), ประเภทการแทง, ยอดเงิน, อัตราจ่าย, ยอดรางวัล, สถานะ | `id` (PK), `user_id` (FK), `market_id` (FK) |
+| 13 | `instant_bet_types` | 9 รูปแบบประเภทการแทงหวยสปีด 1 นาที พร้อมอัตราจ่ายและเงื่อนไข | `id` (PK), `code` (Unique) |
+| 14 | `instant_bets` | โพยการแทงหวยสปีด 1 นาที คำนวณผลและจ่ายเงินรางวัลทันที | `id` (PK), `user_id` (FK), `draw_id` (FK) |
+| 15 | `instant_draws` | รอบการออกรางวัลหวยสปีด 1 นาที พร้อมผลสุ่ม 6D และ 2 ตัวล่าง | `id` (PK), `draw_id` (Unique) |
+| 16 | `lottery_results` | ผลรางวัลหวยรอบปกติที่ออกอย่างเป็นทางการ (3 ตัวบน, 2 ตัวล่าง, 3 ตัวหน้า, 3 ตัวล่าง) | `id` (PK), `market_id` (FK) |
+| 17 | `promotions` | รายการโปรโมชั่นหลัก พร้อมโบนัส, ตัวคูณเทิร์นโอเวอร์ (`turnover_multiplier`), เงื่อนไข และรูปภาพ | `id` (PK), `promo_code` |
 | 18 | `sliders` | แบนเนอร์สไลด์หน้าแรก (รูปภาพ Desktop/Mobile, ลิงก์, ลำดับ Priority, สถานะ) | `id` (PK) |
-| 19 | `promotions` | รายการโปรโมชั่น, เงื่อนไขโบนัส, รูปภาพ, รายละเอียด, วันหมดอายุ | `id` (PK) |
-| 20 | `articles` | บทความ ข่าวสาร เคล็ดลับหวยและแนวทางตัวเลข (SEO slug, Rich Content) | `id` (PK), `slug` (Unique) |
-| 21 | `announcements` | ข้อความประกาศตัววิ่ง (Marquee Ticker) และข่าวด่วนหน้าแรก | `id` (PK) |
-| 22 | `lucky_wheel_rewards` | รายการของรางวัลบนวงล้อเสี่ยงโชค (เครดิต, ทองคำ, แต้มสะสม) พร้อมน้ำหนัก Rate | `id` (PK) |
-| 23 | `lucky_wheel_spins` | ประวัติการหมุนวงล้อของผู้เล่น, ของรางวัลที่ได้รับ, วันเวลา | `id` (PK), `user_id` (FK) |
-| 24 | `wheel_rewards` | ตารางสำรอง/คอนฟิกของรางวัลวงล้อหมุน | `id` (PK) |
-| 25 | `spin_history` | บันทึกประวัติการหมุนวงล้อระดับละเอียด | `id` (PK), `user_id` (FK) |
-| 26 | `broadcast_messages` | ข้อความบรอดแคสต์ที่แอดมินส่งหาผู้ใช้ทุกคน (Realtime Notification) | `id` (PK) |
-| 27 | `notifications` | การแจ้งเตือนส่วนบุคคล (ผลหวยออก, เงินเข้า, อนุมัติถอน, สปินฟรี) | `id` (PK), `user_id` (FK) |
-| 28 | `login_attempts` | ประวัติการพยายามล็อกอิน, พิกัดจริง (Client Geo), IP, อุปกรณ์, สถานะสำเร็จ/ล้มเหลว | `id` (PK) |
-| 29 | `login_history` | ประวัติการเข้าใช้งานระบบที่ยืนยันตัวตนสำเร็จแล้ว | `id` (PK), `user_id` (FK) |
-| 30 | `referrals` | ระบบแนะนำเพื่อน (Affiliate), ผู้แนะนำ, ผู้ถูกแนะนำ, รายได้คอมมิชชั่น | `id` (PK), `referrer_id` (FK) |
-| 31 | `system_settings` | การตั้งค่าระดับระบบ (Maintenance Mode, Auto Draw Switch, Popup Modal) | `id` (PK), `key` (Unique) |
-| 32 | `ip_rules` | รายการ IP Blacklist / Whitelist สำหรับป้องกันการโจมตี | `id` (PK), `ip_address` (Unique) |
-| 33 | `vip_tiers` | ตารางระดับขั้น VIP, สิทธิพิเศษ, ยอดเทิร์นสะสม, อัตราคืนคอมมิชชั่น | `id` (PK) |
-| 34 | `user_activity_logs` | Audit Log บันทึกกิจกรรมของผู้เล่นบนระบบ | `id` (PK), `user_id` (FK) |
-| 35 | `admin_audit_logs` | บันทึกประวัติการทำงานของแอดมิน (ใครทำอะไร เมื่อไหร่ ปรับยอดกี่บาท) | `id` (PK), `admin_id` (FK) |
-| 36 | `bank_list` | รายชื่อธนาคารในประเทศไทยที่รองรับพร้อมโลโก้และโค้ด | `id` (PK), `code` (Unique) |
-| 37 | `app_versions` | ข้อมูลเวอร์ชันแอปพลิเคชันและการบังคับอัปเดต | `id` (PK) |
-| 38 | `contact_channels` | ช่องทางการติดต่อฝ่ายบริการลูกค้า (LINE OA, Telegram, Live Chat) | `id` (PK) |
-| 39 | `faqs` | คำถามที่พบบ่อยและคู่มือการใช้งานระบบ | `id` (PK) |
+| 19 | `articles` | บทความ ข่าวสาร เคล็ดลับหวยและแนวทางตัวเลข (SEO slug, Rich Content, หมวดหมู่) | `id` (PK) |
+| 20 | `announcements` | ข้อความประกาศตัววิ่ง (Marquee Ticker) และข่าวด่วนหน้าแรก | `id` (PK) |
+| 21 | `lucky_wheel_prizes` | 8 ช่องของรางวัลบนวงล้อเสี่ยงโชค พร้อมน้ำหนัก Probability %, สี, และจำนวนเงิน | `id` (PK), `slot_index` |
+| 22 | `lucky_wheel_spins` | ประวัติการหมุนวงล้อของผู้เล่นและรางวัลที่ได้รับ | `id` (PK), `user_id` (FK) |
+| 23 | `referrals` | ประวัติการแนะนำเพื่อน, ผู้แนะนำ, ผู้ถูกแนะนำ, โค้ด, สถานะการจ่ายรางวัล | `id` (PK), `referrer_id` (FK) |
+| 24 | `referral_settings` | การตั้งค่าระบบแนะนำเพื่อน อัตราส่วนแบ่ง และยอดฝากขั้นต่ำ | `id` (PK) |
+| 25 | `user_referral_codes` | โค้ดแนะนำเพื่อนของสมาชิกแต่ละคน พร้อมสถิติยอดผู้สมัครและยอดรับรางวัลรวม | `id` (PK), `user_id` (FK) |
+| 26 | `notifications` | การแจ้งเตือนส่วนบุคคล (ผลหวย, เงินเข้า, ถอนสำเร็จ, รีเซ็ต PIN, บรอดแคสต์) | `id` (PK), `user_id` (FK) |
+| 27 | `login_attempts` | ประวัติการเข้าสู่ระบบ บันทึก IP, User Agent, อุปกรณ์, เมือง, ละติจูด, ลองจิจูด สำหรับระบบแผนที่ Geo & Device | `id` (PK), `phone` |
+| 28 | `admin_roles` | บทบาทและกลุ่มสิทธิ์การใช้งานของผู้ดูแลระบบ | `id` (PK), `name` (Unique) |
+| 29 | `admin_permissions` | รายละเอียดสิทธิ์เฉพาะของแอดมินแต่ละคน | `id` (PK), `admin_id` (FK) |
+| 30 | `admin_notifications` | การแจ้งเตือนสำหรับผู้ดูแลระบบ (คำขอฝากใหม่, คำขอถอนใหม่) | `id` (PK) |
+| 31 | `user_suspensions` | บันทึกการระงับการใช้งานบัญชีสมาชิกและสาเหตุ | `id` (PK), `user_id` (FK) |
+| 32 | `trending_items` | รายการตลาดหรือสินค้าที่แสดงในหมวดหมู่นิยมและมาแรง | `id` (PK), `code` |
+| 33 | `backup_logs` | ประวัติการสำรองข้อมูลฐานข้อมูล | `id` (PK) |
+| 34 | `cms_banners` | แบนเนอร์ระบบ CMS | `id` (PK) |
+| 35 | `cms_pages` | หน้าเพจระบบ CMS | `id` (PK), `slug` (Unique) |
+| 36 | `cms_promotions` | โปรโมชั่นระบบ CMS | `id` (PK) |
+| 37 | `cms_faq` | คำถามที่พบบ่อย (FAQs) ในระบบ CMS | `id` (PK) |
+| 38 | `cms_social_media` | ลิงก์โซเชียลมีเดียในระบบ CMS | `id` (PK) |
+| 39 | `cms_testimonials` | รีวิวและความคิดเห็นของผู้ใช้งาน | `id` (PK) |
+| 40 | `v_open_markets` | วิว (Database View) สำหรับดึงตลาดที่กำลังเปิดรับแทงแบบเรียลไทม์ | View |
+| 41 | `v_latest_results` | วิว (Database View) สำหรับดึงผลรางวัลล่าสุดของทุกตลาด | View |
 
 ---
 

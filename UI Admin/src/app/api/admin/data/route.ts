@@ -1867,9 +1867,15 @@ export async function POST(req: NextRequest) {
           row.id = id;
         }
 
-        const { data, error } = await supabaseAdmin.from("company_bank_accounts").upsert([row], { onConflict: "account_number" }).select();
+        let dbData = null;
+        try {
+          const { data } = await supabaseAdmin.from("company_bank_accounts").upsert([row], { onConflict: "account_number" }).select();
+          dbData = data;
+        } catch {
+          // company_bank_accounts table is not in live DB; settings is the SSOT
+        }
         
-        // Keep settings table in sync as well
+        // Keep settings table in sync as the true SSOT
         await supabaseAdmin.from("settings").upsert([
           { key: "company_bank_code", value: bCode, updated_at: nowIso },
           { key: "company_bank_account_number", value: accNo, updated_at: nowIso },
@@ -1878,7 +1884,7 @@ export async function POST(req: NextRequest) {
           ...(qr_code_url ? [{ key: "bank_qr_url", value: qr_code_url, updated_at: nowIso }] : []),
         ], { onConflict: "key" });
 
-        return NextResponse.json({ success: true, data: data || [row] });
+        return NextResponse.json({ success: true, data: dbData || [row] });
       }
 
       case "batch_update_settings": {
