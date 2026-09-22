@@ -220,7 +220,7 @@ function NotificationBell() {
     setOpen(false);
 
     if (n.target_page) {
-      navigate(n.target_page as PageId);
+      navigate(n.target_page as PageId, n.request_id || null);
       toast({
         title: "เปิดหน้าที่เกี่ยวข้อง",
         description: `กำลังนำคุณไปยังหน้า "${PAGE_META[n.target_page as PageId]?.title || n.target_page}"`,
@@ -272,24 +272,33 @@ function NotificationBell() {
                 onClick={() => handleOpenItem(n)}
                 className={cn(
                   "group flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-neutral-50",
-                  !n.read ? "bg-brand-50/40" : "opacity-85"
+                  !n.read ? "bg-amber-50/40" : "opacity-75 hover:opacity-100"
                 )}
               >
                 <span
                   className={cn(
                     "mt-1.5 size-2 shrink-0 rounded-full",
-                    n.type === "warning" ? "bg-amber-400" : n.type === "success" ? "bg-brand-500" : "bg-sky-400",
-                    !n.read && "ring-2 ring-rose-400 ring-offset-1"
+                    !n.read
+                      ? (n.type === "warning" ? "bg-amber-500 shadow-xs" : n.type === "success" ? "bg-emerald-500 shadow-xs" : "bg-sky-500 shadow-xs")
+                      : "bg-neutral-300",
+                    !n.read && "ring-2 ring-amber-400/50 ring-offset-1"
                   )}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <p className={cn("text-xs font-semibold", !n.read ? "text-neutral-900" : "text-neutral-700")}>
-                      {n.title}
-                    </p>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className={cn("text-xs font-semibold truncate", !n.read ? "text-neutral-900" : "text-neutral-600")}>
+                        {n.title}
+                      </p>
+                      {!n.read && (
+                        <span className="rounded bg-rose-100 px-1 py-0.2 text-[9px] font-bold text-rose-600">
+                          ใหม่
+                        </span>
+                      )}
+                    </div>
                     <span className="shrink-0 text-[10px] text-neutral-400">{n.date}</span>
                   </div>
-                  <p className="mt-0.5 line-clamp-2 text-xs text-neutral-500">{n.message}</p>
+                  <p className={cn("mt-0.5 line-clamp-2 text-xs", !n.read ? "text-neutral-700" : "text-neutral-400")}>{n.message}</p>
                   {n.target_page ? (
                     <div className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-brand-600 group-hover:underline">
                       <span>ไปยัง {PAGE_META[n.target_page as PageId]?.title || n.target_page}</span>

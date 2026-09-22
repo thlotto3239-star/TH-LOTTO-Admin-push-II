@@ -61,19 +61,24 @@ export const KNOWN_ADMINS: CurrentAdminProfile[] = [
 interface AdminNavState {
   page: PageId;
   selectedMemberId: string | null;
+  selectedRequestId: string | null;
   currentAdmin: CurrentAdminProfile;
-  navigate: (page: PageId) => void;
+  navigate: (page: PageId, requestId?: string | null) => void;
   openMember: (memberId: string) => void;
+  clearSelectedRequest: () => void;
   setCurrentAdmin: (admin: CurrentAdminProfile) => void;
 }
 
 export const useAdminNav = create<AdminNavState>((set) => ({
   page: "dashboard",
   selectedMemberId: null,
+  selectedRequestId: null,
   currentAdmin: KNOWN_ADMINS[0],
-  navigate: (page) => set({ page, selectedMemberId: null }),
+  navigate: (page, requestId = null) =>
+    set({ page, selectedMemberId: null, selectedRequestId: requestId ?? null }),
   openMember: (memberId) =>
-    set({ page: "member-detail", selectedMemberId: memberId }),
+    set({ page: "member-detail", selectedMemberId: memberId, selectedRequestId: null }),
+  clearSelectedRequest: () => set({ selectedRequestId: null }),
   setCurrentAdmin: (admin) => set({ currentAdmin: admin }),
 }));
 

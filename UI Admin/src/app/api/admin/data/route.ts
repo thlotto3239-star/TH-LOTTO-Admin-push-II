@@ -366,7 +366,7 @@ export async function GET(req: NextRequest) {
           supabaseAdmin.from("admin_notifications").select("*", { count: "exact", head: true }).eq("is_read", false).eq("type", "WITHDRAW"),
           supabaseAdmin.from("admin_notifications").select("*", { count: "exact", head: true }).eq("is_read", false).eq("type", "DEPOSIT"),
           supabaseAdmin.from("admin_notifications").select("*", { count: "exact", head: true }).eq("is_read", false).in("type", ["KYC", "MEMBER", "TURNOVER_COMPLETE"]),
-          supabaseAdmin.from("admin_notifications").select("*").order("created_at", { ascending: false }).limit(30),
+          supabaseAdmin.from("admin_notifications").select("*").order("is_read", { ascending: true }).order("created_at", { ascending: false }).limit(30),
         ]);
 
         const notifications = (rawNotifs || []).map((n) => {

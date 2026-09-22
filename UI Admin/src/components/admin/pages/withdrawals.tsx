@@ -197,7 +197,7 @@ function DetailModal({
 export function WithdrawalsPage() {
   const { toast } = useToast();
   const { fetchCounts, markRequestRead } = useAdminCounts();
-  const { currentAdmin } = useAdminNav();
+  const { currentAdmin, selectedRequestId, clearSelectedRequest } = useAdminNav();
   const [rows, setRows] = React.useState<WithdrawReq[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [tab, setTab] = React.useState("ALL");
@@ -206,9 +206,7 @@ export function WithdrawalsPage() {
 
   const openModal = React.useCallback((req: WithdrawReq, mode: "view" | "approve" | "reject") => {
     setModal({ req, mode });
-    if (req.status === "PENDING") {
-      markRequestRead(req.id, "withdrawals");
-    }
+    markRequestRead(req.id, "withdrawals");
   }, [markRequestRead]);
 
   const fetchWithdrawals = React.useCallback(async () => {
@@ -266,6 +264,18 @@ export function WithdrawalsPage() {
       supabase.removeChannel(channel);
     };
   }, [fetchWithdrawals, fetchCounts]);
+
+  React.useEffect(() => {
+    if (selectedRequestId && rows.length > 0) {
+      const target = rows.find((r) => r.id === selectedRequestId);
+      if (target) {
+        setTab("ALL");
+        setModal({ req: target, mode: "view" });
+        markRequestRead(target.id, "withdrawals");
+        clearSelectedRequest();
+      }
+    }
+  }, [selectedRequestId, rows, markRequestRead, clearSelectedRequest]);
 
   const counts = {
     PENDING: rows.filter((r) => r.status === "PENDING").length,

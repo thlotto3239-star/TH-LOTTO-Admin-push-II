@@ -191,7 +191,7 @@ function ActionModal({
 export function DepositsPage() {
   const { toast } = useToast();
   const { fetchCounts, markRequestRead } = useAdminCounts();
-  const { currentAdmin } = useAdminNav();
+  const { currentAdmin, selectedRequestId, clearSelectedRequest } = useAdminNav();
   const [rows, setRows] = React.useState<DepositReq[]>([]);
   const [tab, setTab] = React.useState("ALL");
   const [q, setQ] = React.useState("");
@@ -200,16 +200,12 @@ export function DepositsPage() {
 
   const openSlip = React.useCallback((req: DepositReq) => {
     setSlip(req);
-    if (req.status === "PENDING") {
-      markRequestRead(req.id, "deposits");
-    }
+    markRequestRead(req.id, "deposits");
   }, [markRequestRead]);
 
   const openAction = React.useCallback((req: DepositReq, mode: "approve" | "reject") => {
     setAction({ req, mode });
-    if (req.status === "PENDING") {
-      markRequestRead(req.id, "deposits");
-    }
+    markRequestRead(req.id, "deposits");
   }, [markRequestRead]);
 
   const fetchDeposits = React.useCallback(async () => {
@@ -264,6 +260,18 @@ export function DepositsPage() {
       supabase.removeChannel(channel);
     };
   }, [fetchDeposits, fetchCounts]);
+
+  React.useEffect(() => {
+    if (selectedRequestId && rows.length > 0) {
+      const target = rows.find((r) => r.id === selectedRequestId);
+      if (target) {
+        setTab("ALL");
+        setSlip(target);
+        markRequestRead(target.id, "deposits");
+        clearSelectedRequest();
+      }
+    }
+  }, [selectedRequestId, rows, markRequestRead, clearSelectedRequest]);
 
   const counts = {
     PENDING: rows.filter((r) => r.status === "PENDING").length,
