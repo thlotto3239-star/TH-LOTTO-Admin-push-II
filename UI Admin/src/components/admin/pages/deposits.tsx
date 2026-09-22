@@ -190,13 +190,27 @@ function ActionModal({
 // ─── Page ────────────────────────────────────────────────────────────────────
 export function DepositsPage() {
   const { toast } = useToast();
-  const { fetchCounts } = useAdminCounts();
+  const { fetchCounts, markRequestRead } = useAdminCounts();
   const { currentAdmin } = useAdminNav();
   const [rows, setRows] = React.useState<DepositReq[]>([]);
   const [tab, setTab] = React.useState("ALL");
   const [q, setQ] = React.useState("");
   const [slip, setSlip] = React.useState<DepositReq | null>(null);
   const [action, setAction] = React.useState<{ req: DepositReq; mode: "approve" | "reject" } | null>(null);
+
+  const openSlip = React.useCallback((req: DepositReq) => {
+    setSlip(req);
+    if (req.status === "PENDING") {
+      markRequestRead(req.id, "deposits");
+    }
+  }, [markRequestRead]);
+
+  const openAction = React.useCallback((req: DepositReq, mode: "approve" | "reject") => {
+    setAction({ req, mode });
+    if (req.status === "PENDING") {
+      markRequestRead(req.id, "deposits");
+    }
+  }, [markRequestRead]);
 
   const fetchDeposits = React.useCallback(async () => {
     try {
@@ -459,7 +473,7 @@ export function DepositsPage() {
                         size="sm"
                         className="h-8 gap-1 rounded-full px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-100"
                         title="ดูสลิปการโอนเงิน"
-                        onClick={() => setSlip(r)}
+                        onClick={() => openSlip(r)}
                       >
                         <Eye className="size-3.5 text-brand-600" /> สลิป
                       </Btn>
@@ -469,7 +483,7 @@ export function DepositsPage() {
                             size="sm"
                             className="h-8 gap-1 rounded-full bg-emerald-600 px-3 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
                             title="อนุมัติรายการฝากเงินเข้ากระเป๋าสมาชิก"
-                            onClick={() => setAction({ req: r, mode: "approve" })}
+                            onClick={() => openAction(r, "approve")}
                           >
                             <Check className="size-3.5" /> อนุมัติ
                           </Btn>
@@ -478,7 +492,7 @@ export function DepositsPage() {
                             variant="outline"
                             className="h-8 gap-1 rounded-full border-rose-200 px-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50"
                             title="ปฏิเสธรายการฝาก"
-                            onClick={() => setAction({ req: r, mode: "reject" })}
+                            onClick={() => openAction(r, "reject")}
                           >
                             <X className="size-3.5" /> ปฏิเสธ
                           </Btn>

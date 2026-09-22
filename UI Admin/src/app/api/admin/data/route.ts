@@ -353,6 +353,9 @@ export async function GET(req: NextRequest) {
           { count: pendingKyc },
           { count: pendingResults },
           { count: unreadNotifs },
+          { count: unreadWthCount },
+          { count: unreadDepCount },
+          { count: unreadKycCount },
           { data: rawNotifs },
         ] = await Promise.all([
           supabaseAdmin.from("deposit_requests").select("*", { count: "exact", head: true }).in("status", ["PENDING", "pending"]),
@@ -360,30 +363,38 @@ export async function GET(req: NextRequest) {
           supabaseAdmin.from("profiles").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
           supabaseAdmin.from("draw_schedules").select("*", { count: "exact", head: true }).eq("status", "UPCOMING"),
           supabaseAdmin.from("admin_notifications").select("*", { count: "exact", head: true }).eq("is_read", false),
-          supabaseAdmin.from("admin_notifications").select("*").order("created_at", { ascending: false }).limit(20),
+          supabaseAdmin.from("admin_notifications").select("*", { count: "exact", head: true }).eq("is_read", false).eq("type", "WITHDRAW"),
+          supabaseAdmin.from("admin_notifications").select("*", { count: "exact", head: true }).eq("is_read", false).eq("type", "DEPOSIT"),
+          supabaseAdmin.from("admin_notifications").select("*", { count: "exact", head: true }).eq("is_read", false).in("type", ["KYC", "MEMBER", "TURNOVER_COMPLETE"]),
+          supabaseAdmin.from("admin_notifications").select("*").order("created_at", { ascending: false }).limit(30),
         ]);
 
         const notifications = (rawNotifs || []).map((n) => {
           let title = "การแจ้งเตือนระบบ";
           let type: "info" | "warning" | "success" = "info";
           let target_page: string | undefined = undefined;
+          let category: "withdrawals" | "deposits" | "members" | "results" | "general" = "general";
 
           if (n.type === "DEPOSIT") {
             title = "รายการฝากเงิน";
             type = "warning";
             target_page = "deposits";
+            category = "deposits";
           } else if (n.type === "WITHDRAW") {
             title = "รายการถอนเงิน";
             type = "warning";
             target_page = "withdrawals";
-          } else if (n.type === "TURNOVER_COMPLETE") {
-            title = "สมาชิกทำเทิร์นครบ";
+            category = "withdrawals";
+          } else if (n.type === "TURNOVER_COMPLETE" || n.type === "MEMBER" || n.type === "KYC") {
+            title = n.type === "TURNOVER_COMPLETE" ? "สมาชิกทำเทิร์นครบ" : "ข้อมูลสมาชิก";
             type = "success";
             target_page = "members";
+            category = "members";
           } else if (n.type === "LOTTERY_RESULT") {
             title = "ผลรางวัลออกแล้ว";
             type = "success";
             target_page = "results";
+            category = "results";
           }
 
           if (n.link_url) {
@@ -401,17 +412,21 @@ export async function GET(req: NextRequest) {
             date: timeStr,
             read: Boolean(n.is_read),
             target_page,
+            category,
+            request_id: n.metadata?.request_id || null,
           };
         });
 
+        // The badge for withdrawals, deposits, members and results represents unread items
+        // which matches the unread notifications shown on the Bell icon
         return NextResponse.json({
           success: true,
           data: {
-            dep: pendingDeposits || 0,
-            wth: pendingWithdrawals || 0,
-            kyc: pendingKyc || 0,
-            res: pendingResults || 0,
-            unread_notifications: unreadNotifs || 0,
+            dep: unreadDepCount ?? 0,
+            wth: unreadWthCount ?? 0,
+            kyc: unreadKycCount ?? 0,
+            res: pendingResults ?? 0,
+            unread_notifications: unreadNotifs ?? 0,
             notifications,
           },
         });
@@ -1814,6 +1829,16 @@ export async function POST(req: NextRequest) {
 
       case "update_deposit": {
         const { id, status, admin_note, admin_id } = payload;
+
+        // Auto-mark corresponding admin notification as read
+        try {
+          await supabaseAdmin
+            .from("admin_notifications")
+            .update({ is_read: true })
+            .contains("metadata", { request_id: id });
+        } catch (notifSyncErr) {
+          console.warn("Failed to mark admin notification read for deposit:", notifSyncErr);
+        }
         
         // Fetch deposit details to get user_id & amount for realtime notification
         const { data: depRow } = await supabaseAdmin
@@ -2091,6 +2116,16 @@ export async function POST(req: NextRequest) {
 
       case "update_withdrawal": {
         const { id, status, admin_note, admin_id } = payload;
+
+        // Auto-mark corresponding admin notification as read
+        try {
+          await supabaseAdmin
+            .from("admin_notifications")
+            .update({ is_read: true })
+            .contains("metadata", { request_id: id });
+        } catch (notifSyncErr) {
+          console.warn("Failed to mark admin notification read for withdrawal:", notifSyncErr);
+        }
 
         // Fetch withdrawal details to get user_id & amount for realtime notification
         const { data: withRow } = await supabaseAdmin
@@ -2456,6 +2491,17 @@ export async function POST(req: NextRequest) {
           .select();
         if (error) throw error;
         return NextResponse.json({ success: true, data });
+      }
+
+      case "mark_request_read": {
+        const { request_id } = payload;
+        if (request_id) {
+          await supabaseAdmin
+            .from("admin_notifications")
+            .update({ is_read: true })
+            .contains("metadata", { request_id });
+        }
+        return NextResponse.json({ success: true });
       }
 
       case "mark_all_notifications_read": {

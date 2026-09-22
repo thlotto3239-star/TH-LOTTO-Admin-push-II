@@ -41,6 +41,7 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import { useAdminCounts, type AdminNotificationItem } from "./store";
+import { supabase } from "@/lib/supabase";
 
 // ─── Navigation (19 หน้าตามเช็คลิสต์เมนูเต็ม) ─────────────────────────────────
 const NAV: { group: string; items: { id: PageId; label: string; icon: React.ComponentType<{ className?: string }>; badge?: (n: { dep: number; wth: number; kyc: number; res: number }) => number }[] }[] = [
@@ -389,6 +390,14 @@ export function AdminApp({ onLogout }: { onLogout?: () => void } = {}) {
     fetchCounts();
     const timer = setInterval(fetchCounts, 15000);
 
+    // Realtime notifications sync
+    const notifChannel = supabase
+      .channel("realtime:admin_notifications_app")
+      .on("postgres_changes", { event: "*", schema: "public", table: "admin_notifications" }, () => {
+        fetchCounts();
+      })
+      .subscribe();
+
     // Auto-sync real results from ThaiLottoAPI & schedule settlements
     const syncResults = async () => {
       try {
@@ -417,6 +426,7 @@ export function AdminApp({ onLogout }: { onLogout?: () => void } = {}) {
       clearInterval(timer);
       clearInterval(syncTimer);
       clearInterval(heartbeatTimer);
+      supabase.removeChannel(notifChannel);
     };
   }, [fetchCounts, currentAdmin?.id]);
 

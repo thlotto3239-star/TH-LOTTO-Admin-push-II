@@ -196,13 +196,20 @@ function DetailModal({
 
 export function WithdrawalsPage() {
   const { toast } = useToast();
-  const { fetchCounts } = useAdminCounts();
+  const { fetchCounts, markRequestRead } = useAdminCounts();
   const { currentAdmin } = useAdminNav();
   const [rows, setRows] = React.useState<WithdrawReq[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [tab, setTab] = React.useState("ALL");
   const [q, setQ] = React.useState("");
   const [modal, setModal] = React.useState<{ req: WithdrawReq; mode: "view" | "approve" | "reject" } | null>(null);
+
+  const openModal = React.useCallback((req: WithdrawReq, mode: "view" | "approve" | "reject") => {
+    setModal({ req, mode });
+    if (req.status === "PENDING") {
+      markRequestRead(req.id, "withdrawals");
+    }
+  }, [markRequestRead]);
 
   const fetchWithdrawals = React.useCallback(async () => {
     try {
@@ -462,7 +469,7 @@ export function WithdrawalsPage() {
                             size="sm"
                             className="h-8 gap-1.5 rounded-full bg-emerald-600 px-3 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
                             title="กดอนุมัติคำขอถอนเงินให้สมาชิก"
-                            onClick={() => setModal({ req: r, mode: "approve" })}
+                            onClick={() => openModal(r, "approve")}
                           >
                             <Check className="size-3.5" /> อนุมัติ
                           </Btn>
@@ -471,7 +478,7 @@ export function WithdrawalsPage() {
                             variant="outline"
                             className="h-8 gap-1 rounded-full border-rose-200 px-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50"
                             title="ปฏิเสธคำขอถอนเงินและคืนเครดิต"
-                            onClick={() => setModal({ req: r, mode: "reject" })}
+                            onClick={() => openModal(r, "reject")}
                           >
                             <X className="size-3.5" /> ปฏิเสธ
                           </Btn>
@@ -480,7 +487,7 @@ export function WithdrawalsPage() {
                             variant="ghost"
                             className="h-8 gap-1 rounded-full px-2 text-xs text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
                             title="ดูรายละเอียดบัญชีและข้อมูลสมาชิก"
-                            onClick={() => setModal({ req: r, mode: "view" })}
+                            onClick={() => openModal(r, "view")}
                           >
                             <Copy className="size-3.5" /> บัญชี
                           </Btn>
@@ -491,7 +498,7 @@ export function WithdrawalsPage() {
                           size="sm"
                           className="h-8 gap-1.5 rounded-full px-3 text-xs font-medium text-neutral-700 hover:bg-neutral-100"
                           title="ดูรายละเอียดการทำรายการ"
-                          onClick={() => setModal({ req: r, mode: "view" })}
+                          onClick={() => openModal(r, "view")}
                         >
                           <Copy className="size-3.5" /> ดูข้อมูล
                         </Btn>
