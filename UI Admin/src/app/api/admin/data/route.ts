@@ -451,7 +451,6 @@ export async function GET(req: NextRequest) {
             status,
             admin_note,
             created_at,
-            updated_at,
             promo_code,
             approved_by,
             approved_at,
@@ -480,7 +479,6 @@ export async function GET(req: NextRequest) {
             status,
             admin_note,
             created_at,
-            updated_at,
             approved_by,
             approved_at,
             profiles!withdraw_requests_profile_fkey (
@@ -505,22 +503,18 @@ export async function GET(req: NextRequest) {
             .select(`
               id,
               member_id,
+              username,
               full_name,
               phone,
               vip_level,
-              bank_name,
-              bank_account_number,
-              bank_account_name,
+              status,
               avatar_url,
               is_admin,
               admin_role,
-              status,
               created_at,
-              last_seen_at,
-              last_login_at,
-              last_login_ip,
-              last_login_device,
-              last_login_city,
+              bank_name,
+              bank_account_number,
+              bank_account_name,
               wallets (
                 balance,
                 commission_balance
@@ -545,8 +539,12 @@ export async function GET(req: NextRequest) {
 
         const enriched = (data || []).map((p: any) => {
           const stats = betAgg.get(p.id) || { total_bets: 0, total_won: 0 };
+          const wallet = Array.isArray(p.wallets) ? p.wallets[0] : p.wallets;
           return {
             ...p,
+            bank_code: p.bank_name || null,
+            balance: Number(wallet?.balance || 0),
+            commission_balance: Number(wallet?.commission_balance || 0),
             total_bets: stats.total_bets,
             total_won: stats.total_won,
           };
@@ -1628,6 +1626,65 @@ export async function POST(req: NextRequest) {
         }
 
         return NextResponse.json({ success: true, data: updWallet });
+      }
+
+      case "reset_member_pin": {
+        const { user_id, new_pin } = payload || {};
+        if (!user_id || !new_pin) {
+          return NextResponse.json({ success: false, error: "กรุณาระบุ ID สมาชิกและรหัส PIN ใหม่" }, { status: 400 });
+        }
+        const cleanPin = String(new_pin).trim();
+        if (!/^[0-9]{6}$/.test(cleanPin)) {
+          return NextResponse.json({ success: false, error: "รหัส PIN ต้องเป็นตัวเลข 6 หลักเท่านั้น" }, { status: 400 });
+        }
+
+        const { data: userProf, error: profErr } = await supabaseAdmin
+          .from("profiles")
+          .select("id, phone, full_name, member_id")
+          .eq("id", user_id)
+          .single();
+
+        if (profErr || !userProf) {
+          return NextResponse.json({ success: false, error: "ไม่พบข้อมูลสมาชิกในระบบ" }, { status: 404 });
+        }
+
+        const pPhone = userProf.phone || "";
+        const pHash = hashPin(pPhone, cleanPin);
+
+        const { data: updatedProf, error: updErr } = await supabaseAdmin
+          .from("profiles")
+          .update({
+            pin_hash: pHash,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", user_id)
+          .select()
+          .single();
+
+        if (updErr) throw updErr;
+
+        await supabaseAdmin.auth.admin.updateUserById(user_id, { password: cleanPin }).catch(() => {});
+
+        const { error: notifErr } = await supabaseAdmin.from("notifications").insert([{
+          user_id,
+          type: "SYSTEM",
+          title: "🔒 รหัส PIN 6 หลักได้รับการรีเซ็ต",
+          body: `เจ้าหน้าที่ผู้ดูแลระบบได้ทำการรีเซ็ตรหัส PIN 6 หลักใหม่ให้คุณเรียบร้อยแล้ว: ${cleanPin} กรุณาเข้าสู่ระบบและเปลี่ยนรหัสผ่านเพื่อความปลอดภัย`,
+          data: {
+            is_popup: true,
+            action_url: "/change-password",
+          },
+          is_read: false,
+        }]);
+        if (notifErr) console.error("Failed to insert reset pin notification:", notifErr);
+
+        return NextResponse.json({
+          success: true,
+          message: "รีเซ็ตรหัส PIN 6 หลักสำเร็จ",
+          pin: cleanPin,
+          member_id: userProf.member_id,
+          member_name: userProf.full_name,
+        });
       }
 
       case "record_result": {

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowLeft, Phone, CalendarDays, Wallet, Dices, Trophy, Gem, Landmark, Copy, Check, Loader2, Plus, Minus } from "lucide-react";
+import { ArrowLeft, Phone, CalendarDays, Wallet, Dices, Trophy, Gem, Landmark, Copy, Check, Loader2, Plus, Minus, KeyRound } from "lucide-react";
 import { Panel, Btn, StatusBadge, BankBadge, Avatar, TableWrap, Th, Td, EmptyState, Field, inputCls } from "../primitives";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -81,12 +81,125 @@ function WalletModal({ member, onClose, onAdjust }: { member: Member; onClose: (
   );
 }
 
+function ResetPinModal({ member, onClose, onSuccess }: { member: Member; onClose: () => void; onSuccess: () => void }) {
+  const [pin, setPin] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
+  const { toast } = useToast();
+
+  const handleGenerateRandom = () => {
+    const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
+    setPin(randomPin);
+    setCopied(false);
+  };
+
+  const handleCopy = () => {
+    if (!pin) return;
+    navigator.clipboard.writeText(pin);
+    setCopied(true);
+    toast({ title: "คัดลอก PIN แล้ว", description: `คัดลอกรหัส ${pin} ไปยังคลิปบอร์ดแล้ว` });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!/^[0-9]{6}$/.test(pin)) {
+      toast({ title: "รูปแบบไม่ถูกต้อง", description: "รหัส PIN ต้องเป็นตัวเลข 6 หลักเท่านั้น", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reset_member_pin",
+          payload: { user_id: member.id, new_pin: pin },
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast({
+          title: "รีเซ็ตรหัส PIN สำเร็จ",
+          description: `เปลี่ยนรหัส PIN 6 หลักของ ${member.full_name} เป็น "${pin}" เรียบร้อยแล้ว`,
+        });
+        onSuccess();
+        onClose();
+      } else {
+        toast({ title: "รีเซ็ตล้มเหลว", description: json.error, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "เชื่อมต่อล้มเหลว", description: e.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md rounded-3xl p-6">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+            <KeyRound className="size-5 text-amber-600" />
+            รีเซ็ตรหัสผ่าน / PIN 6 หลัก
+          </DialogTitle>
+          <DialogDescription>
+            กำหนดรหัส PIN 6 หลักใหม่สำหรับสมาชิก <strong>{member.full_name}</strong> ({member.member_id})
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-neutral-600">รหัส PIN 6 หลักใหม่</label>
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                maxLength={6}
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+                placeholder="เช่น 123456"
+                className="font-mono text-center text-lg font-bold tracking-widest"
+                autoFocus
+              />
+              <Btn type="button" variant="outline" onClick={handleGenerateRandom} className="whitespace-nowrap">
+                สุ่มเลข
+              </Btn>
+            </div>
+            <p className="text-[11px] text-neutral-400">ต้องเป็นตัวเลข 6 หลัก (ใช้สำหรับเข้าสู่ระบบและยืนยันการถอนเงิน)</p>
+          </div>
+
+          {pin.length === 6 && (
+            <div className="flex items-center justify-between rounded-2xl bg-amber-50/70 p-3 border border-amber-200 text-xs">
+              <span className="text-amber-900 font-medium">PIN ที่จะตั้ง: <strong className="font-mono text-base">{pin}</strong></span>
+              <Btn type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={handleCopy}>
+                {copied ? <Check className="size-3.5 mr-1 text-emerald-600" /> : <Copy className="size-3.5 mr-1" />}
+                {copied ? "คัดลอกแล้ว" : "คัดลอก"}
+              </Btn>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-neutral-100">
+            <Btn type="button" variant="outline" onClick={onClose} disabled={loading}>
+              ยกเลิก
+            </Btn>
+            <Btn type="submit" className="bg-amber-600 hover:bg-amber-700 text-white" disabled={loading || pin.length !== 6}>
+              {loading ? <Loader2 className="size-4 animate-spin mr-1.5" /> : <Check className="size-4 mr-1.5" />}
+              ยืนยันตั้งรหัส PIN ใหม่
+            </Btn>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function MemberDetailPage() {
   const { selectedMemberId, navigate } = useAdminNav();
   const { toast } = useToast();
   const [copied, setCopied] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [adjustWalletOpen, setAdjustWalletOpen] = React.useState(false);
+  const [resetPinOpen, setResetPinOpen] = React.useState(false);
   const [data, setData] = React.useState<{
     profile: any;
     wallet: any;
@@ -284,6 +397,14 @@ export function MemberDetailPage() {
                   onClick={() => setAdjustWalletOpen(true)}
                 >
                   <Wallet className="size-3.5 mr-1" /> ปรับยอดกระเป๋า
+                </Btn>
+                <Btn
+                  size="sm"
+                  variant="outline"
+                  className="h-7 rounded-full text-xs text-amber-700 border-amber-200 hover:bg-amber-50"
+                  onClick={() => setResetPinOpen(true)}
+                >
+                  <KeyRound className="size-3.5 mr-1" /> รีเซ็ต PIN 6 หลัก
                 </Btn>
               </div>
             </div>
@@ -623,6 +744,14 @@ export function MemberDetailPage() {
           member={member}
           onClose={() => setAdjustWalletOpen(false)}
           onAdjust={handleAdjustWallet}
+        />
+      ) : null}
+
+      {resetPinOpen ? (
+        <ResetPinModal
+          member={member}
+          onClose={() => setResetPinOpen(false)}
+          onSuccess={() => fetchDetail(member.id)}
         />
       ) : null}
     </div>

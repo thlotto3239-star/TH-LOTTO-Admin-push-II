@@ -154,3 +154,34 @@ Stage Summary:
 - ฟอนต์ Prompt ทั้งแอป (TTF อัปโหลดเป็นฐาน + Google weights), favicon = โลโก้จริง
 - ไม่มีข้อความตกบรรทัด/ล้นทั้งเดสก์ท็อปและมือถือ 375px (ตารางกว้างใช้ scroll แนวนอนตาม pattern เดิม)
 - ภาพหลักฐาน: download/thai-{dash,deposits,broadcast,appearance,wheel,members,markets}.png
+
+---
+Task ID: 9
+Agent: Antigravity (Advanced Agentic Coding)
+Task: ปรับแต่งและเชื่อมต่อข้อมูลจริง Supabase SSOT (`ygopnjbvccenryejqmlw`), ตรวจสอบระบบฝาก/ถอน/เทิร์นโอเวอร์ และเพิ่มระบบรีเซ็ตรหัส PIN 6 หลักของสมาชิกโดยแอดมิน
+
+Work Log:
+- AUDIT LIVE DATABASE (`ygopnjbvccenryejqmlw`): ตรวจสอบโครงสร้างจริง 41 ตาราง และ 186 RPCs จาก live database ผ่าน Supabase REST API & Service Role Key
+- TURNOVER GOVERNANCE: ตรวจสอบการตั้งค่าใน `settings` (`default_turnover_multiplier = "0"`) และใน `wallets` มีเพียง 20 บัญชีที่ติดเทิร์นเนื่องจากรับโปรโมชั่นสมัครใหม่ (`active_promo_id: 10`) ส่วนผู้ใช้ที่ฝากเงินปกติมี `turnover_required = 0` (ไม่ติดเทิร์น สามารถถอนได้ทันที 100%)
+- UI CUSTOMER FIX (`Withdrawal.jsx`):
+  - แมปข้อมูลบัญชีธนาคารจาก `userProfile.bank_name` และ `userProfile.bank_account_number` แสดงผลผ่าน `BankBadge` (ตรงตาม `profiles` SSOT)
+  - ดึงการตั้งค่าการเงินจาก `settings` และตรวจสอบสถานะโปรโมชั่น/เทิร์นโอเวอร์จาก `wallets` จริง
+  - ปลดล็อกให้ผู้ใช้ที่ฝากเงินปกติไม่ติดเงื่อนไขเทิร์นโอเวอร์ สามารถทำรายการถอนเงินได้ทันที
+- UI ADMIN API & DATA ENGINE (`route.ts`):
+  - กู้คืน Foreign Key Embeddings ในการ JOIN: `profiles!deposit_requests_profile_fkey` และ `profiles!withdraw_requests_profile_fkey` ป้องกัน 500 error จาก PostgREST ambiguity
+  - กู้คืนการดึงข้อมูล `members` ให้ตรงกับฟิลด์จริงของ `profiles` และ `wallets` (ลบฟิลด์สมมุติ `serial_number`, `tenant_id`, `is_blocked`)
+  - เพิ่ม Action `reset_member_pin`: ตรวจสอบรหัส PIN 6 หลัก (`/^[0-9]{6}$/`), คำนวณ SHA-256 Hash (`pin + phone`), อัปเดต `profiles.pin_hash`, ซิงก์รหัสผ่านใหม่เข้า GoTrue Auth ด้วย `supabaseAdmin.auth.admin.updateUserById`, และยิง In-App Notification แจ้งเตือนสมาชิก
+- UI ADMIN PAGES (`members.tsx` & `member-detail.tsx`):
+  - เพิ่มปุ่มรีเซ็ต PIN 6 หลัก (`KeyRound`) ในตารางสมาชิก และในหัวการ์ดหน้ารายละเอียดสมาชิก
+  - เพิ่มโมดัล `ResetPinModal` พร้อมปุ่มสุ่มตัวเลข 6 หลัก (Randomizer), ปุ่มคัดลอก PIN ไปยังคลิปบอร์ด, และส่งคำขอรีเซ็ตไปยัง API
+- SYSTEM BLUEPRINT & STANDARDS:
+  - อัปเดต `docs/SYSTEM_BLUEPRINT.md` ข้อ 5.2 มาตรฐานความปลอดภัยและกลไกการรีเซ็ต PIN 6 หลักโดยแอดมิน
+- VERIFICATION & BUILDS:
+  - `UI Customer`: ผ่านการทดสอบ Vitest ทั้งหมด 37/37 tests และ `npm run build` ผ่าน 100% (exit code 0, 5.83s)
+  - `UI Admin`: `npm run build` (Next.js 16 Turbopack) ผ่าน 100% ทุก static pages & API routes (exit code 0, 14.9s)
+
+Stage Summary:
+- การเชื่อมต่อข้อมูลจริง Supabase SSOT ทำงานได้ 100% ปราศจากการสมมุติโครงสร้าง
+- กฎเกณฑ์การถอนเงินถูกต้อง: ฝากปกติถอนได้ทันที ไม่ติดเทิร์น, ติดเทิร์นเฉพาะผู้รับโปรโมชั่น
+- ระบบรีเซ็ตรหัส PIN 6 หลักของสมาชิกโดยแอดมินทำงานได้จริงทั้งในตารางและหน้ารายละเอียดสมาชิก พร้อมระบบซิงก์ Auth และแจ้งเตือน
+- ผ่านการตรวจสอบความถูกต้องและการ Build ทุกโปรเจกต์ 0 error
