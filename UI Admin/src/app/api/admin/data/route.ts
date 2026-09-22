@@ -1631,6 +1631,28 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      case "notify_admin_password_change": {
+        const { user_id, phone, full_name, member_id } = payload || {};
+        try {
+          await supabaseAdmin.from("admin_notifications").insert({
+            type: "MEMBER",
+            message: `สมาชิก ${full_name || phone} (${member_id || phone || "ไม่ระบุรหัส"}) ได้เปลี่ยนรหัสผ่านใหม่เรียบร้อยแล้ว`,
+            link_url: "/members",
+            metadata: {
+              user_id: user_id || null,
+              phone: phone || null,
+              action: "PASSWORD_CHANGED",
+              changed_at: new Date().toISOString(),
+            },
+            is_read: false,
+            created_at: new Date().toISOString(),
+          });
+        } catch (notifErr) {
+          console.warn("[Password Change Notification Skipped]:", notifErr);
+        }
+        return NextResponse.json({ success: true }, { headers: corsHeaders });
+      }
+
       case "update_deposit": {
         const { id, status, admin_note } = payload;
         
