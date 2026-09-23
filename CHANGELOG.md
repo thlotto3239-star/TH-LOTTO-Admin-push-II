@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.1.4] - 2026-09-23
+
+### Added
+- **Unified 6-Digit PIN Standard Across Customer & Admin UI:**
+  - Standardized customer PIN to strictly 6 numerical digits across all authentication and profile flows (`Login.jsx`, `Register.jsx`, `ForgotPassword.jsx`, `ChangePassword.jsx`, `EditProfile.jsx`, `Support.jsx`, `Withdrawal.jsx`).
+  - Added direct admin PIN view, randomizer, and password update within `EditModal` on Admin UI (`members.tsx`, `member-detail.tsx`, `admins.tsx`, `login.tsx`), updating both Supabase Auth and `profiles.pin_hash`.
+  - Stored Procedure `reset_user_password` verified on Supabase to strictly enforce 6-digit regex validation (`^\d{6}$`).
+- **Authorized Test Accounts Registration (`docs/conversation_notes.md`):**
+  - Documented Admin Test Account (`0622306037` / PIN: `020257`) with `super_admin` permissions.
+  - Documented Customer Member Test Account (`0622306699` / PIN: `020257`), synchronized with Supabase Auth, bcrypt encrypted password, and email identity provider.
+
+### Changed
+- **Withdrawal & Deposit Action Buttons Normalization (`UI Admin/src/components/admin/pages/withdrawals.tsx` & `deposits.tsx`):**
+  - Updated action buttons for PENDING transactions to `[✓ อนุมัติ]` (emerald) and `[✕ ปฏิเสธ]` (rose).
+  - Normalized transaction status checks using `.toUpperCase()` to seamlessly support both `PENDING` and `pending` DB states.
+  - Enhanced detail modal to show promotion terms and approver identity directly.
+
 ## [3.1.3] - 2026-09-23
 
 ### Added
