@@ -32,7 +32,7 @@
 | Remote Name | GitHub Repo | Default Branch | Vercel Deploy URL | หมายเหตุ |
 |-------------|-------------|---------------|-------------------|----------|
 | `admin-deploy` | `TH-LOTTO-Admin-push-II` | `main` | `th-lotto-admin-push-ii.vercel.app` | Blueprint canonical |
-| `old-admin` | `TH-LOTTO-Admin-push` | **`master`** ⚠️ | `th-lotto-admin-push-ten.vercel.app` | ใช้งานจริงปัจจุบัน — **ต้อง push main:master** |
+| `old-admin` | `TH-LOTTO-Admin-push` | **`main` / `master`** ⚠️ | `th-lotto-admin-push-ten.vercel.app` | ใช้งานจริงปัจจุบัน — **ต้อง subtree split โฟลเดอร์ `UI Admin` ไปที่ root** |
 | `core-origin` | `thlotto-core` | `main` | - | Core backup |
 | `origin` | `THLOTTO-II` | `main` | - | Root monorepo |
 
@@ -42,9 +42,17 @@
 | `origin` | `thlotto-premium` | `main` | `lotto-th-customer.vercel.app` | Customer production |
 | `new-origin` | `thlotto-app-user` | `main` | - | Customer backup |
 
-### 🚨 กฎบังคับสำหรับ Git Push
-1. **ก่อน push ทุกครั้ง** ต้องเช็ค default branch ของ remote ด้วย `git ls-remote <remote> HEAD` และ `git remote show <remote>`
-2. **old-admin ใช้ `master`** — ต้อง push ด้วย `git push old-admin main:master`
-3. **หลัง push ทุกครั้ง** ต้องยืนยันด้วย `git ls-remote <remote> HEAD` ว่า commit hash ตรงกับ local
-4. **ห้ามสมมุติว่าทุก remote ใช้ `main`** — ต้องตรวจสอบจริงเสมอ
+### 🚨 กฎบังคับสำหรับ Git Push และ Vercel Deploy
+1. **โครงสร้างของ `old-admin` (`TH-LOTTO-Admin-push`):**
+   - Vercel ของโปรเจกต์ `th-lotto-admin-push` มี `rootDirectory: null` (รันจาก root ของ repo)
+   - ห้าม push ทั้ง monorepo ที่มีโฟลเดอร์ `UI Admin` ไปที่ `old-admin` เด็ดขาด เพราะ Vercel ไม่ยอมรับชื่อฟังก์ชัน serverless ที่มีช่องว่าง (`UI Admin/...`)
+   - **ขั้นตอนการ deploy ขึ้น `old-admin`:**
+     ```bash
+     git subtree split --prefix="UI Admin" -b deploy-admin-latest
+     git push old-admin deploy-admin-latest:main --force
+     git push old-admin deploy-admin-latest:master --force
+     ```
+2. **ก่อนและหลัง push ทุกครั้ง:**
+   - เช็คสถานะการ build จริงบน Vercel ผ่าน `npx vercel list` เสมอ
+   - ยืนยันว่า Deployment มีสถานะ `READY` (ไม่ใช่ `ERROR`) ก่อนรายงานผล
 
