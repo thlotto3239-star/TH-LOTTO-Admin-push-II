@@ -26,3 +26,25 @@
   - ชื่อผู้ใช้: `•PHANTOM` (•PHANTOM –)
   - วัตถุประสงค์: ใช้สำหรับทดสอบระบบผู้ใช้ (Login, ถอนเงิน, ซื้อหวย)
 
+## ⚠️ Git Remote & Branch Mapping (ห้ามเดา — ต้องใช้ตามนี้เท่านั้น)
+
+### UI Admin Remotes
+| Remote Name | GitHub Repo | Default Branch | Vercel Deploy URL | หมายเหตุ |
+|-------------|-------------|---------------|-------------------|----------|
+| `admin-deploy` | `TH-LOTTO-Admin-push-II` | `main` | `th-lotto-admin-push-ii.vercel.app` | Blueprint canonical |
+| `old-admin` | `TH-LOTTO-Admin-push` | **`master`** ⚠️ | `th-lotto-admin-push-ten.vercel.app` | ใช้งานจริงปัจจุบัน — **ต้อง push main:master** |
+| `core-origin` | `thlotto-core` | `main` | - | Core backup |
+| `origin` | `THLOTTO-II` | `main` | - | Root monorepo |
+
+### UI Customer Remotes
+| Remote Name | GitHub Repo | Default Branch | Vercel Deploy URL | หมายเหตุ |
+|-------------|-------------|---------------|-------------------|----------|
+| `origin` | `thlotto-premium` | `main` | `lotto-th-customer.vercel.app` | Customer production |
+| `new-origin` | `thlotto-app-user` | `main` | - | Customer backup |
+
+### 🚨 กฎบังคับสำหรับ Git Push
+1. **ก่อน push ทุกครั้ง** ต้องเช็ค default branch ของ remote ด้วย `git ls-remote <remote> HEAD` และ `git remote show <remote>`
+2. **old-admin ใช้ `master`** — ต้อง push ด้วย `git push old-admin main:master`
+3. **หลัง push ทุกครั้ง** ต้องยืนยันด้วย `git ls-remote <remote> HEAD` ว่า commit hash ตรงกับ local
+4. **ห้ามสมมุติว่าทุก remote ใช้ `main`** — ต้องตรวจสอบจริงเสมอ
+
