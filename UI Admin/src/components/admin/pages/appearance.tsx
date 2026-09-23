@@ -628,7 +628,7 @@ export function AppearancePage() {
             <Input
               value={s.login_form_subtitle}
               onChange={(e) => set("login_form_subtitle", e.target.value)}
-              placeholder="กรุณากรอกหมายเลขโทรศัพท์และรหัส PIN 4 หลักเพื่อเข้าใช้งาน"
+              placeholder="กรุณากรอกหมายเลขโทรศัพท์และรหัส PIN 6 หลักเพื่อเข้าใช้งาน"
               className={inputCls}
             />
           </Field>

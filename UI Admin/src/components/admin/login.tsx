@@ -175,7 +175,7 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any)
       errs.id = "โปรดกรอกเบอร์โทรศัพท์ อีเมล หรือชื่อผู้ใช้";
     }
     if (!password.trim() || password.length < 4) {
-      errs.pass = "โปรดกรอกรหัสผ่านหรือ PIN อย่างน้อย 4 หลัก";
+      errs.pass = "โปรดกรอกรหัสผ่านหรือ PIN อย่างน้อย 6 หลัก";
     }
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
@@ -304,10 +304,10 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any)
                 ) : null}
               </div>
 
-              {/* รหัสผ่าน หรือ PIN 4 หลัก */}
+              {/* รหัสผ่าน หรือ PIN 6 หลัก */}
               <div>
                 <label htmlFor="login-pass" className="mb-1.5 block text-sm font-medium text-neutral-700">
-                  รหัสผ่าน หรือ PIN 4 หลัก
+                  รหัสผ่าน หรือ PIN 6 หลัก
                 </label>
                 <div
                   className={cn(
@@ -327,7 +327,7 @@ export function AdminLogin({ onLogin }: { onLogin: (name: string, profile?: any)
                       setPassword(e.target.value);
                       if (errors.pass) setErrors((p) => ({ ...p, pass: undefined }));
                     }}
-                    placeholder="กรอกรหัสผ่าน หรือ PIN 4 หลัก"
+                    placeholder="กรอกรหัสผ่าน หรือ PIN 6 หลัก"
                     className="h-full min-w-0 flex-1 bg-transparent px-3.5 text-sm text-neutral-900 outline-none placeholder:text-neutral-400"
                   />
                   <button

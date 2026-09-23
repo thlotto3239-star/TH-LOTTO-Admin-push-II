@@ -936,7 +936,7 @@ export const APPEARANCE_SETTINGS = {
   login_stat_3_val: "24/7",
   login_stat_3_label: "ศูนย์บริการสมาชิก",
   login_form_title: "เข้าสู่ระบบสมาชิก",
-  login_form_subtitle: "กรุณากรอกหมายเลขโทรศัพท์และรหัส PIN 4 หลักเพื่อเข้าใช้งาน",
+  login_form_subtitle: "กรุณากรอกหมายเลขโทรศัพท์และรหัส PIN 6 หลักเพื่อเข้าใช้งาน",
   login_badge_1_title: "ความปลอดภัย",
   login_badge_1_sub: "SSL 256-Bit",
   login_badge_2_title: "ธุรกรรมออโต้",

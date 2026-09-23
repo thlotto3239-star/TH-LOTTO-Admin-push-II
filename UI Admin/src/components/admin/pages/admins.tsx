@@ -26,7 +26,7 @@ function AdminForm({ initial, onClose, onSave }: { initial: AdminUser; onClose: 
       return;
     }
     if (isNew && (!pw || pw.length < 4)) {
-      alert("กรุณากำหนดรหัสผ่านหรือ PIN อย่างน้อย 4 หลัก");
+      alert("กรุณากำหนดรหัสผ่านหรือ PIN อย่างน้อย 6 หลัก");
       return;
     }
     onSave(f, pw);
@@ -46,8 +46,8 @@ function AdminForm({ initial, onClose, onSave }: { initial: AdminUser; onClose: 
           <Field label="ชื่อ-นามสกุล"><Input value={f.full_name} onChange={(e) => setF({ ...f, full_name: e.target.value })} className={inputCls} /></Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="เบอร์โทร / อีเมล / Username"><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="0812345678 หรือ email/user" className={inputCls} /></Field>
-            <Field label={isNew ? "รหัสผ่าน / PIN (อย่างน้อย 4 หลัก)" : "รหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)"}>
-              <Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="รหัสผ่าน หรือ PIN 4 หลัก" className={inputCls} />
+            <Field label={isNew ? "รหัสผ่าน / PIN (อย่างน้อย 6 หลัก)" : "รหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)"}>
+              <Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="รหัสผ่าน หรือ PIN 6 หลัก" className={inputCls} />
             </Field>
           </div>
           <Field label="ระดับผู้ดูแล">
@@ -137,7 +137,7 @@ function PasswordResetDialog({ admin, onClose, onSuccess }: { admin: AdminUser; 
 
   const handleSave = async () => {
     if (newPassword.length < 4) {
-      toast({ title: "รหัสผ่านสั้นเกินไป", description: "รหัสผ่านใหม่หรือ PIN ต้องมีความยาวอย่างน้อย 4 หลัก", variant: "destructive" });
+      toast({ title: "รหัสผ่านสั้นเกินไป", description: "รหัสผ่านใหม่หรือ PIN ต้องมีความยาวอย่างน้อย 6 หลัก", variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -173,12 +173,12 @@ function PasswordResetDialog({ admin, onClose, onSuccess }: { admin: AdminUser; 
           <DialogDescription>กำหนดรหัสผ่านใหม่สำหรับบัญชีแอดมินเบอร์ {admin.phone}</DialogDescription>
         </DialogHeader>
         <div className="py-2">
-          <Field label="รหัสผ่านใหม่ หรือ PIN (อย่างน้อย 4 หลัก)">
+          <Field label="รหัสผ่านใหม่ หรือ PIN (อย่างน้อย 6 หลัก)">
             <Input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="กรอกรหัสผ่านใหม่ หรือ PIN 4 หลักที่นี่..."
+              placeholder="กรอกรหัสผ่านใหม่ หรือ PIN 6 หลักที่นี่..."
               className={inputCls}
             />
           </Field>
