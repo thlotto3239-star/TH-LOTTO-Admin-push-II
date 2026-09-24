@@ -400,8 +400,12 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
  Deposit / Withdraw      ❌              ❌            ✅
 ```
 
-- **UI Guard:** Staff จะถูกซ่อนเมนู `deposits`, `withdrawals`, `banks`, `admins`, `settings`, `data-management` ออกจาก Sidebar
-- **Server API Guard (`/api/admin/data`):** เมื่อมีการส่ง Action ทางการเงินหรือตั้งค่าระบบ Server จะตรวจสอบ Role จาก Admin Token หากไม่ใช่ `super_admin` จะตอบกลับ `403 Forbidden` ทันที
+- **UI Guard:** Staff/Admin ทั่วไปจะถูกซ่อนเมนูการเงิน `deposits`, `withdrawals`, `banks` รวมถึง `admins`, `data-management` ออกจาก Sidebar เว้นแต่จะได้รับสิทธิ์เฉพาะจาก Super Admin
+- **Server API Guard (`/api/admin/data`):** เมื่อมีการส่ง Action ทางการเงินหรือตั้งค่าระบบ Server จะตรวจสอบ Role จาก Admin Token หากไม่ใช่ `super_admin` และไม่มีสิทธิ์การเงินจะตอบกลับ `403 Forbidden` ทันที
+- **Admin Google OAuth Access Specification:**
+  - ผู้ใช้งานที่เข้าสู่ระบบผ่าน Google OAuth หน้าแอดมิน จะได้รับการอนุมัติสิทธิ์เข้าสู่ระบบผู้ดูแล (`is_admin: true`, `admin_role: "admin"`) โดยอัตโนมัติ
+  - **สิทธิ์เริ่มต้น (Default Permissions):** ได้รับสิทธิ์ในการจัดการข้อมูลระบบทั้งหมด **ยกเว้นการเงิน** (ไม่รวม `deposits`, `withdrawals`, `banks`)
+  - Super Admin สามารถปรับเปลี่ยน เพิ่ม หรือลดสิทธิ์ของผู้ดูแลแต่ละคนได้ตลอดเวลาผ่านหน้า "ผู้ดูแลระบบ" (`admins.tsx`)
 
 ---
 

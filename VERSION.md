@@ -1,8 +1,8 @@
 # THLOTTO-II Version Specification
 
-**Current Version:** `3.1.4`  
-**Release Name:** Unified 6-Digit PIN Standard, Withdrawal Buttons & Authorized Test Credentials  
-**Release Date:** 2026-09-23  
+**Current Version:** `3.1.5`  
+**Release Name:** Admin Gmail OAuth Auto-Sync & Default Non-Financial Permissions  
+**Release Date:** 2026-09-24  
 **Standard:** ARM AI Engineering Standard (ARM-AES v1.0) & Web Development Standards  
 
 ---

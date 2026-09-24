@@ -17,7 +17,7 @@ import { supabase } from "@/lib/supabase";
 function SlipModal({ req, onClose }: { req: DepositReq | null; onClose: () => void }) {
   if (!req) return null;
   const t = new Date(req.created_at);
-  const promo = req.promo || (req.promo_code ? PROMO_DETAILS[req.promo_code] : null);
+  const promo: any = req.promo || (req.promo_code ? (PROMO_DETAILS as any)[req.promo_code] : null);
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -109,7 +109,7 @@ function ActionModal({
 }) {
   const [note, setNote] = React.useState("");
   const { toast } = useToast();
-  const promo = req?.promo || (req?.promo_code ? PROMO_DETAILS[req.promo_code] : null);
+  const promo: any = req?.promo || (req?.promo_code ? (PROMO_DETAILS as any)[req.promo_code] : null);
 
   React.useEffect(() => setNote(""), [req, mode]);
 

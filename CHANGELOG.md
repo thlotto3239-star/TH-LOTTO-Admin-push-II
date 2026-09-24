@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.1.5] - 2026-09-24
+
+### Added
+- **Admin Google OAuth Automatic Sign-in & Profile Synchronization (`UI Admin/src/app/page.tsx` & `/api/admin/data/route.ts`):**
+  - Implemented `oauth_admin_sync` server-side action to automatically authenticate and register any admin signing in via Gmail / Google OAuth on the Admin Portal.
+  - Automatically provisions admin credentials (`is_admin: true`, `admin_role: "admin"`) with **Default Non-Financial Permissions** (`members`, `markets`, `bets`, `restricted`, `results`, `instant`, `wheel`, `sliders`, `popup`, `promotions`, `articles`, `feeds`, `appearance`, `broadcast`, `settings`, `affiliate`), strictly excluding financial modules (`deposits`, `withdrawals`, `banks`).
+  - Preserves existing custom permissions and `super_admin` statuses without overwrite.
+- **Admin List Query Support (`/api/admin/data?resource=admins`):**
+  - Added support for loading all active administrators across roles (`super_admin`, `admin`, `staff`) with `.or("is_admin.eq.true,admin_role.in.(super_admin,admin,staff)")`.
+
+### Changed
+- **Strict Role & Navigation Permission Enforcer (`UI Admin/src/components/admin/admin-app.tsx` & `admins.tsx`):**
+  - Updated `isPagePermitted` to strictly require explicit permission for financial pages (`deposits`, `withdrawals`, `banks`), preventing unauthorized staff/admin access.
+  - Removed `deposits` and `withdrawals` from `DEFAULT_STAFF_PAGES` and fallback lists.
+  - Updated `admins.tsx` to default newly created admins to non-financial permissions with full customizability for Super Admins.
+
 ## [3.1.4] - 2026-09-23
 
 ### Added

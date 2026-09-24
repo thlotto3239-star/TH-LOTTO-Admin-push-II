@@ -3,7 +3,7 @@
 import * as React from "react";
 import { AdminApp } from "@/components/admin/admin-app";
 import { AdminLogin } from "@/components/admin/login";
-import { useAdminNav, KNOWN_ADMINS } from "@/components/admin/store";
+import { useAdminNav } from "@/components/admin/store";
 import { supabase } from "@/lib/supabase";
 import { getAdminClientGeo } from "@/lib/client-geo";
 
@@ -52,58 +52,32 @@ export default function Page() {
     // 2. ตรวจสอบ Supabase Session สำหรับกรณี Google OAuth Redirect หรือ Existing Session
     const handleAuthUser = async (sessionUser: any) => {
       try {
-        let { data: profile } = await supabase
-          .from("profiles")
-          .select("id, full_name, is_admin, admin_role, admin_permissions, phone, avatar_url, is_super")
-          .eq("id", sessionUser.id)
-          .maybeSingle();
+        // ซิงก์ผู้ใช้ที่เข้าสู่ระบบผ่าน Google OAuth หน้าแอดมิน ให้ได้รับสิทธิ์ผู้ดูแลระบบ (ยกเว้นการเงิน) อัตโนมัติ
+        const res = await fetch("/api/admin/data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "oauth_admin_sync",
+            payload: {
+              user_id: sessionUser.id,
+              email: sessionUser.email,
+              full_name: sessionUser.user_metadata?.full_name || sessionUser.user_metadata?.name || sessionUser.email?.split("@")[0] || "ผู้ดูแลระบบ",
+              avatar_url: sessionUser.user_metadata?.avatar_url || sessionUser.user_metadata?.picture || null,
+            },
+          }),
+        });
 
-        // [FIX A-2] Security Gate: ตรวจสอบสิทธิ์ก่อนอนุญาตเข้า Admin Panel
-        // ผู้ใช้ต้อง: (1) มี profile ที่ is_admin=true อยู่แล้ว หรือ (2) อยู่ใน KNOWN_ADMINS list
-        const isKnownAdmin = KNOWN_ADMINS.some(ka => ka.id === sessionUser.id);
-
-        if (!profile) {
-          // ไม่มี profile ในระบบเลย
-          if (isKnownAdmin) {
-            // เป็น Known Admin → สร้าง profile ให้
-            const knownInfo = KNOWN_ADMINS.find(ka => ka.id === sessionUser.id)!;
-            const newStaff = {
-              id: sessionUser.id,
-              full_name: knownInfo.full_name || sessionUser.user_metadata?.full_name || sessionUser.email?.split("@")[0] || "ผู้ดูแลระบบ",
-              phone: knownInfo.phone || sessionUser.phone || sessionUser.email || "-",
-              is_admin: true,
-              admin_role: knownInfo.admin_role || "staff",
-              admin_permissions: [],
-              status: "active",
-            };
-            const { data: created } = await supabase.from("profiles").insert(newStaff).select().maybeSingle();
-            profile = created || newStaff;
-          } else {
-            // ❌ ไม่ใช่ Admin — ปฏิเสธและ sign out
-            console.warn("Unauthorized admin access attempt:", sessionUser.email);
-            setUnauthorizedError("บัญชีนี้ไม่มีสิทธิ์เข้าถึงแผงควบคุม กรุณาติดต่อ Super Admin เพื่อขอสิทธิ์");
-            await supabase.auth.signOut();
-            return;
-          }
-        } else if (profile.is_admin !== true && !["admin", "super_admin"].includes(profile.admin_role || "")) {
-          // มี profile แต่ยังไม่ได้เปิดสิทธิ์ admin
-          if (isKnownAdmin) {
-            // เป็น Known Admin → อัพเกรดสิทธิ์ให้
-            const knownInfo = KNOWN_ADMINS.find(ka => ka.id === sessionUser.id)!;
-            await supabase.from("profiles").update({ is_admin: true, admin_role: knownInfo.admin_role || "staff", admin_permissions: [] }).eq("id", profile.id);
-            profile.is_admin = true;
-            profile.admin_role = knownInfo.admin_role || "staff";
-            profile.admin_permissions = [];
-          } else {
-            // ❌ ไม่ใช่ Admin — ปฏิเสธและ sign out
-            console.warn("Unauthorized admin access attempt (existing profile):", profile.phone, sessionUser.email);
-            setUnauthorizedError("บัญชีนี้ไม่มีสิทธิ์เข้าถึงแผงควบคุม กรุณาติดต่อ Super Admin เพื่อขอสิทธิ์");
-            await supabase.auth.signOut();
-            return;
-          }
+        const syncJson = await res.json();
+        if (!res.ok || !syncJson.success || !syncJson.profile) {
+          console.warn("OAuth admin sync error:", syncJson?.error);
+          setUnauthorizedError(syncJson?.error || "บัญชีนี้ไม่มีสิทธิ์เข้าถึงแผงควบคุม");
+          await supabase.auth.signOut();
+          return;
         }
 
-        const adminName = profile?.full_name || sessionUser.email?.split("@")[0] || "ผู้ดูแลระบบ";
+        const profile = syncJson.profile;
+        const adminName = profile.full_name || sessionUser.email?.split("@")[0] || "ผู้ดูแลระบบ";
+
         setCurrentUser(adminName);
         syncAdminProfile(profile, adminName);
         setUnauthorizedError(null);

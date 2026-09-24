@@ -109,16 +109,21 @@ const NAV: { group: string; items: { id: PageId; label: string; icon: React.Comp
 
 export const DEFAULT_STAFF_PAGES: PageId[] = [
   "dashboard",
-  "deposits",
-  "withdrawals",
-  "data-management",
+  "members",
+  "markets",
+  "bets",
+  "restricted",
+  "results",
+  "wheel",
   "sliders",
   "popup",
   "promotions",
   "articles",
   "feeds",
-  "wheel",
+  "appearance",
   "broadcast",
+  "settings",
+  "affiliate",
 ];
 
 export function isPagePermitted(pageId: PageId, currentAdmin: any): boolean {
@@ -127,7 +132,23 @@ export function isPagePermitted(pageId: PageId, currentAdmin: any): boolean {
     return true;
   }
   const perms: string[] = currentAdmin.permissions || [];
-  if (pageId === "dashboard" || pageId === "deposits" || pageId === "withdrawals" || pageId === "data-management") return true;
+  if (perms.includes("*")) return true;
+
+  if (pageId === "dashboard") return true;
+
+  // เมนูการเงิน ต้องมีสิทธิ์เฉพาะเท่านั้น
+  if (pageId === "deposits" || pageId === "withdrawals" || pageId === "banks") {
+    return perms.includes(pageId);
+  }
+
+  // การจัดการผู้ดูแล และ การจัดการข้อมูลระดับสูง
+  if (pageId === "admins") {
+    return perms.includes("admins");
+  }
+  if (pageId === "data-management") {
+    return perms.includes("data-management");
+  }
+
   if (pageId === "member-detail") return perms.includes("members");
   if (pageId.startsWith("instant-")) return perms.includes("instant") || perms.includes("markets") || perms.includes("all");
   if (perms.includes(pageId)) return true;

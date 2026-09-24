@@ -206,7 +206,19 @@ export function AdminsPage() {
 
   const isSuperAdmin = currentAdmin?.admin_role === "super_admin" || currentAdmin?.is_super;
 
-  const emptyAdmin: AdminUser = { id: "", full_name: "", phone: "", role: "admin", status: "active", permissions: ["deposits", "withdrawals", "members", "bets"], avatar_color: "#0d9488" };
+  const DEFAULT_NON_FINANCIAL_PERMS = PERMISSION_KEYS
+    .filter((p) => !["deposits", "withdrawals", "banks"].includes(p.key))
+    .map((p) => p.key);
+
+  const emptyAdmin: AdminUser = {
+    id: "",
+    full_name: "",
+    phone: "",
+    role: "admin",
+    status: "active",
+    permissions: DEFAULT_NON_FINANCIAL_PERMS,
+    avatar_color: "#0d9488",
+  };
 
   const fetchAdmins = React.useCallback(async () => {
     try {
@@ -220,7 +232,7 @@ export function AdminsPage() {
           } else if (Array.isArray(a.admin_permissions) && a.admin_permissions.length > 0) {
             perms = a.admin_permissions.includes("*") ? PERMISSION_KEYS.map((k) => k.key) : a.admin_permissions;
           } else {
-            perms = ["deposits", "withdrawals", "members", "bets"];
+            perms = DEFAULT_NON_FINANCIAL_PERMS;
           }
 
           return {

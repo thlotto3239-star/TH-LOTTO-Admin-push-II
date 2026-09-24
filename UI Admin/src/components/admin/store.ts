@@ -148,7 +148,7 @@ export const useAdminCounts = create<AdminCountsState>((set, get) => ({
       let nextRes = state.res;
 
       const page = target.target_page || "";
-      const cat = target.category || "";
+      const cat = (target.category as string) || "";
 
       if (cat === "withdrawals" || page === "withdrawals" || target.title.includes("ถอน")) {
         nextWth = Math.max(0, state.wth - 1);

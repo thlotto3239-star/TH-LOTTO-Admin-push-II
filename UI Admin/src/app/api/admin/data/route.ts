@@ -521,7 +521,7 @@ export async function GET(req: NextRequest) {
         });
 
         const enriched = (data || []).map((d: any) => {
-          let promoInfo = null;
+          let promoInfo: any = null;
           if (d.promo_code) {
             const found = promoMap.get(String(d.promo_code)) || promoMap.get(String(d.promo_code).toLowerCase());
             if (found) {
@@ -1014,7 +1014,7 @@ export async function GET(req: NextRequest) {
           { data: adminProfiles, error: aErr },
           { data: roles },
         ] = await Promise.all([
-          supabaseAdmin.from("profiles").select("*").eq("is_admin", true).order("created_at", { ascending: true }),
+          supabaseAdmin.from("profiles").select("*").or("is_admin.eq.true,admin_role.in.(super_admin,admin,staff)").order("created_at", { ascending: true }),
           supabaseAdmin.from("admin_roles").select("*").order("created_at", { ascending: true }),
         ]);
         if (aErr) throw aErr;
@@ -1225,6 +1225,92 @@ export async function POST(req: NextRequest) {
     const { action, payload } = body;
 
     switch (action) {
+      case "oauth_admin_sync": {
+        const { user_id, email, full_name, avatar_url } = payload || {};
+        if (!user_id) {
+          return NextResponse.json({ success: false, error: "Missing user_id" }, { status: 400 });
+        }
+
+        // Standard non-financial management permissions: all system data management EXCEPT finance (deposits, withdrawals, banks)
+        const defaultNonFinancialPerms = [
+          "members", "markets", "bets", "restricted", "results",
+          "instant", "wheel", "sliders", "popup", "promotions",
+          "articles", "feeds", "appearance", "broadcast", "settings", "affiliate"
+        ];
+
+        // 1. Fetch profile
+        const { data: existingProfile } = await supabaseAdmin
+          .from("profiles")
+          .select("*")
+          .eq("id", user_id)
+          .maybeSingle();
+
+        if (existingProfile?.status === "suspended") {
+          return NextResponse.json({
+            success: false,
+            error: "บัญชีผู้ดูแลนี้ถูกระงับการใช้งาน โปรดติดต่อผู้ดูแลสูงสุด",
+          }, { status: 403 });
+        }
+
+        const isSuper = existingProfile?.admin_role === "super_admin" || existingProfile?.is_super === true;
+        const role = isSuper ? "super_admin" : (existingProfile?.admin_role || "admin");
+
+        let perms: string[];
+        if (isSuper) {
+          perms = ["*"];
+        } else if (Array.isArray(existingProfile?.admin_permissions) && existingProfile.admin_permissions.length > 0) {
+          perms = existingProfile.admin_permissions;
+        } else {
+          // Default for all OAuth admin sign-ins: all system data management EXCEPT finance
+          perms = defaultNonFinancialPerms;
+        }
+
+        const standardPhone = existingProfile?.phone || email || "-";
+        const adminFullName = existingProfile?.full_name || full_name || email?.split("@")[0] || "ผู้ดูแลระบบ";
+
+        const profileData: any = {
+          id: user_id,
+          is_admin: true,
+          admin_role: role,
+          admin_permissions: perms,
+          status: "active",
+          last_login_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        if (!existingProfile?.full_name) {
+          profileData.full_name = adminFullName;
+        }
+        if (!existingProfile?.phone || existingProfile?.phone === "-") {
+          profileData.phone = standardPhone;
+        }
+        if (avatar_url && !existingProfile?.avatar_url) {
+          profileData.avatar_url = avatar_url;
+        }
+
+        const { data: syncedProfile, error: pErr } = await supabaseAdmin
+          .from("profiles")
+          .upsert(profileData, { onConflict: "id" })
+          .select()
+          .single();
+
+        if (pErr) throw pErr;
+
+        return NextResponse.json({
+          success: true,
+          profile: {
+            id: syncedProfile.id,
+            full_name: syncedProfile.full_name || adminFullName,
+            phone: syncedProfile.phone || standardPhone,
+            username: syncedProfile.username || adminFullName,
+            admin_role: role,
+            is_super: isSuper,
+            avatar_url: syncedProfile.avatar_url || avatar_url || null,
+            admin_permissions: perms,
+          },
+        });
+      }
+
       case "admin_login": {
         const { identifier, password } = payload || {};
         if (!identifier || !password) {
@@ -2326,7 +2412,7 @@ export async function POST(req: NextRequest) {
           row.id = id;
         }
 
-        let dbData = null;
+        let dbData: any = null;
         try {
           const { data } = await supabaseAdmin.from("company_bank_accounts").upsert([row], { onConflict: "account_number" }).select();
           dbData = data;
@@ -2811,7 +2897,14 @@ export async function POST(req: NextRequest) {
         const strippedPhone = cleanDigits.replace(/^0+/, "");
         const email = isEmail ? inputId.toLowerCase() : `${standardPhone}@thlotto.app`;
         const role = admin_role === "super_admin" ? "super_admin" : "admin";
-        const perms = role === "super_admin" ? ["*"] : (Array.isArray(permissions) ? permissions : []);
+        const defaultNonFinancial = [
+          "members", "markets", "bets", "restricted", "results",
+          "instant", "wheel", "sliders", "popup", "promotions",
+          "articles", "feeds", "appearance", "broadcast", "settings", "affiliate"
+        ];
+        const perms = role === "super_admin"
+          ? ["*"]
+          : (Array.isArray(permissions) && permissions.length > 0 ? permissions : defaultNonFinancial);
 
         // 1. Check if user already exists in profiles
         let existingProfile: any = null;
@@ -2906,7 +2999,8 @@ export async function POST(req: NextRequest) {
 
           const { data: newProfile, error: pErr } = await supabaseAdmin
             .from("profiles")
-            .update({
+            .upsert({
+              id: userId,
               is_admin: true,
               admin_role: role,
               admin_permissions: perms,
@@ -2914,8 +3008,7 @@ export async function POST(req: NextRequest) {
               phone: isEmail ? inputId : standardPhone,
               status: "active",
               updated_at: new Date().toISOString(),
-            })
-            .eq("id", userId)
+            }, { onConflict: "id" })
             .select()
             .single();
 
