@@ -2968,21 +2968,24 @@ export async function POST(req: NextRequest) {
 
           // Update password if provided
           if (password && password.length >= 4) {
-            if (password.length >= 6) {
-              await supabaseAdmin.auth.admin.updateUserById(userId, { password }).catch((e: any) => console.warn("Password update error:", e));
-            } else {
-              // PIN format: hash and store in pin_hash and updateUserById
-              const pPhone = existingProfile?.phone || standardPhone;
-              const pHash = hashPin(pPhone, password);
+            const isNumericPin = /^\d{4,6}$/.test(password);
+            const pPhone = existingProfile?.phone || standardPhone;
+            const pHash = hashPin(pPhone, password);
+            if (isNumericPin) {
               await supabaseAdmin.from("profiles").update({ pin_hash: pHash }).eq("id", userId);
-              await supabaseAdmin.auth.admin.updateUserById(userId, { password: pHash }).catch(() => {});
+              await supabaseAdmin.auth.admin.updateUserById(userId, { password: pHash }).catch((e: any) => console.warn("Password hash update error:", e));
+            } else {
+              await supabaseAdmin.auth.admin.updateUserById(userId, { password }).catch((e: any) => console.warn("Password update error:", e));
             }
           }
 
           return NextResponse.json({ success: true, data: updated, isPromoted: true });
         } else {
           // 3. Create new Auth user
-          const adminPassword = password && password.length >= 6 ? password : (password && password.length >= 4 ? `${password}Aa!` : "Password123!");
+          const isNumericPin = password && /^\d{4,6}$/.test(password);
+          const pPhone = isEmail ? inputId : standardPhone;
+          const pHash = isNumericPin ? hashPin(pPhone, password) : null;
+          const adminPassword = isNumericPin ? pHash : (password && password.length >= 6 ? password : "Password123!");
           const { data: authUser, error: aErr } = await supabaseAdmin.auth.admin.createUser({
             email,
             password: adminPassword,
@@ -2997,18 +3000,21 @@ export async function POST(req: NextRequest) {
           if (aErr) throw aErr;
           userId = authUser.user.id;
 
+          const profileInsert: any = {
+            id: userId,
+            is_admin: true,
+            admin_role: role,
+            admin_permissions: perms,
+            full_name: full_name || "แอดมิน",
+            phone: isEmail ? inputId : standardPhone,
+            status: "active",
+            updated_at: new Date().toISOString(),
+          };
+          if (pHash) profileInsert.pin_hash = pHash;
+
           const { data: newProfile, error: pErr } = await supabaseAdmin
             .from("profiles")
-            .upsert({
-              id: userId,
-              is_admin: true,
-              admin_role: role,
-              admin_permissions: perms,
-              full_name: full_name || "แอดมิน",
-              phone: isEmail ? inputId : standardPhone,
-              status: "active",
-              updated_at: new Date().toISOString(),
-            }, { onConflict: "id" })
+            .upsert(profileInsert, { onConflict: "id" })
             .select()
             .single();
 
@@ -3047,14 +3053,14 @@ export async function POST(req: NextRequest) {
         if (error) throw error;
 
         if (password && password.length >= 4) {
-          if (password.length >= 6) {
-            await supabaseAdmin.auth.admin.updateUserById(id, { password }).catch((e: any) => console.warn("Password update error:", e));
-          } else {
-            // PIN format
-            const pPhone = data?.phone || phone || "0622306037";
-            const pHash = hashPin(pPhone, password);
+          const isNumericPin = /^\d{4,6}$/.test(password);
+          const pPhone = data?.phone || phone || "0622306037";
+          const pHash = hashPin(pPhone, password);
+          if (isNumericPin) {
             await supabaseAdmin.from("profiles").update({ pin_hash: pHash }).eq("id", id);
-            await supabaseAdmin.auth.admin.updateUserById(id, { password: pHash }).catch(() => {});
+            await supabaseAdmin.auth.admin.updateUserById(id, { password: pHash }).catch((e: any) => console.warn("Password hash update error:", e));
+          } else {
+            await supabaseAdmin.auth.admin.updateUserById(id, { password }).catch((e: any) => console.warn("Password update error:", e));
           }
         }
 
